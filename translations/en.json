@@ -1,0 +1,43 @@
+{
+  "general": {
+    "app_name": "{owner_name}'s Channel",
+    "explore": "explore",
+    "channel": "channel",
+    "message": "message",
+    "panel": "panel",
+    "views": "views",
+    "shorts": "shorts",
+    "new_posts": "New Posts",
+    "not_posted_any_content_yet": "Not Posted Any Content Yet",
+    "wait_for_first_content": "Wait For <highlight>{owner_name}</highlight> To Publish First Content",
+    "copy_post_link": "Copy Post Link",
+    "delete_post": "Delete Post",
+    "view_other_contents": "View Other Contents",
+    "sub_newsletter_now": "Sub Newsletter Now",
+    "new_story": "New Story",
+    "posts": "Posts",
+    "posted": "Posted",
+    "published": "Published",
+    "scroll_for_more": "Scroll For More",
+    "message_input_placeholder": "Type Your Message Here ...",
+    "login_to_panel": "Login To Panel",
+    "send_message_now": "Send Message Now",
+    "tap_to_download": "Tap to download",
+    "downloading": "Downloading",
+    "lorem_ipsum": "Here’s to the crazy ones The misfits The rebels The troublemakers The round pegs in the square holes The ones who see things differently They’re not fond of rules And they have no respect for the status quo You can quote them, disagree with them, glorify or vilify them About the only thing you can’t do is ignore them Because they change things They push the human race forward And while some may see them as the crazy ones, we see genius Because the people who are crazy enough to think they can change the world, are the ones who do",
+    "login_panel_subtitle": "Use Email and Password Defined on the Configurations",
+    "login_panel_title": "Panel — Dastyare Social — CS",
+    "login_panel_title_span": "To Manage Your Personal Brand"
+  },
+  "last_time": {
+    "just_now": "Just now",
+    "minutes_ago": "{count} min{count, plural, one {} other {s}} ago",
+    "hours_ago": "{count} hr{count, plural, one {} other {s}} ago",
+    "days_ago": "{count} day{count, plural, one {} other {s}} ago"
+  },
+  "not_found": {
+    "meta_title": "Not Found",
+    "description": "Are You Lost — Seems There's Not What You're Looking For",
+    "back_to_home": "Get Back To Home Page"
+  }
+}

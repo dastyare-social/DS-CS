@@ -1,0 +1,14 @@
+---
+description: Drizzle ORM and database schema patterns
+globs: src/lib/db/**/*
+alwaysApply: false
+---
+
+# Database Conventions
+
+- Schema files: `src/lib/db/schema/` (one table per file, re-exported in index.ts)
+- Use drizzle-zod: `createSelectSchema`, `createInsertSchema`, `.partial()` for patches
+- Use `toZodV4SchemaTyped()` wrapper from `@/lib/zod-utils`
+- Migrations: `bun run db:generate` then `bun run db:migrate`
+- Never edit migration files manually after they are applied
+- IDs are text (UUID strings), views/likes stored as text counters

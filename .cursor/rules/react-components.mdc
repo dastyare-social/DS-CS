@@ -1,0 +1,14 @@
+---
+description: React and Next.js component patterns
+globs: **/*.tsx
+alwaysApply: false
+---
+
+# React / Next.js Patterns
+
+- Functional components, React 19
+- `"use client"` only when needed (hooks, browser APIs, interactivity)
+- Tailwind CSS 4 for styling; use existing design tokens (primary, secondary)
+- Path alias: `@/components/`, `@/lib/`, `@/config/`
+- i18n via next-intl; messages in `translations/`
+- Match existing component naming and file structure in `src/components/`

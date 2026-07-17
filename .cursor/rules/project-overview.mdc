@@ -1,0 +1,25 @@
+---
+description: Core project context for Dastyare Social CS
+alwaysApply: true
+---
+
+# Dastyare Social CS
+
+Next.js 16 creator studio. REST API at `/api`, docs at `/docs`, OpenAPI at `/openapi.json`.
+
+## Key paths
+
+- API routes: `src/app/api/`
+- Business logic: `src/lib/api/`
+- DB schema: `src/lib/db/schema/`
+- Auth: `src/lib/auth/`
+- Config: `config/app.config.yml` (source) → `config/app.config.json` (generated)
+
+## Rules
+
+- Minimal diffs; do not refactor unrelated code
+- Keep API logic in `src/lib/api/`, routes stay thin
+- Use `@/` imports, existing Zod/drizzle-zod schemas
+- After API changes: add JSDoc `@openapi` tags, run `bun run openapi:generate`
+- Never commit secrets (.env, S3 keys, auth secrets)
+- Read AGENTS.md for API details before integration work

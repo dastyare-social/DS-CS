@@ -1,0 +1,26 @@
+---
+description: REST API route and handler conventions
+globs: src/app/api/**/*.ts,src/lib/api/**/*
+alwaysApply: false
+---
+
+# API Conventions
+
+Route handlers in `src/app/api/` delegate to `src/lib/api/`.
+
+```typescript
+// ✅ Route: thin handler
+export async function GET(req: NextRequest) {
+  const result = await getPostsWithReactions({ page, limit });
+  return NextResponse.json(result);
+}
+
+// ✅ Logic lives in lib/api
+// src/lib/api/posts/queries.ts
+```
+
+- Document routes with JSDoc `@openapi` tags (summary, `@description`, `@tag`)
+- Use `export const dynamic = "force-dynamic"` on API routes
+- Validate with Zod schemas from `src/lib/db/schema/`
+- Regenerate OpenAPI after changes: `bun run openapi:generate`
+- Action-based POST bodies use `{ action: "view" | "reaction" | ... }` pattern

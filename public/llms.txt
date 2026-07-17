@@ -1,0 +1,52 @@
+# Dastyare Social — CS
+
+> Personal creator studio and social profile platform. REST API for posts and stories, with Better Auth authentication. Built with Next.js 16, PostgreSQL, and S3 media storage.
+
+Dastyare Social CS lets creators publish threads, shorts (vertical video), media posts, and ephemeral stories. External AI agents and LLMs should use the REST API documented below.
+
+## Documentation
+
+- [Interactive API docs (Scalar + MCP)](/docs): Full OpenAPI reference with try-it-out and MCP tool discovery
+- [OpenAPI spec (JSON)](/openapi.json): Machine-readable API contract for tool use and code generation
+- [AGENTS.md](/agents.md): Detailed agent guide with endpoint examples and auth flow
+- [README.md](/readme.md): Setup, architecture, and scripts
+
+## API overview
+
+Base URL: `{APP_URL}/api`
+
+### Posts
+
+- `GET /api/posts` — List posts (query: page, limit, search, type=list|count|shorts)
+- `POST /api/posts` — Create post (JSON or multipart with file)
+- `GET /api/posts/{id}` — Get single post
+- `PATCH /api/posts/{id}` — Update post
+- `DELETE /api/posts/{id}` — Delete post
+- `POST /api/posts/{id}` — Actions: reaction, view
+- `POST /api/posts` with `{ action: "batch-view", ids: [...] }` — Batch view increment
+
+Post types: text, image, video, voice, file
+
+### Stories
+
+- `GET /api/stories` — List stories (query: page, limit, search, type=count, kind=image|video)
+- `POST /api/stories` — Create story (JSON or multipart)
+- `GET /api/stories/{id}` — Get single story
+- `PATCH /api/stories/{id}` — Update story
+- `DELETE /api/stories/{id}` — Delete story
+- `POST /api/stories/{id}` — Actions: view, like (direction: inc|dec)
+
+Story types: image, video
+
+### Authentication
+
+- Auth handler: `/api/auth/*` (Better Auth)
+- Sign in: `POST /api/auth/sign-in/email`
+- Bearer token or API key in `Authorization` header for protected operations
+- Public GET endpoints do not require authentication
+
+## Optional
+
+- tRPC endpoint at `/api/trpc` is for internal frontend use; external agents should use REST
+- Content filtering (NSFW, HTML sanitization) applied on write paths
+- Media uploads stored in S3-compatible object storage
