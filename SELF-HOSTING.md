@@ -173,13 +173,46 @@ bun run db:migrate
 bun run start
 ```
 
-## 7) Docker deployment
+## 7) One-command server install
+
+Use the install script to bootstrap the repository on a fresh server or VPS.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yourname/dastyare_social_cs/main/scripts/install.sh | bash
+```
+
+The script will:
+
+- clone the repository if needed
+- install Bun if it is missing
+- create `.env` with default local values
+- build and start Docker Compose services
+
+> Review and update the generated `.env` before using this setup in production.
+
+## 8) Docker deployment
 
 A Dockerfile is included. Build and run it locally:
 
 ```bash
 docker build -t dastyare-social-cs .
 docker run -p 8729:8729 --env-file .env dastyare-social-cs
+```
+
+### Production Docker Compose
+
+Use the production compose file to run the app with PostgreSQL and MinIO.
+
+```bash
+docker compose up -d --build
+```
+
+### Development Docker Compose
+
+Use the development compose file to run the app in dev mode with live code mounting.
+
+```bash
+docker compose -f docker-compose.dev.yml up -d --build
 ```
 
 ### Docker Hub / registry deployment

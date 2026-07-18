@@ -192,6 +192,20 @@ bun run db:migrate           # Apply migrations
 bun run lint                 # ESLint
 ```
 
+## Deployment helpers
+
+Use Docker Compose to run the app with database and local storage.
+
+```bash
+docker compose up -d --build
+```
+
+For development with hot reload and mounted code:
+
+```bash
+docker compose -f docker-compose.dev.yml up -d --build
+```
+
 ## MCP integration
 
 The `/docs` Scalar UI exposes MCP for tool-using agents. Point your MCP client at the docs URL to discover available API operations from the OpenAPI spec.

@@ -5,16 +5,18 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: dastyare-social-cs:latest
+    image: dastyare-social-cs-dev:latest
     ports:
       - "8729:8729"
     env_file:
       - .env
+    volumes:
+      - .:/app
     depends_on:
       - db
       - minio
     restart: unless-stopped
-    command: sh -c "bun run generate:config && bun run db:migrate && bun run bootstrap:admin && bun run start"
+    command: sh -c "bun run generate:config && bun run db:migrate && bun run bootstrap:admin && bun run dev -p 8729"
 
   db:
     image: postgres:15-alpine

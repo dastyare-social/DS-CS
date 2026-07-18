@@ -31,11 +31,23 @@ This repository is prepared for production and designed for early adoption by cr
 
 **Requirements:** Bun, Node.js 20+, PostgreSQL, and an S3-compatible storage provider.
 
+### Local quick start
+
 ```bash
 cp .env.example .env
 bun install
 bun run dev          # http://localhost:8729
 ```
+
+### One-command server install
+
+Use the install script to bootstrap the repository on a fresh server or VPS.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yourname/dastyare_social_cs/main/scripts/install.sh | bash
+```
+
+> The script creates a default `.env`, builds Docker Compose services, and starts the app.
 
 On first build, migrations run automatically and an admin user is bootstrapped from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
@@ -147,6 +159,28 @@ Dastyare Social CS includes these pages:
 | `bun run db:generate` | Generate migration from schema changes |
 | `bun run db:studio` | Open Drizzle Studio |
 | `bun run openapi:generate` | Regenerate `public/openapi.json` from route JSDoc |
+
+## Docker Compose
+
+### Production
+
+```bash
+docker compose up -d --build
+```
+
+The default `docker-compose.yml` includes services for:
+
+- `app` — the Next.js app
+- `db` — PostgreSQL
+- `minio` — local S3-compatible storage
+
+### Development
+
+```bash
+docker compose -f docker-compose.dev.yml up -d --build
+```
+
+The `docker-compose.dev.yml` file mounts the repository into the container and runs the dev server.
 
 ## Architecture
 
