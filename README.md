@@ -198,6 +198,23 @@ The `docker-compose.dev.yml` file mounts the repository into the container and r
 
 ```
 src/
+
+## Production checklist (SEO / Search Console)
+
+Follow these before going live:
+
+- Set `NEXT_PUBLIC_APP_URL` to your production URL (use `https://`).
+- Add one of these verification methods in your production environment:
+ - Set `NEXT_PUBLIC_ALLOW_INDEXING` to `true` in production when you want search engines to index the site. By default indexing is blocked via `X-Robots-Tag`.
+ - If you need app-sided Search Console helpers (meta/file), enable them with `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and then choose one verification method:
+  - Meta tag: set `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` to the token Google provides.
+  - File: set `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE` (filename) or `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` (token). Optionally set `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE_CONTENT` to the exact file Google gives you. The app serves the file at `https://<your-host>/<filename>` when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true`.
+- Ensure `robots.txt` and `/sitemap.xml` are reachable (this app generates them via `src/app/robots.ts` and `src/app/sitemap.ts`).
+- Verify HTTPS on your host and make sure `NEXT_PUBLIC_APP_URL` uses `https://`.
+- After deploying, add your site in Google Search Console and verify ownership using the chosen method. Then submit `/sitemap.xml` in the Sitemaps section.
+
+For a full verification and Lighthouse guide, see [SEARCH-CONSOLE.md](SEARCH-CONSOLE.md).
+
 ├── app/
 │   ├── (routes)/          # Pages: home, explore, os (admin), resume
 │   ├── api/                 # REST API (OpenAPI-documented)

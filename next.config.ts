@@ -44,17 +44,36 @@ const nextConfig: NextConfig = {
     "cs.dastyare.social",
   ],
   async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: [
-          {
-            key: "X-Robots-Tag",
-            value: "noindex, nofollow, noarchive",
-          },
-        ],
-      },
-    ];
+    const allowIndexing = process.env.NEXT_PUBLIC_ALLOW_INDEXING === 'true'
+
+    const robotsHeader = {
+      key: "X-Robots-Tag",
+      value: "noindex, nofollow, noarchive",
+    }
+
+    // Routes that should NEVER be indexed (admin/internal/API/diagnostic pages)
+    const alwaysNoIndex = [
+      "/os/(.*)", // operator/admin UI
+      "/api/(.*)", // API endpoints
+      "/~offline", // offline page
+      "/pwa-self-test", // PWA test page
+      "/agents.md", // agent guidance page
+      "/docs/(.*)", // interactive docs (optional private)
+    ].map((source) => ({ source, headers: [robotsHeader] }))
+
+    if (!allowIndexing) {
+      // Block everything by default, but keep explicit alwaysNoIndex entries for clarity
+      return [
+        ...alwaysNoIndex,
+        {
+          source: "/(.*)",
+          headers: [robotsHeader],
+        },
+      ];
+    }
+
+    // Indexing allowed globally, but still ensure sensitive routes remain blocked.
+    return [...alwaysNoIndex];
   },
   devIndicators: false,
 };

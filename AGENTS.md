@@ -174,6 +174,21 @@ See `.env.example`. Critical vars:
 - `WEBPUSH_PRIVATE_KEY` — Private VAPID key for server-side sending
 - `WEBPUSH_SUBJECT` — Contact URI such as `mailto:hey@omidshabab.com`
 
+## Search Console / SEO (agent notes)
+
+- DNS verification (Cloudflare) is the recommended and simplest method; if the operator has already verified the domain via Cloudflare DNS TXT records, the app does not need to serve meta tags or verification files.
+- The app supports optional verification helpers controlled by env vars:
+	- `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` — enables meta/file verification behavior.
+	- `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` — meta token (used when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true`).
+	- `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE` — filename for HTML-file verification.
+	- `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE_CONTENT` — optional exact file contents.
+	- `NEXT_PUBLIC_ALLOW_INDEXING=true` — when set in production, allows search engines to index the site; default behavior blocks indexing with `X-Robots-Tag`.
+- `src/app/head.tsx` injects `google-site-verification` only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` is set.
+- `src/app/[file]/route.ts` serves a verification file only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and matching filename env vars are present.
+- `src/app/sitemap.ts` generates `/sitemap.xml` based on `app_url` and posts; ensure `NEXT_PUBLIC_APP_URL` is correct in production.
+ - The app explicitly blocks indexing for sensitive routes (see `next.config.ts` `alwaysNoIndex`). By default these include `/os/*`, `/api/*`, `/~offline`, `/pwa-self-test`, `/agents.md`, and `/docs/*`.
+
+
 ## Analytics / PostHog (for agents)
 
 This project sends analytics to PostHog for both client and server events. Agents and crawlers should be aware of the following configuration and events:

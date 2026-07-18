@@ -10,6 +10,8 @@ export interface AppConfig {
     name: string;
     desc: string;
   };
+
+  [locale: string]: any;
 }
 
 export const app_config: AppConfig = client_config;

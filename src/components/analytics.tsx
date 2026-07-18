@@ -55,7 +55,7 @@ export default function Analytics() {
   useEffect(() => {
     const query = searchParams.toString();
     const path = query ? `${pathname}?${query}` : pathname;
-    void captureClientEvent("page_view", {
+    void captureClientEvent("$pageview", {
       path,
       title: document.title,
       locale: navigator.language || "unknown",

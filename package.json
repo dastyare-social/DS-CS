@@ -21,6 +21,7 @@
     "db:check": "drizzle-kit check",
     "openapi:generate": "bunx next-openapi-gen generate",
     "pwa-self-test": "node scripts/pwa-self-test.js"
+    ,"validate:sitemap": "node scripts/validate-sitemap.js"
   },
   "overrides": {
     "strip-json-comments": "3.1.1"

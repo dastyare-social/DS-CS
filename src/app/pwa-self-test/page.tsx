@@ -90,9 +90,11 @@ export default function PwaSelfTest() {
           <Link href="/">
             <a className="px-4 py-2 bg-primary text-white rounded">Open Home</a>
           </Link>
-          <Link href="/~offline">
-            <a className="px-4 py-2 bg-white border rounded">Open Offline Page</a>
-          </Link>
+          {process.env.NEXT_PUBLIC_SHOW_INTERNAL_NAV === 'true' && (
+            <Link href="/~offline">
+              <a className="px-4 py-2 bg-white border rounded">Open Offline Page</a>
+            </Link>
+          )}
         </div>
       </div>
     </div>
