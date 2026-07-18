@@ -115,7 +115,10 @@ export const postsRouter = router({
   }),
 
   create: publicProcedure.input(postCreateInput).mutation(async ({ input }) => {
-    return createPostWithOptionalUpload({ content: input.content ?? null, file: null });
+    return createPostWithOptionalUpload({
+      content: input.content ?? null,
+      file: null,
+    });
   }),
 
   batchView: publicProcedure

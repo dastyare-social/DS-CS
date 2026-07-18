@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
 import { join } from "path";
+import { captureServerEvent } from "@/lib/analytics/server";
 
 export const dynamic = "force-dynamic";
 
@@ -15,5 +16,9 @@ function serveMarkdown(filename: string) {
 
 /** Serves AGENTS.md for LLM crawlers and agents */
 export async function GET() {
+  await captureServerEvent("llm_asset_requested", {
+    asset: "agents.md",
+    path: "/agents.md",
+  });
   return serveMarkdown("AGENTS.md");
 }

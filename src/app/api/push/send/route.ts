@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import type { PushSubscription } from "web-push";
 import webPush from "web-push";
 import { configureWebPush } from "@/lib/notifications/push";
+import { captureServerEvent } from "@/lib/analytics/server";
 
 export async function POST(req: NextRequest) {
   const authResponse = requireApiKeyAuth(req);
@@ -21,6 +22,9 @@ export async function POST(req: NextRequest) {
 
     const configured = configureWebPush();
     if (!configured) {
+      await captureServerEvent("push_notifications_skipped", {
+        reason: "push-not-configured",
+      });
       return NextResponse.json({ success: false, skipped: true, reason: "push-not-configured" });
     }
 
@@ -56,9 +60,18 @@ export async function POST(req: NextRequest) {
       console.warn("Some push notifications failed", failed.length);
     }
 
+    await captureServerEvent("push_notifications_sent", {
+      sent: results.length - failed.length,
+      failed: failed.length,
+      total: results.length,
+    });
+
     return NextResponse.json({ success: true, sent: results.length - failed.length, failed: failed.length });
   } catch (error) {
     console.error("push send failed", error);
+    await captureServerEvent("push_notifications_failed", {
+      error: String(error),
+    });
     return NextResponse.json({ error: "Failed to send push notifications" }, { status: 500 });
   }
 }

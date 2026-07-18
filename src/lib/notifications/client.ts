@@ -1,4 +1,5 @@
 import type { PushStatus } from "./status";
+import { captureClientEvent } from "@/lib/analytics/client";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -56,8 +57,16 @@ export async function registerPushSubscription(): Promise<PushStatus | null> {
 
   if (!response.ok) {
     console.error("Push subscription save failed", await response.text());
+    void captureClientEvent("push_subscription_failed", {
+      status: response.status,
+      ok: false,
+    });
     return "error";
   }
+
+  void captureClientEvent("push_subscription_enabled", {
+    endpoint: subscription.endpoint,
+  });
 
   return "enabled";
 }

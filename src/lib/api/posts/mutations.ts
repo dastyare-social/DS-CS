@@ -17,6 +17,7 @@ import type {
 } from "./queries";
 import { getPostById, invalidatePostsCache } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
+import { captureServerEvent } from "@/lib/analytics/server";
 
 const s3 = new S3Client({
   region: process.env.S3_REGION!,
@@ -164,6 +165,13 @@ export async function createPostWithOptionalUpload({
   invalidatePostsCache();
 
   if (inserted) {
+    await captureServerEvent("post_created", {
+      post_id: inserted.id,
+      post_type: type,
+      has_media: Boolean(media),
+      content_length: content?.length ?? 0,
+    });
+
     await sendPushNotification({
       title: "New post published",
       body: content ? content.slice(0, 80) : "A new post is now available",
@@ -200,6 +208,12 @@ export async function updatePost({
   if (!updated) return null;
   invalidatePostsCache();
 
+  await captureServerEvent("post_updated", {
+    post_id: id,
+    updated_fields: Object.keys(parsed),
+    post_type: updated.type,
+  });
+
   const reactionsRows = await db
     .select({
       emoji: reactions.emoji,
@@ -224,6 +238,11 @@ export async function batchIncrementViews(ids: string[]): Promise<void> {
       updatedAt: new Date(),
     })
     .where(inArray(posts.id, ids));
+
+  await captureServerEvent("post_batch_viewed", {
+    post_ids: ids,
+    count: ids.length,
+  });
 }
 
 export async function deletePostById(id: string): Promise<boolean> {
@@ -232,7 +251,12 @@ export async function deletePostById(id: string): Promise<boolean> {
     .where(eq(posts.id, id))
     .returning({ id: posts.id });
   const success = res.length > 0;
-  if (success) invalidatePostsCache();
+  if (success) {
+    invalidatePostsCache();
+    await captureServerEvent("post_deleted", {
+      post_id: id,
+    });
+  }
   return success;
 }
 
@@ -283,6 +307,12 @@ export async function addReaction({
 
   invalidatePostsCache();
 
+  await captureServerEvent("post_reacted", {
+    post_id: postId,
+    emoji,
+    reaction_count: row.count,
+  });
+
   return {
     postId: row.postId,
     emoji: row.emoji,
@@ -301,6 +331,11 @@ export async function viewPost(
 
   const updated = await updatePost({ id, patch: { views: newViews } });
   if (!updated) return null;
+
+  await captureServerEvent("post_viewed", {
+    post_id: id,
+    views: newViews,
+  });
 
   return {
     messageId: id,

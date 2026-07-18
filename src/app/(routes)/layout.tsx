@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { app_config, app_url } from "@/config/app";
 import { Locale } from "@/config/locale";
 import RegisterPWA from "@/components/register-pwa";
+import Analytics from "@/components/analytics";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
@@ -69,7 +70,7 @@ export default async function RootLayout({
         suppressHydrationWarning
         className={cn(
           font,
-          "antialiased tracking-tighter w-full flex justify-center"
+          "antialiased tracking-tighter select-none w-full flex justify-center"
         )}
       >
         <NextIntlClientProvider locale={locale} messages={messages}>
@@ -79,6 +80,7 @@ export default async function RootLayout({
             shadow="none"
           />
           <RegisterPWA />
+          <Analytics />
           {children}
         </NextIntlClientProvider>
       </body>

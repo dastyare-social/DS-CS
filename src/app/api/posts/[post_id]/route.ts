@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getPostById,
   updatePost,
+  viewPost,
   deletePostById,
   addReaction,
 } from "@/lib/api/posts";
 import { requireApiKeyAuth } from "@/lib/auth/api-key";
 import { patchPostsSchema } from "@/lib/db/schema/posts";
+import { captureServerEvent } from "@/lib/analytics/server";
 
 type RouteParams = {
   params: Promise<{
@@ -28,6 +30,11 @@ export async function GET(req: NextRequest, context: RouteParams) {
   if (!post) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  captureServerEvent("post_requested", {
+    post_id,
+  });
+
   return NextResponse.json(post);
 }
 
@@ -104,28 +111,11 @@ export async function POST(req: NextRequest, context: RouteParams) {
 
     // ----- VIEW -----
     if (body.action === "view") {
-      // load current message
-      const post = await getPostById(post_id);
-      if (!post) {
+      const result = await viewPost(post_id);
+      if (!result) {
         return NextResponse.json({ error: "Not found" }, { status: 404 });
       }
-
-      const currentViews = Number(post.views || "0");
-      const newViews = String(currentViews + 1);
-
-      const updated = await updatePost({
-        id: post_id,
-        patch: { views: newViews },
-      });
-
-      if (!updated) {
-        return NextResponse.json({ error: "Not found" }, { status: 404 });
-      }
-
-      return NextResponse.json(
-        { messageId: post_id, views: newViews },
-        { status: 201 }
-      );
+      return NextResponse.json(result, { status: 201 });
     }
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });

@@ -15,6 +15,7 @@ import type {
 } from "./queries";
 import { getStoryById } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
+import { captureServerEvent } from "@/lib/analytics/server";
 
 const s3 = new S3Client({
   region: process.env.S3_REGION!,
@@ -145,6 +146,14 @@ export async function createStoryWithOptionalUpload({
   const [inserted] = await db.insert(stories).values(toInsert).returning();
 
   if (inserted) {
+    await captureServerEvent("story_created", {
+      story_id: inserted.id,
+      story_type: finalType,
+      has_media: Boolean(finalMedia),
+      views: inserted.views,
+      likes: inserted.likes,
+    });
+
     await sendPushNotification({
       title: "New story published",
       body: "A new story is now live",
@@ -178,6 +187,11 @@ export async function updateStory({
     .returning();
 
   if (!updated) return null;
+  await captureServerEvent("story_updated", {
+    story_id: id,
+    updated_fields: Object.keys(parsed),
+    story_type: updated.type,
+  });
   return {
     ...updated,
   };
@@ -188,7 +202,13 @@ export async function deleteStoryById(id: string): Promise<boolean> {
     .delete(stories)
     .where(eq(stories.id, id))
     .returning({ id: stories.id });
-  return res.length > 0;
+  const success = res.length > 0;
+  if (success) {
+    await captureServerEvent("story_deleted", {
+      story_id: id,
+    });
+  }
+  return success;
 }
 
 export async function incrementStoryViews(
@@ -202,6 +222,11 @@ export async function incrementStoryViews(
 
   const updated = await updateStory({ id, patch: { views: newViews } });
   if (!updated) return null;
+
+  await captureServerEvent("story_viewed", {
+    story_id: id,
+    views: newViews,
+  });
 
   return { storyId: id, views: newViews };
 }
@@ -221,6 +246,12 @@ export async function toggleStoryLike(
 
   const updated = await updateStory({ id, patch: { likes: newLikes } });
   if (!updated) return null;
+
+  await captureServerEvent("story_liked", {
+    story_id: id,
+    direction,
+    likes: newLikes,
+  });
 
   return { storyId: id, likes: newLikes };
 }

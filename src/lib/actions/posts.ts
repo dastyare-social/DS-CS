@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc/client";
 import type { PostWithReactions } from "@/lib/api/posts";
+import { captureClientEvent } from "@/lib/analytics/client";
 
 export type { PostWithReactions };
 
@@ -39,19 +40,41 @@ export async function getPostById(id: string) {
 }
 
 export async function createPost(content: string | null) {
-  return trpc.posts.create.mutate({ content });
+  const result = await trpc.posts.create.mutate({ content });
+  void captureClientEvent("post_created", {
+    post_type: result.type,
+    has_media: Boolean(result.media),
+    content_length: result.content?.length ?? 0,
+  });
+  return result;
 }
 
 export async function batchIncrementViews(ids: string[]) {
-  await trpc.posts.batchView.mutate({ ids });
+  const result = await trpc.posts.batchView.mutate({ ids });
+  void captureClientEvent("post_batch_viewed", {
+    post_ids: ids,
+    count: ids.length,
+    success: result.success,
+  });
 }
 
 export async function addReaction(postId: string, emoji: string) {
-  return trpc.posts.addReaction.mutate({ postId, emoji });
+  const result = await trpc.posts.addReaction.mutate({ postId, emoji });
+  void captureClientEvent("post_reacted", {
+    post_id: postId,
+    emoji,
+    reaction_count: result.count,
+  });
+  return result;
 }
 
 export async function viewPost(id: string) {
-  return trpc.posts.view.mutate({ id });
+  const result = await trpc.posts.view.mutate({ id });
+  void captureClientEvent("post_viewed", {
+    post_id: id,
+    views: result?.views,
+  });
+  return result;
 }
 
 export async function deletePost(id: string) {

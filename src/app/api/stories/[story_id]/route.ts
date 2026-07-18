@@ -29,6 +29,11 @@ export async function GET(req: NextRequest, context: RouteParams) {
   if (!story) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  captureServerEvent("story_requested", {
+    story_id,
+  });
+
   return NextResponse.json(story);
 }
 

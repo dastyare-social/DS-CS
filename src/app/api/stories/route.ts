@@ -6,6 +6,7 @@ import {
   StoryType,
 } from "@/lib/api/stories";
 import { requireApiKeyAuth } from "@/lib/auth/api-key";
+import { captureServerEvent } from "@/lib/analytics/server";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,13 @@ export async function GET(req: NextRequest) {
       limit: safeLimit,
       search,
       type: kind,
+    });
+
+    await captureServerEvent("stories_list_requested", {
+      page: safePage,
+      limit: safeLimit,
+      has_search: Boolean(search),
+      kind: kind ?? "all",
     });
 
     return NextResponse.json(result);

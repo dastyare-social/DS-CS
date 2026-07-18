@@ -6,6 +6,7 @@ import {
   batchIncrementViews,
 } from "@/lib/api/posts";
 import { requireApiKeyAuth } from "@/lib/auth/api-key";
+import { captureServerEvent } from "@/lib/analytics/server";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,13 @@ export async function GET(req: NextRequest) {
       page: safePage,
       limit: safeLimit,
       search,
+    });
+
+    await captureServerEvent("posts_list_requested", {
+      page: safePage,
+      limit: safeLimit,
+      has_search: Boolean(search),
+      type,
     });
 
     if (type === "shorts") {

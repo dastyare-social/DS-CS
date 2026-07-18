@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc/client";
+import { captureClientEvent } from "@/lib/analytics/client";
 
 export type StoryType = "image" | "video";
 export type StoryItem = {
@@ -43,9 +44,20 @@ export async function getStoryById(id: string) {
 }
 
 export async function incrementStoryViews(id: string) {
-  return trpc.stories.view.mutate({ id });
+  const result = await trpc.stories.view.mutate({ id });
+  void captureClientEvent("story_viewed", {
+    story_id: id,
+    views: result?.views,
+  });
+  return result;
 }
 
 export async function toggleStoryLike(id: string, direction: "inc" | "dec") {
-  return trpc.stories.like.mutate({ id, direction });
+  const result = await trpc.stories.like.mutate({ id, direction });
+  void captureClientEvent("story_liked", {
+    story_id: id,
+    direction,
+    likes: result?.likes,
+  });
+  return result;
 }

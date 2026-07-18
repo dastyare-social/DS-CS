@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { db } from "@/lib/db";
 import { pushSubscriptions } from "@/lib/db/schema/push-subscriptions";
 import { eq } from "drizzle-orm";
+import { captureServerEvent } from "@/lib/analytics/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,9 +48,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    await captureServerEvent("push_subscription_saved", {
+      endpoint,
+      active: true,
+      user_agent: req.headers.get("user-agent") ?? null,
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("push subscription save failed", error);
+    await captureServerEvent("push_subscription_failed", {
+      error: String(error),
+    });
     return NextResponse.json({ error: "Failed to save subscription" }, { status: 500 });
   }
 }
