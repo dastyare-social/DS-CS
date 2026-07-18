@@ -54,6 +54,31 @@ WEBPUSH_SUBJECT="mailto:you@example.com"
 - `API_KEY` should be a strong secret used for protected API routes.
 - `WEBPUSH_SUBJECT` should be a valid URI such as `mailto:you@example.com`.
 
+### How to generate or obtain every required value
+
+- `DATABASE_URL`: Copy the full connection URL from your PostgreSQL provider, or build it from `host`, `port`, `user`, `password`, and `database`.
+  - Example local value: `postgresql://dastyare_user:strong-password@127.0.0.1:5432/dastyare_social_cs`
+  - Example managed provider value: `postgresql://username:password@db.example.com:5432/dastyare_social_cs?sslmode=require`
+- `ADMIN_EMAIL`: Use a valid email address for the bootstrap admin user.
+- `ADMIN_PASSWORD`: Choose a strong password, or generate one with a password manager.
+- `API_KEY`: Generate a secure API key with `openssl rand -hex 32`, `node -e "console.log(crypto.randomBytes(32).toString('hex'))"`, or a trusted secret manager.
+- `API_KEY_RATE_LIMIT_MAX_REQUESTS`: Set the number of requests allowed per window for API key clients.
+- `API_KEY_RATE_LIMIT_WINDOW_MS`: Set the rate limit window in milliseconds. Example: `60000` for one minute.
+- `BETTER_AUTH_URL`: Set to the same public domain that users will access.
+- `BETTER_AUTH_SECRET`: Generate a random secret string with `openssl rand -base64 32`.
+- `NEXT_PUBLIC_APP_URL`: Set to your live app URL for SEO, metadata, and client links.
+- `S3_ENDPOINT`: Use the endpoint from your S3-compatible provider or local MinIO installation.
+- `S3_REGION`: Use the provider region.
+- `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY`: Use storage credentials from your storage provider.
+- `S3_BUCKET_NAME`: Use the name of your media bucket.
+- `S3_FORCE_PATH_STYLE`: Set `true` for MinIO or path-style endpoints, `false` for AWS standard endpoints.
+- `NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY` / `WEBPUSH_PRIVATE_KEY`: Generate with `npx web-push generate-vapid-keys` and paste the values directly.
+- `WEBPUSH_SUBJECT`: Use a valid contact URI such as `mailto:you@example.com`.
+
+### If you use AI to help fill env values
+
+AI can help you generate example values and shell commands, but do not ask any AI to store or keep your real production secrets. Always verify the output and keep actual secrets only in `.env` or your deployment vault.
+
 ## 3) Database setup
 
 ### Option A: Neon / Supabase Postgres / managed PostgreSQL
