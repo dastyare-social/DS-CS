@@ -174,6 +174,63 @@ See `.env.example`. Critical vars:
 - `WEBPUSH_PRIVATE_KEY` — Private VAPID key for server-side sending
 - `WEBPUSH_SUBJECT` — Contact URI such as `mailto:hey@omidshabab.com`
 
+## Analytics / PostHog (for agents)
+
+This project sends analytics to PostHog for both client and server events. Agents and crawlers should be aware of the following configuration and events:
+
+- Environment variables (see `.env.example`):
+	- `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` — client-side public token/key used by `posthog-js` (browser).
+	- `POSTHOG_API_KEY` — server-side secret key used by `posthog-node`.
+	- `NEXT_PUBLIC_POSTHOG_HOST` — custom host for self-hosted PostHog (defaults to `https://app.posthog.com`).
+
+- Event names emitted by the server (important for agent telemetry and audit):
+	- `llm_asset_requested` → properties: `{ asset: string, path: string }` (when `/openapi.json`, `/llms.txt`, or `/agents.md` are requested)
+	- `posts_list_requested` → `{ page, limit, has_search, type }` (GET `/api/posts` list)
+	- `post_requested` → `{ post_id }` (GET `/api/posts/{id}`)
+	- `post_created` → `{ post_id, post_type, has_media, content_length }`
+	- `post_updated` → `{ post_id, updated_fields, post_type }`
+	- `post_viewed` → `{ post_id, views }`
+	- `post_reacted` → `{ post_id, emoji, reaction_count }`
+	- `post_batch_viewed` → `{ post_ids, count }`
+	- `post_deleted` → `{ post_id }`
+	- `stories_list_requested` → `{ page, limit, has_search, kind }` (GET `/api/stories` list)
+	- `story_requested` → `{ story_id }` (GET `/api/stories/{id}`)
+	- `story_created` → `{ story_id, story_type, has_media, views, likes }`
+	- `story_updated` → `{ story_id, updated_fields, story_type }`
+	- `story_viewed` → `{ story_id, views }`
+	- `story_liked` → `{ story_id, direction, likes }`
+	- `story_deleted` → `{ story_id }`
+	- `push_subscription_saved` → `{ endpoint, active, user_agent }`
+	- `push_subscription_failed` → `{ error }`
+	- `push_notifications_sent` → `{ sent, failed, total }`
+	- `push_notifications_failed` → `{ error }`
+
+Guidance for agents:
+
+- Agents should not expose or attempt to fetch `POSTHOG_API_KEY` or other secrets. Use the public `/docs`, `/openapi.json`, and other read endpoints to discover API shapes.
+- If instrumenting behaviors or verifying telemetry, prefer observable read endpoints (e.g., `/api/posts`) and correlate local actions with emitted events.
+- For AI tooling that generates requests, respect rate limits and auth requirements (see `API_KEY` and Better Auth plugin).
+
+Installation notes (for operators)
+
+- Automated setup: operators can run PostHog's AI wizard from the project root to scaffold client-side setup:
+
+```bash
+npx -y @posthog/wizard@latest
+```
+
+- Manual steps (mapping to this repo):
+
+	1. Install `posthog-js` (client) and ensure `posthog-node` is available on the server.
+
+		 ```bash
+		 bun add posthog-js posthog-node
+		 ```
+
+	2. Copy the dashboard **Project API key / token** into `NEXT_PUBLIC_POSTHOG_PROJECT_API_KEY` and a server **Personal API key** or **Project Secret** into `POSTHOG_API_KEY`.
+
+	3. Client init is centralized in `src/lib/analytics/client.ts`. Agents should not attempt to read or fetch `POSTHOG_API_KEY` (server secret).
+
 ## Push notification endpoints
 
 - `POST /api/push` — Store a browser push subscription. Requires `Authorization: Bearer <API_KEY>`.

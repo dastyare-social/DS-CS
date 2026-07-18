@@ -1,7 +1,8 @@
 import { PostHog } from "posthog-node";
 
 const apiKey = process.env.POSTHOG_API_KEY;
-const apiHost = process.env.POSTHOG_API_HOST || "https://app.posthog.com";
+// Accept both `POSTHOG_HOST` (dashboard naming) and `POSTHOG_API_HOST` (legacy repo name).
+const apiHost = process.env.POSTHOG_HOST || process.env.POSTHOG_API_HOST || "https://app.posthog.com";
 
 let client: PostHog | null = null;
 

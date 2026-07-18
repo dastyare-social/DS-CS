@@ -1,8 +1,5 @@
 # Dastyare Social — CS
 
-Personal creator studio and social profile platform built with Next.js. Publish posts (threads, shorts, media), stories, and manage content through a REST API designed for creators, operators, and AI agents.
-
-[![Status](https://img.shields.io/badge/status-production-ready-brightgreen)](https://github.com/yourname/dastyare_social_cs)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Deploy](https://img.shields.io/badge/deploy-Docker%20%7C%20Bun-lightgrey)](https://github.com/yourname/dastyare_social_cs)
 [![Stars](https://img.shields.io/badge/stars-PLACEHOLDER-yellow)](https://github.com/yourname/dastyare_social_cs/stargazers)
@@ -14,13 +11,9 @@ Dastyare Social CS is a production-ready creator studio built around:
 - modern REST API with OpenAPI docs and MCP-ready agent support
 - self-hosted media upload via S3-compatible storage
 - Better Auth integration for sessions, API keys, and admin bootstrap
-- PWA-friendly frontend with posts, shorts, stories, and docs pages
-- built with Bun, Next.js, PostgreSQL, Drizzle ORM, Tailwind CSS, and Better Auth
 
 ## Popularity & growth
 
-This repository is prepared for production and designed for early adoption by creators, self-hosters, and developer teams. It is built to scale with:
-- open API discoverability via `/docs` and `/openapi.json`
 - clear deployment and self-hosting documentation
 - a fast developer workflow with Bun and Drizzle migrations
 - a growing open-source mindset for maintainability and QA
@@ -42,15 +35,12 @@ bun run dev          # http://localhost:8729
 ### One-command server install
 
 Use the install script to bootstrap the repository on a fresh server or VPS.
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/yourname/dastyare_social_cs/main/scripts/install.sh | bash
 ```
-
 > The script creates a default `.env`, builds Docker Compose services, and starts the app.
 
 On first build, migrations run automatically and an admin user is bootstrapped from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
-
 ## Environment variables
 
 Copy `.env.example` to `.env` and fill the values before running the app. Do not commit `.env` to source control.
@@ -78,8 +68,6 @@ Copy `.env.example` to `.env` and fill the values before running the app. Do not
 - `BETTER_AUTH_SECRET`
   - Long random secret for Better Auth session signing.
   - Generate with `openssl rand -base64 32`.
-
-### S3 / media storage variables
 
 - `S3_ENDPOINT`
   - S3-compatible object storage endpoint.
@@ -117,6 +105,30 @@ Copy `.env.example` to `.env` and fill the values before running the app. Do not
 - For `NEXT_PUBLIC_APP_URL`, use the site URL that will be available in production.
 - For web push VAPID keys, run `npx web-push generate-vapid-keys` and copy both keys into your `.env`.
 - AI can help draft example configs and shell commands, but never store or commit actual secret values.
+
+### PostHog analytics configuration
+
+- `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` (required for client-side): Public project token/key used by `posthog-js` in the browser. Find it in PostHog under Project Settings → Setup → JavaScript snippet. This value is safe to expose to browsers but avoid committing it in public repos if you don't want to disclose analytics to third parties.
+- `POSTHOG_API_KEY` (required for server-side): Secret key used by `posthog-node` for server capture and optional local evaluation. Use a Project Secret or Personal API Key from PostHog and keep it private (never commit to source control).
+- `NEXT_PUBLIC_POSTHOG_HOST` (optional): PostHog host URL. Defaults to `https://app.posthog.com` for PostHog Cloud. If you self-host PostHog, use your host URL such as `https://us.i.posthog.com` or `https://analytics.example.com`.
+
+How to set keys:
+
+1. Create or sign in to your PostHog account and open the target Project.
+2. For client events, copy the **Project API key / token** (JavaScript snippet) into `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`.
+3. For server events, create a **Personal API key** or use a **Project Secret** (recommended) and set it as `POSTHOG_API_KEY`.
+4. Optionally set `NEXT_PUBLIC_POSTHOG_HOST` (and `POSTHOG_HOST` if preferred) to your PostHog host.
+5. Restart the dev server or rebuild (`bun run dev` / `bun run build`).
+
+Security notes:
+
+- Never commit `POSTHOG_API_KEY` to the repo. Use secret managers (GitHub Actions secrets, Docker secrets, Vault) in CI/CD.
+- Rotate keys periodically and restrict the scope of Personal API keys where possible.
+
+Troubleshooting:
+
+- If you see no events in PostHog, ensure `POSTHOG_API_KEY` is present in the runtime environment for server processes and `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` is present for the browser build.
+- Check the network tab for client-side `capture` calls and server logs for PostHog capture failures.
 
 ## Pages and project showcase
 

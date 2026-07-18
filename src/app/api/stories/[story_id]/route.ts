@@ -8,6 +8,7 @@ import {
 } from "@/lib/api/stories";
 import { requireApiKeyAuth } from "@/lib/auth/api-key";
 import { patchStoriesSchema } from "@/lib/db/schema/stories";
+import { captureServerEvent } from "@/lib/analytics/server";
 
 type RouteParams = {
   params: Promise<{

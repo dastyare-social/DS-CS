@@ -1,21 +1,25 @@
-const apiKey = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_API_KEY;
-const apiHost = process.env.NEXT_PUBLIC_POSTHOG_API_HOST;
-let posthog: any | null = null;
+// Accept both the PostHog dashboard names and the repo's previous names for
+// backward compatibility. Prefer the dashboard-style names:
+// - NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN
+// - NEXT_PUBLIC_POSTHOG_HOST
+import type { PostHog } from "posthog-js";
+const apiKey =
+  process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN ||
+  process.env.NEXT_PUBLIC_POSTHOG_PROJECT_API_KEY;
+const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || process.env.NEXT_PUBLIC_POSTHOG_API_HOST;
+let posthog: PostHog | null = null;
 let initialized = false;
 
 const canInit = () =>
   typeof window !== "undefined" &&
   typeof document !== "undefined" &&
-  typeof apiKey === "string" &&
-  apiKey.trim().length > 0 &&
-  typeof apiHost === "string" &&
-  apiHost.trim().length > 0;
+  typeof apiKey === "string" && apiKey.trim().length > 0 && typeof apiHost === "string" && apiHost.trim().length > 0;
 
 async function getPosthog() {
   if (!canInit()) return null;
   if (posthog) return posthog;
-  const module = await import("posthog-js");
-  posthog = module.default;
+  const phModule = await import("posthog-js");
+  posthog = phModule.default as PostHog;
   return posthog;
 }
 
