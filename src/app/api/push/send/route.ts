@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { pushSubscriptions } from "@/lib/db/schema/push-subscriptions";
 import { requireApiKeyAuth } from "@/lib/auth/api-key";
 import { eq } from "drizzle-orm";
+import type { PushSubscription } from "web-push";
 import webPush from "web-push";
 import { configureWebPush } from "@/lib/notifications/push";
 
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
               p256dh: subscription.p256dh,
               auth: subscription.auth,
             },
-          } as webPush.PushSubscription,
+          } as PushSubscription,
           payload,
         ),
       ),

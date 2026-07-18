@@ -26,11 +26,13 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
         src: '/profile_image.png',
         sizes: '192x192',
         type: 'image/png',
+        purpose: 'maskable',
       },
       {
         src: '/profile_image.png',
         sizes: '512x512',
         type: 'image/png',
+        purpose: 'maskable',
       },
     ],
   };
