@@ -18,10 +18,6 @@ export async function registerPushSubscription(): Promise<PushStatus | null> {
     return "unsupported-browser";
   }
 
-  if (typeof window.PushManager === "undefined") {
-    return "unsupported-browser";
-  }
-
   if (!process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY) {
     return "missing-vapid";
   }
@@ -30,6 +26,11 @@ export async function registerPushSubscription(): Promise<PushStatus | null> {
     await navigator.serviceWorker.register("/sw.js");
   } catch {
     return "error";
+  }
+
+  const swRegistration = await navigator.serviceWorker.ready;
+  if (!swRegistration.pushManager) {
+    return "unsupported-browser";
   }
 
   const existingPermission = Notification.permission;
@@ -42,17 +43,21 @@ export async function registerPushSubscription(): Promise<PushStatus | null> {
     return "permission-denied";
   }
 
-  const registration = await navigator.serviceWorker.ready;
-  const subscription = await registration.pushManager.subscribe({
+  const subscription = await swRegistration.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY),
   });
 
-  await fetch("/api/push", {
+  const response = await fetch("/api/push", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(subscription),
   });
+
+  if (!response.ok) {
+    console.error("Push subscription save failed", await response.text());
+    return "error";
+  }
 
   return "enabled";
 }

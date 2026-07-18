@@ -12,7 +12,7 @@ export function getPushStatusMessage(status: PushStatus) {
     case "enabled":
       return "Notifications are enabled. You’ll get browser alerts for new posts and stories.";
     case "unsupported-browser":
-      return "This browser does not support push notifications. Please switch to Chrome, Edge, Safari, or another modern browser.";
+      return "Push notifications are not supported in this browser tab on iPhone. Install the app to enable notifications, or use a supported browser with PWA push support.";
     case "permission-denied":
       return "Notifications are blocked for this browser. Please allow notifications in your browser settings and try again.";
     case "missing-vapid":

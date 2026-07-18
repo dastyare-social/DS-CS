@@ -2,15 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { db } from "@/lib/db";
 import { pushSubscriptions } from "@/lib/db/schema/push-subscriptions";
-import { requireApiKeyAuth } from "@/lib/auth/api-key";
 import { eq } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
-  const authResponse = requireApiKeyAuth(req);
-  if (authResponse) {
-    return authResponse;
-  }
-
   try {
     const body = await req.json();
     const endpoint = body?.endpoint;
