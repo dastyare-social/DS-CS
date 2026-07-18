@@ -2,10 +2,8 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer, openAPI, username } from "better-auth/plugins";
 import { db } from "@/lib/db";
-import { apiKey } from "@better-auth/api-key"
 import {
   accounts,
-  apikeys,
   sessions,
   users,
   verifications,
@@ -21,7 +19,6 @@ export const auth = betterAuth({
       accounts,
       sessions,
       verifications,
-      apikeys,
     },
   }),
   emailAndPassword: {
@@ -55,6 +52,5 @@ export const auth = betterAuth({
       minUsernameLength: 5,
     }),
     bearer(),
-    apiKey(),
   ],
 });

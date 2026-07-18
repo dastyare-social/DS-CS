@@ -5,6 +5,7 @@ import {
   deletePostById,
   addReaction,
 } from "@/lib/api/posts";
+import { requireApiKeyAuth } from "@/lib/auth/api-key";
 import { patchPostsSchema } from "@/lib/db/schema/posts";
 
 type RouteParams = {
@@ -38,6 +39,11 @@ export async function GET(req: NextRequest, context: RouteParams) {
  * @openapi
  */
 export async function PATCH(req: NextRequest, context: RouteParams) {
+  const authResponse = requireApiKeyAuth(req);
+  if (authResponse) {
+    return authResponse;
+  }
+
   const { post_id } = await context.params;
 
   try {
@@ -67,6 +73,11 @@ export async function PATCH(req: NextRequest, context: RouteParams) {
  * @openapi
  */
 export async function POST(req: NextRequest, context: RouteParams) {
+  const authResponse = requireApiKeyAuth(req);
+  if (authResponse) {
+    return authResponse;
+  }
+
   const { post_id } = await context.params;
 
   try {
@@ -134,6 +145,11 @@ export async function POST(req: NextRequest, context: RouteParams) {
  * @openapi
  */
 export async function DELETE(req: NextRequest, context: RouteParams) {
+  const authResponse = requireApiKeyAuth(req);
+  if (authResponse) {
+    return authResponse;
+  }
+
   const { post_id } = await context.params;
   const ok = await deletePostById(post_id);
   if (!ok) {

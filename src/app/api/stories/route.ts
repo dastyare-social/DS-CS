@@ -5,6 +5,7 @@ import {
   countStories,
   StoryType,
 } from "@/lib/api/stories";
+import { requireApiKeyAuth } from "@/lib/auth/api-key";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,11 @@ export async function GET(req: NextRequest) {
  * @openapi
  */
 export async function POST(req: NextRequest) {
+  const authResponse = requireApiKeyAuth(req);
+  if (authResponse) {
+    return authResponse;
+  }
+
   try {
     const contentType = req.headers.get("content-type") || "";
 

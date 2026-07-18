@@ -6,6 +6,7 @@ import {
   incrementStoryViews,
   toggleStoryLike,
 } from "@/lib/api/stories";
+import { requireApiKeyAuth } from "@/lib/auth/api-key";
 import { patchStoriesSchema } from "@/lib/db/schema/stories";
 
 type RouteParams = {
@@ -39,6 +40,11 @@ export async function GET(req: NextRequest, context: RouteParams) {
  * @openapi
  */
 export async function PATCH(req: NextRequest, context: RouteParams) {
+  const authResponse = requireApiKeyAuth(req);
+  if (authResponse) {
+    return authResponse;
+  }
+
   const { story_id } = await context.params;
 
   try {
@@ -68,6 +74,11 @@ export async function PATCH(req: NextRequest, context: RouteParams) {
  * @openapi
  */
 export async function POST(req: NextRequest, context: RouteParams) {
+  const authResponse = requireApiKeyAuth(req);
+  if (authResponse) {
+    return authResponse;
+  }
+
   const { story_id } = await context.params;
 
   try {
@@ -111,6 +122,11 @@ export async function POST(req: NextRequest, context: RouteParams) {
  * @openapi
  */
 export async function DELETE(req: NextRequest, context: RouteParams) {
+  const authResponse = requireApiKeyAuth(req);
+  if (authResponse) {
+    return authResponse;
+  }
+
   const { story_id } = await context.params;
   const ok = await deleteStoryById(story_id);
   if (!ok) {
