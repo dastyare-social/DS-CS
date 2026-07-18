@@ -7,7 +7,30 @@ import type { PushSubscription } from "web-push";
 import webPush from "web-push";
 import { configureWebPush } from "@/lib/notifications/push";
 import { captureServerEvent } from "@/lib/analytics/server";
+import { z } from "zod";
 
+const pushNotificationRequestSchema = z.object({
+  title: z.string().optional(),
+  body: z.string().optional(),
+  url: z.string().optional(),
+});
+
+/** @id PushNotificationSendResponse */
+const PushNotificationSendResponse = z.object({
+  success: z.boolean(),
+  sent: z.number(),
+  failed: z.number(),
+});
+
+/**
+ * Send browser push notifications to active subscribers
+ * @description Broadcast a web push notification to all active subscriptions. Requires API key auth.
+ * @tag Push
+ * @body pushNotificationRequestSchema
+ * @response PushNotificationSendResponse
+ * @contentType application/json
+ * @openapi
+ */
 export async function POST(req: NextRequest) {
   const authResponse = requireApiKeyAuth(req);
   if (authResponse) {

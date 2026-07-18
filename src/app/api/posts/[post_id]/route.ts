@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import {
   getPostById,
   updatePost,
@@ -16,12 +17,37 @@ type RouteParams = {
   }>;
 };
 
+/** @id PostParams */
+export const PostParams = z.object({
+  post_id: z.string(),
+});
+
 export const dynamic = "force-dynamic";
+
+/** @id PostWithReactionsSchema */
+export const PostWithReactionsSchema = z.object({
+  id: z.string(),
+  type: z.enum(["text", "image", "video", "voice", "file"]),
+  content: z.string().nullable(),
+  views: z.string(),
+  pinnedAt: z.string().nullable(),
+  media: z.any(),
+  createdAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+  reactions: z.array(
+    z.object({
+      emoji: z.string(),
+      count: z.number(),
+    })
+  ),
+});
 
 /**
  * Get post by ID
  * @description Returns a single post with reactions.
  * @tag Posts
+ * @pathParams PostParams
+ * @response 200 PostWithReactionsSchema
  * @openapi
  */
 export async function GET(req: NextRequest, context: RouteParams) {
@@ -42,7 +68,9 @@ export async function GET(req: NextRequest, context: RouteParams) {
  * Update post
  * @description Partial update of post fields (content, views, pinnedAt, media, type).
  * @tag Posts
+ * @pathParams PostParams
  * @body patchPostsSchema
+ * @response 200 PostWithReactionsSchema
  * @openapi
  */
 export async function PATCH(req: NextRequest, context: RouteParams) {
@@ -77,6 +105,9 @@ export async function PATCH(req: NextRequest, context: RouteParams) {
  * Post actions
  * @description Perform actions on a post. action=reaction requires emoji string. action=view increments the view count.
  * @tag Posts
+ * @pathParams PostParams
+ * @response 201 PostWithReactionsSchema
+ * @response 200 PostSuccessResponse
  * @openapi
  */
 export async function POST(req: NextRequest, context: RouteParams) {
@@ -132,6 +163,8 @@ export async function POST(req: NextRequest, context: RouteParams) {
  * Delete post
  * @description Permanently deletes a post by ID.
  * @tag Posts
+ * @pathParams PostParams
+ * @response 200 PostSuccessResponse
  * @openapi
  */
 export async function DELETE(req: NextRequest, context: RouteParams) {

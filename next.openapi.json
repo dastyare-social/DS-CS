@@ -16,7 +16,7 @@
   },
   "apiDir": "./src/app/api",
   "schemaDir": "./src",
-  "schemaType": "typescript",
+  "schemaType": ["typescript", "zod"],
   "docsUrl": "docs",
   "tags": [
     {

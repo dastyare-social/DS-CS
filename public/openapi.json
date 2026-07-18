@@ -14,23 +14,215 @@
       }
     },
     "schemas": {
+      "insertPostsSchema": {
+        "type": "object"
+      },
+      "insertReactionsSchema": {
+        "type": "object",
+        "properties": {
+          "postId": {
+            "type": "string"
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "postId",
+          "emoji"
+        ]
+      },
+      "insertStoriesSchema": {
+        "type": "object"
+      },
       "patchPostsSchema": {
         "type": "object"
       },
       "patchStoriesSchema": {
         "type": "object"
       },
-      "PostType": {
-        "type": "string",
-        "enum": [
-          "text",
-          "image",
-          "video",
-          "voice",
-          "file"
+      "postBatchViewInput": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "ids"
         ]
       },
-      "PostWithReactions": {
+      "postCreateInput": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "postIdInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "postListInput": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "maximum": 100,
+            "minimum": 0
+          },
+          "search": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "list",
+              "shorts"
+            ]
+          }
+        }
+      },
+      "PostParams": {
+        "type": "object",
+        "properties": {
+          "post_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "post_id"
+        ]
+      },
+      "postReactionInput": {
+        "type": "object",
+        "properties": {
+          "postId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "emoji": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "postId",
+          "emoji"
+        ]
+      },
+      "PostsCountResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "total"
+        ]
+      },
+      "PostsListResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {}
+          },
+          "total": {
+            "type": "number"
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "hasMore",
+          "page",
+          "limit"
+        ]
+      },
+      "PostsQueryParams": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "page": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "string"
+          },
+          "search": {
+            "type": "string"
+          }
+        }
+      },
+      "PostsResponse": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PostsListResponse"
+          },
+          {
+            "$ref": "#/components/schemas/PostsCountResponse"
+          }
+        ]
+      },
+      "PostSuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ]
+      },
+      "PostWithReactionsSchema": {
         "type": "object",
         "properties": {
           "id": {
@@ -55,18 +247,15 @@
           },
           "pinnedAt": {
             "type": "string",
-            "format": "date-time",
             "nullable": true
           },
           "media": {},
           "createdAt": {
             "type": "string",
-            "format": "date-time",
             "nullable": true
           },
           "updatedAt": {
             "type": "string",
-            "format": "date-time",
             "nullable": true
           },
           "reactions": {
@@ -100,7 +289,189 @@
           "reactions"
         ]
       },
-      "StoryItem": {
+      "pushNotificationRequestSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "PushNotificationSendResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "sent": {
+            "type": "number"
+          },
+          "failed": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "success",
+          "sent",
+          "failed"
+        ]
+      },
+      "pushSubscriptionRequestSchema": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string"
+          },
+          "keys": {
+            "type": "object",
+            "properties": {
+              "p256dh": {
+                "type": "string"
+              },
+              "auth": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "p256dh",
+              "auth"
+            ]
+          }
+        },
+        "required": [
+          "endpoint",
+          "keys"
+        ]
+      },
+      "PushSubscriptionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ]
+      },
+      "selectReactionsSchema": {
+        "type": "object",
+        "properties": {
+          "postId": {
+            "type": "string"
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "postId",
+          "emoji",
+          "count",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "StoriesCountResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "total"
+        ]
+      },
+      "StoriesListResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {}
+          },
+          "total": {
+            "type": "number"
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit"
+        ]
+      },
+      "StoriesQueryParams": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "page": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "string"
+          },
+          "search": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          }
+        }
+      },
+      "StoriesResponse": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/StoriesListResponse"
+          },
+          {
+            "$ref": "#/components/schemas/StoriesCountResponse"
+          }
+        ]
+      },
+      "storyIdInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "StoryItemSchema": {
         "type": "object",
         "properties": {
           "id": {
@@ -113,30 +484,98 @@
               "video"
             ]
           },
-          "url": {
+          "views": {
             "type": "string"
           },
-          "duration": {
-            "type": "number"
-          },
           "likes": {
-            "type": "number"
+            "type": "string"
           },
-          "views": {
-            "type": "number"
-          },
+          "media": {},
           "createdAt": {
             "type": "string",
-            "format": "date-time"
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
           "id",
           "type",
-          "url",
-          "likes",
           "views",
-          "createdAt"
+          "likes",
+          "media",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "storyLikeInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "inc",
+              "dec"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "direction"
+        ]
+      },
+      "storyListInput": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "maximum": 100,
+            "minimum": 0
+          },
+          "search": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ]
+          }
+        }
+      },
+      "StoryParams": {
+        "type": "object",
+        "properties": {
+          "story_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "story_id"
+        ]
+      },
+      "StorySuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
         ]
       }
     },
@@ -150,6 +589,9 @@
     {
       "name": "Stories",
       "description": "Ephemeral image and video stories with view and like counters."
+    },
+    {
+      "name": "Push"
     }
   ],
   "paths": {
@@ -205,33 +647,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "total": {
-                      "type": "number"
-                    }
-                  },
-                  "required": [
-                    "total"
-                  ]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
+                  "$ref": "#/components/schemas/200 PostsResponse"
                 }
               }
             }
@@ -252,67 +668,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success"
-                  ]
+                  "$ref": "#/components/schemas/201 PostWithReactionsSchema"
                 }
               }
             }
           },
-          "201": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PostWithReactions"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
+          "200 PostSuccessResponse": {
+            "$ref": "#/components/responses/200 PostSuccessResponse"
           }
         }
       }
@@ -327,14 +689,13 @@
         ],
         "parameters": [
           {
-            "name": "post_id",
             "in": "path",
+            "name": "post_id",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "example": "123",
-            "description": "Path parameter: post_id"
+            "example": "123"
           }
         ],
         "responses": {
@@ -343,25 +704,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PostWithReactions"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
+                  "$ref": "#/components/schemas/200 PostWithReactionsSchema"
                 }
               }
             }
@@ -377,96 +720,28 @@
         ],
         "parameters": [
           {
-            "name": "post_id",
             "in": "path",
+            "name": "post_id",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "example": "123",
-            "description": "Path parameter: post_id"
+            "example": "123"
           }
         ],
         "responses": {
-          "201": {
+          "200": {
             "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "postId": {
-                      "type": "string"
-                    },
-                    "emoji": {
-                      "type": "string"
-                    },
-                    "count": {
-                      "type": "number"
-                    }
-                  },
-                  "required": [
-                    "postId",
-                    "emoji",
-                    "count"
-                  ]
+                  "$ref": "#/components/schemas/201 PostWithReactionsSchema"
                 }
               }
             }
           },
-          "400": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
+          "200 PostSuccessResponse": {
+            "$ref": "#/components/responses/200 PostSuccessResponse"
           }
         }
       },
@@ -479,14 +754,13 @@
         ],
         "parameters": [
           {
-            "name": "post_id",
             "in": "path",
+            "name": "post_id",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "example": "123",
-            "description": "Path parameter: post_id"
+            "example": "123"
           }
         ],
         "requestBody": {
@@ -504,43 +778,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PostWithReactions"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
+                  "$ref": "#/components/schemas/200 PostWithReactionsSchema"
                 }
               }
             }
@@ -556,14 +794,13 @@
         ],
         "parameters": [
           {
-            "name": "post_id",
             "in": "path",
+            "name": "post_id",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "example": "123",
-            "description": "Path parameter: post_id"
+            "example": "123"
           }
         ],
         "responses": {
@@ -572,36 +809,71 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success"
-                  ]
+                  "$ref": "#/components/schemas/200 PostSuccessResponse"
                 }
               }
             }
-          },
-          "404": {
+          }
+        }
+      }
+    },
+    "/push": {
+      "post": {
+        "operationId": "post-push",
+        "summary": "Save a browser push subscription",
+        "description": "Register or update a push subscription for the current browser. Requires `endpoint` and `keys.p256dh` / `keys.auth`.",
+        "tags": [
+          "Push"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/pushSubscriptionRequestSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
             "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
+                  "$ref": "#/components/schemas/PushSubscriptionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/push/send": {
+      "post": {
+        "operationId": "post-push-send",
+        "summary": "Send browser push notifications to active subscribers",
+        "description": "Broadcast a web push notification to all active subscriptions. Requires API key auth.",
+        "tags": [
+          "Push"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/pushNotificationRequestSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushNotificationSendResponse"
                 }
               }
             }
@@ -670,33 +942,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "total": {
-                      "type": "number"
-                    }
-                  },
-                  "required": [
-                    "total"
-                  ]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
+                  "$ref": "#/components/schemas/200 StoriesResponse"
                 }
               }
             }
@@ -712,48 +958,12 @@
         ],
         "parameters": [],
         "responses": {
-          "201": {
+          "200": {
             "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StoryItem"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
+                  "$ref": "#/components/schemas/201 StoryItemSchema"
                 }
               }
             }
@@ -771,14 +981,13 @@
         ],
         "parameters": [
           {
-            "name": "story_id",
             "in": "path",
+            "name": "story_id",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "example": "123",
-            "description": "Path parameter: story_id"
+            "example": "123"
           }
         ],
         "responses": {
@@ -787,25 +996,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StoryItem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
+                  "$ref": "#/components/schemas/200 StoryItemSchema"
                 }
               }
             }
@@ -821,92 +1012,28 @@
         ],
         "parameters": [
           {
-            "name": "story_id",
             "in": "path",
+            "name": "story_id",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "example": "123",
-            "description": "Path parameter: story_id"
+            "example": "123"
           }
         ],
         "responses": {
-          "201": {
+          "200": {
             "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "storyId": {
-                      "type": "string"
-                    },
-                    "views": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "storyId",
-                    "views"
-                  ]
+                  "$ref": "#/components/schemas/201 StoryItemSchema"
                 }
               }
             }
           },
-          "400": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
+          "200 StorySuccessResponse": {
+            "$ref": "#/components/responses/200 StorySuccessResponse"
           }
         }
       },
@@ -919,14 +1046,13 @@
         ],
         "parameters": [
           {
-            "name": "story_id",
             "in": "path",
+            "name": "story_id",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "example": "123",
-            "description": "Path parameter: story_id"
+            "example": "123"
           }
         ],
         "requestBody": {
@@ -944,43 +1070,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StoryItem"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
+                  "$ref": "#/components/schemas/200 StoryItemSchema"
                 }
               }
             }
@@ -996,52 +1086,22 @@
         ],
         "parameters": [
           {
-            "name": "story_id",
             "in": "path",
+            "name": "story_id",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "example": "123",
-            "description": "Path parameter: story_id"
+            "example": "123"
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful response",
+            "description": "z.boolean() })",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
+                  "$ref": "#/components/schemas/z.object({ success"
                 }
               }
             }

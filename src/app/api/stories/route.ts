@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import {
   getStories,
   createStoryWithOptionalUpload,
@@ -10,10 +11,43 @@ import { captureServerEvent } from "@/lib/analytics/server";
 
 export const dynamic = "force-dynamic";
 
+/** @id StoriesQueryParams */
+export const StoriesQueryParams = z.object({
+  type: z.string().optional(),
+  page: z.string().optional(),
+  limit: z.string().optional(),
+  search: z.string().optional(),
+  kind: z.string().optional(),
+});
+
+/** @id StoriesListResponse */
+export const StoriesListResponse = z.object({
+  items: z.array(z.any()),
+  total: z.number(),
+  hasMore: z.boolean().optional(),
+  page: z.number(),
+  limit: z.number(),
+});
+
+/** @id StoriesCountResponse */
+export const StoriesCountResponse = z.object({
+  total: z.number(),
+});
+
+/** @id StoriesResponse */
+export const StoriesResponse = z.union([StoriesListResponse, StoriesCountResponse]);
+
+/** @id StorySuccessResponse */
+export const StorySuccessResponse = z.object({
+  success: z.boolean(),
+});
+
 /**
  * List or count stories
  * @description Returns paginated stories. Use query type=count for total. Filter by kind=image or kind=video.
  * @tag Stories
+ * @queryParams StoriesQueryParams
+ * @response 200 StoriesResponse
  * @openapi
  */
 export async function GET(req: NextRequest) {
@@ -69,6 +103,7 @@ export async function GET(req: NextRequest) {
  * @tag Stories
  * @contentType application/json
  * @contentType multipart/form-data
+ * @response 201 StoryItemSchema
  * @openapi
  */
 export async function POST(req: NextRequest) {

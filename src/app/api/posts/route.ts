@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import {
   getPostsWithReactions,
   createPostWithOptionalUpload,
@@ -10,10 +11,42 @@ import { captureServerEvent } from "@/lib/analytics/server";
 
 export const dynamic = "force-dynamic";
 
+/** @id PostsQueryParams */
+export const PostsQueryParams = z.object({
+  type: z.string().optional(),
+  page: z.string().optional(),
+  limit: z.string().optional(),
+  search: z.string().optional(),
+});
+
+/** @id PostsListResponse */
+export const PostsListResponse = z.object({
+  items: z.array(z.any()),
+  total: z.number(),
+  hasMore: z.boolean(),
+  page: z.number(),
+  limit: z.number(),
+});
+
+/** @id PostsCountResponse */
+export const PostsCountResponse = z.object({
+  total: z.number(),
+});
+
+/** @id PostsResponse */
+export const PostsResponse = z.union([PostsListResponse, PostsCountResponse]);
+
+/** @id PostSuccessResponse */
+export const PostSuccessResponse = z.object({
+  success: z.boolean(),
+});
+
 /**
  * List or count posts
  * @description Returns paginated posts with reactions. Use query type=count for total count, type=shorts for vertical videos (1080x1920). Default type=list.
  * @tag Posts
+ * @queryParams PostsQueryParams
+ * @response 200 PostsResponse
  * @openapi
  */
 export async function GET(req: NextRequest) {
@@ -80,6 +113,8 @@ export async function GET(req: NextRequest) {
  * @tag Posts
  * @contentType application/json
  * @contentType multipart/form-data
+ * @response 201 PostWithReactionsSchema
+ * @response 200 PostSuccessResponse
  * @openapi
  */
 export async function POST(req: NextRequest) {

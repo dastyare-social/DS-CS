@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import {
   getStoryById,
   updateStory,
@@ -16,12 +17,30 @@ type RouteParams = {
   }>;
 };
 
+/** @id StoryParams */
+export const StoryParams = z.object({
+  story_id: z.string(),
+});
+
 export const dynamic = "force-dynamic";
+
+/** @id StoryItemSchema */
+export const StoryItemSchema = z.object({
+  id: z.string(),
+  type: z.enum(["image", "video"]),
+  views: z.string(),
+  likes: z.string(),
+  media: z.any(),
+  createdAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+});
 
 /**
  * Get story by ID
  * @description Returns a single story.
  * @tag Stories
+ * @pathParams StoryParams
+ * @response 200 StoryItemSchema
  * @openapi
  */
 export async function GET(req: NextRequest, context: RouteParams) {
@@ -42,7 +61,9 @@ export async function GET(req: NextRequest, context: RouteParams) {
  * Update story
  * @description Partial update of story fields (type, views, likes, media).
  * @tag Stories
+ * @pathParams StoryParams
  * @body patchStoriesSchema
+ * @response 200 StoryItemSchema
  * @openapi
  */
 export async function PATCH(req: NextRequest, context: RouteParams) {
@@ -77,6 +98,9 @@ export async function PATCH(req: NextRequest, context: RouteParams) {
  * Story actions
  * @description Perform actions on a story. action=view increments views. action=like with direction=inc or dec toggles likes.
  * @tag Stories
+ * @pathParams StoryParams
+ * @response 201 StoryItemSchema
+ * @response 200 StorySuccessResponse
  * @openapi
  */
 export async function POST(req: NextRequest, context: RouteParams) {
@@ -125,6 +149,8 @@ export async function POST(req: NextRequest, context: RouteParams) {
  * Delete story
  * @description Permanently deletes a story by ID.
  * @tag Stories
+ * @pathParams StoryParams
+ * @response z.object({ success: z.boolean() })
  * @openapi
  */
 export async function DELETE(req: NextRequest, context: RouteParams) {
