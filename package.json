@@ -61,6 +61,7 @@
     "superjson": "^1.11.0",
     "tailwind-merge": "^3.5.0",
     "takumi-js": "^2.2.2",
+    "web-push": "^3.6.7",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -73,6 +74,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19.2.3",
+    "@types/web-push": "^3.6.4",
     "@vitejs/plugin-react": "^6.0.3",
     "babel-plugin-react-compiler": "1.0.0",
     "better-sqlite3": "^12.11.1",

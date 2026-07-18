@@ -79,3 +79,45 @@ See [AGENTS.md](./AGENTS.md) for a complete API reference written for AI agents,
 ## Deployment
 
 Docker multi-stage build included. See `Dockerfile`. Production build skips DB migration at image build time; run migrations at container start or via CI.
+
+For a complete self-hosting guide covering environment variables, PostgreSQL, S3-compatible storage, Docker, VPS, Vercel, Railway, Render, and browser push notifications, see [SELF-HOSTING.md](./SELF-HOSTING.md).
+
+## Web push notifications (self-hosted)
+
+Browser push notifications are supported for modern browsers on HTTPS. They are optional and only send to users who explicitly enable them from the notification modal.
+
+### 1) Generate VAPID keys
+
+Run this locally or in your deployment environment:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+The command prints a public key and a private key.
+
+### 2) Fill in the environment variables
+
+In your `.env` or deployment secrets, set:
+
+```dotenv
+NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY="<public-key>"
+WEBPUSH_PRIVATE_KEY="<private-key>"
+WEBPUSH_SUBJECT="mailto:hey@omidshabab.com"
+```
+
+You can set `WEBPUSH_SUBJECT` to any valid contact string, but `mailto:your-email@example.com` is the most common and recommended format.
+
+### 3) Requirements
+
+- The app must run on HTTPS in production.
+- The browser must support Web Push.
+- The browser must allow notifications for your domain.
+
+### 4) Notes
+
+- The feature is browser push only, not email.
+- If VAPID keys are missing, the app will show a setup message instead of failing silently.
+- The push subscription is stored in the database so the server can target active subscribers.
+
+See [SELF-HOSTING.md](./SELF-HOSTING.md) for a full production checklist.

@@ -16,6 +16,7 @@ import type {
   PostWithReactions,
 } from "./queries";
 import { getPostById, invalidatePostsCache } from "./queries";
+import { sendPushNotification } from "@/lib/notifications/push";
 
 const s3 = new S3Client({
   region: process.env.S3_REGION!,
@@ -161,6 +162,14 @@ export async function createPostWithOptionalUpload({
 
   const [inserted] = await db.insert(posts).values(toInsert).returning();
   invalidatePostsCache();
+
+  if (inserted) {
+    await sendPushNotification({
+      title: "New post published",
+      body: content ? content.slice(0, 80) : "A new post is now available",
+      url: "/",
+    });
+  }
 
   return {
     ...inserted,

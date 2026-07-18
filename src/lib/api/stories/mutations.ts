@@ -14,6 +14,7 @@ import type {
   StoryType,
 } from "./queries";
 import { getStoryById } from "./queries";
+import { sendPushNotification } from "@/lib/notifications/push";
 
 const s3 = new S3Client({
   region: process.env.S3_REGION!,
@@ -142,6 +143,14 @@ export async function createStoryWithOptionalUpload({
   };
 
   const [inserted] = await db.insert(stories).values(toInsert).returning();
+
+  if (inserted) {
+    await sendPushNotification({
+      title: "New story published",
+      body: "A new story is now live",
+      url: "/",
+    });
+  }
 
   return {
     ...inserted,

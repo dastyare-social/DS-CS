@@ -170,6 +170,15 @@ See `.env.example`. Critical vars:
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD` — Bootstrap admin
 - `S3_*` — Media storage (endpoint, bucket, credentials)
 - `NEXT_PUBLIC_APP_URL` — Public URL for SEO/metadata
+- `NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY` — Browser public key for Web Push
+- `WEBPUSH_PRIVATE_KEY` — Private VAPID key for server-side sending
+- `WEBPUSH_SUBJECT` — Contact URI such as `mailto:hey@omidshabab.com`
+
+## Push notification endpoints
+
+- `POST /api/push` — Store a browser push subscription. Requires `Authorization: Bearer <API_KEY>`.
+- `POST /api/push/send` — Send push notifications to all active subscribers. Requires `Authorization: Bearer <API_KEY>`.
+- These endpoints are intended for browser push only; they do not send email.
 
 Never commit `.env` or expose secrets in generated docs.
 

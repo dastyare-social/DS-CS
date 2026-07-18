@@ -45,6 +45,12 @@ Story types: image, video
 - Bearer token or API key in `Authorization` header for protected operations
 - Public GET endpoints do not require authentication
 
+### Push notifications
+
+- `POST /api/push` — Save a browser push subscription. Requires `Authorization: Bearer <API_KEY>`.
+- `POST /api/push/send` — Send browser push notifications to active subscribers. Requires `Authorization: Bearer <API_KEY>`.
+- Use this for self-hosted web push delivery to browsers that have enabled notifications.
+
 ## Optional
 
 - tRPC endpoint at `/api/trpc` is for internal frontend use; external agents should use REST
