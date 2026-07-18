@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "./button";
+import { Dialog, DialogContent } from "./dialog";
 
 export default function PwaInstallModal() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -22,12 +23,12 @@ export default function PwaInstallModal() {
       setShow(false);
     };
 
+    const openHandler = () => setShow(true);
+
     window.addEventListener("beforeinstallprompt", beforeHandler as any);
     window.addEventListener("appinstalled", appInstalled as any);
-    const openHandler = () => setShow(true);
     window.addEventListener("open-pwa-install", openHandler as any);
 
-    // detect already-installed state (standalone)
     try {
       const isStandalone = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
       if ((navigator as any).standalone === true || isStandalone) setInstalled(true);
@@ -42,7 +43,6 @@ export default function PwaInstallModal() {
 
   const handleInstall = async () => {
     if (!deferredPrompt) {
-      // iOS or no prompt available — show instructions
       alert("To install: open the browser menu and choose 'Add to Home screen'.");
       setShow(false);
       return;
@@ -54,8 +54,8 @@ export default function PwaInstallModal() {
       if (choice && choice.outcome === "accepted") {
         setInstalled(true);
       }
-    } catch (err) {
-      // swallow
+    } catch {
+      // ignore install prompt failures
     } finally {
       setShow(false);
       setDeferredPrompt(null);
@@ -65,21 +65,42 @@ export default function PwaInstallModal() {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 px-4">
-      <div className="max-w-lg w-full bg-white rounded-lg p-5">
-        <h3 className="text-lg font-semibold">Install app</h3>
-        <p className="text-sm mt-2">Install this app to your device for a faster, app-like experience.</p>
+    <Dialog open={show} onOpenChange={setShow}>
+      <DialogContent className="w-[min(95vw,32rem)] rounded-3xl border border-secondary/5 bg-background/95 p-6 shadow-2xl">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <div className="text-lg font-semibold">Install app</div>
+            <div className="text-sm text-foreground/80">
+              Install this app to your device for a faster, app-like experience and offline access.
+            </div>
+          </div>
 
-        <div className="mt-4 flex gap-2 justify-end">
-          <Button className="px-3 py-1" onClick={() => setShow(false)}>
-            Dismiss
-          </Button>
-          <Button variant="primary" className="px-3 py-1" onClick={handleInstall}>
-            Install
-          </Button>
+          <div className="flex flex-col justify-center items-start gap-y-2.5 py-6 px-4 w-full border border-secondary/5 rounded-3xl bg-background/50 backdrop-blur-3xl">
+            <div className="text-base font-medium">Keep the app handy</div>
+            <div className="text-sm text-foreground/70">
+              Save the studio on your home screen so you can open it quickly without typing a URL.
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <Button variant="secondary" className="px-4 py-2 text-sm" onClick={() => setShow(false)}>
+              Dismiss
+            </Button>
+            <Button variant="primary" className="px-4 py-2 text-sm" onClick={handleInstall}>
+              Install
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
+        <button
+          type="button"
+          className="absolute top-4 right-4 rounded-full p-2 text-foreground/70 transition hover:text-foreground"
+          onClick={() => setShow(false)}
+          aria-label="Close"
+        >
+          ×
+        </button>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -94,6 +115,7 @@ export function InstallButton({ className }: { className?: string }) {
       e.preventDefault();
       setVisible(true);
     };
+
     const appInstalled = () => {
       setInstalled(true);
       setVisible(false);
@@ -107,7 +129,6 @@ export function InstallButton({ className }: { className?: string }) {
       if ((navigator as any).standalone === true || isStandalone) setInstalled(true);
     } catch {}
 
-    // show button by default on modern browsers when not installed (user requested)
     if (!installed) setVisible(true);
 
     return () => {
@@ -117,19 +138,17 @@ export function InstallButton({ className }: { className?: string }) {
   }, [installed]);
 
   if (installed) return null;
+  if (!visible) return null;
 
   return (
     <>
-      <button
-        onClick={() => {
-          // open the install modal safely
-          const ev = new Event("open-pwa-install");
-          window.dispatchEvent(ev);
-        }}
-        className={className ?? "text-sm md:text-sm px-3.5 py-1.5 backdrop-blur-3xl bg-white/50"}
+      <Button
+        variant="secondary"
+        className={className ?? "text-sm md:text-sm px-3.5 py-1.5"}
+        onClick={() => window.dispatchEvent(new Event("open-pwa-install"))}
       >
         Install
-      </button>
+      </Button>
       <PwaInstallModal />
     </>
   );
