@@ -17,12 +17,11 @@ vi.mock('@/lib/fonts', () => ({
 vi.mock('@/config/app', () => ({
   app_config: {
     en: { name: 'Test User' },
-    fa: { name: 'کاربر تست' },
   },
 }));
 
 vi.mock('@/config/locale', () => ({
-  Locale: ['en', 'fa'],
+  Locale: ['en'],
 }));
 
 vi.mock('@/lib/utils', () => ({

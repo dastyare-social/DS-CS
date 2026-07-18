@@ -33,13 +33,26 @@ vi.mock('@/config/locale', () => ({
 }));
 
 vi.mock('@/lib/utils', () => ({
-  capitalize: (s: string) => s,
+  capitalize: (s: string) => s.charAt(0).toUpperCase() + s.slice(1),
   cn: (...args: any) => args.join(' '),
   formatTimeAgo: () => ({ key: 'test', values: {} }),
 }));
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: (namespace?: string) => (key: string) => {
+    if (namespace === 'last_time') return 'just now';
+    const translations: Record<string, string> = {
+      'general.app_name': 'Test App',
+      'general.posts': 'posts',
+      'general.published': 'published',
+      'general.not_posted_any_content_yet': 'No content yet',
+      'general.posted': 'Posted',
+      'general.explore': 'explore',
+      'general.channel': 'channel',
+      'general.new_story': 'new story',
+    };
+    return translations[key] ?? key;
+  },
   useLocale: () => 'en',
 }));
 
@@ -87,18 +100,18 @@ describe('Header Component', () => {
   });
 
   it('shows explore button when explore prop is true', () => {
-    const { getByText } = render(<Header explore={true} />);
-    expect(getByText('general.explore')).toBeTruthy();
+    const { getByRole } = render(<Header explore={true} />);
+    expect(getByRole('link', { name: /explore/i })).toBeTruthy();
   });
 
   it('shows new story button when new_story prop is true', () => {
     const { getByText } = render(<Header new_story={true} />);
-    expect(getByText('general.new_story')).toBeTruthy();
+    expect(getByText('new story')).toBeTruthy();
   });
 
   it('shows back to channel button when back_to_channel prop is true', () => {
-    const { getByText } = render(<Header back_to_channel={true} />);
-    expect(getByText('general.channel')).toBeTruthy();
+    const { getByRole } = render(<Header back_to_channel={true} />);
+    expect(getByRole('link', { name: /channel/i })).toBeTruthy();
   });
 
   it('displays post count when postsData is provided', () => {
@@ -119,6 +132,6 @@ describe('Header Component', () => {
     const { getByText } = render(
       <Header postsData={testPosts} totalCount={5} />
     );
-    expect(getByText('general.posts')).toBeTruthy();
+    expect(getByText(/posts/i)).toBeTruthy();
   });
 });
