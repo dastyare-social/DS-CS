@@ -265,6 +265,20 @@ Vercel can host the frontend, but this project also depends on PostgreSQL and S3
 4. Add a PostgreSQL provider and S3-compatible storage provider.
 5. Run migrations as a build or post-deploy step.
 
+### GitHub Actions deployment
+
+If you use the repository's Vercel deployment workflow, add these **repository
+secrets** in GitHub under **Settings → Secrets and variables → Actions**:
+
+- `VERCEL_TOKEN`: a Vercel access token created in your Vercel account settings.
+- `VERCEL_ORG_ID`: the Vercel team or personal-account ID for the project.
+- `VERCEL_PROJECT_ID`: the ID of the Vercel project.
+
+The last two values are available in Vercel under the project's settings, or in
+the `.vercel/project.json` file created by `vercel link`. Do not commit that
+file or any token. The workflow stops with a clear message when a required
+secret is absent; secrets are not provided to pull requests from forks.
+
 ### Important note
 
 Because the app uses server-side runtime and database access, Vercel is suitable for the app shell but you still need real database and storage backing services.
