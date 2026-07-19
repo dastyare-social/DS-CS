@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "storage.iran.liara.space",
+        hostname: "**",
         pathname: "/**",
       },
     ],

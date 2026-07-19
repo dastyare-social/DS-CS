@@ -25,6 +25,21 @@ const Page = () => {
   // Refs for header/footer like in the first page
   const headerRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
+  const [pageHeight, setPageHeight] = useState<number | null>(null);
+
+  const updatePageHeight = () => {
+      const h = window.innerHeight;
+      setPageHeight(h);
+      document.documentElement.style.setProperty("--page-height", `${h}px`);
+      updateHeaderFooterOffsets();
+    };
+  
+    useEffect(() => {
+      // get the height of the screen before loading anything
+      updatePageHeight();
+      window.addEventListener("resize", updatePageHeight);
+      return () => window.removeEventListener("resize", updatePageHeight);
+    }, []);
 
   // Root scroll container ref (optional but useful for future scroll-to-bottom logic)
   const pageRef = useRef<HTMLDivElement | null>(null);
@@ -187,7 +202,7 @@ const Page = () => {
   return (
     <div
       ref={pageRef}
-      style={{ height: `100dvh` }}
+      style={{ height: `${pageHeight}px` }}
       className="flex flex-col-reverse overflow-y-scroll none-scroll-bar w-full outline-none max-w-2xl border-x border-secondary/5"
     >
       {/* Header */}

@@ -197,6 +197,7 @@ const Page = () => {
       className="flex flex-col-reverse overflow-y-scroll none-scroll-bar w-full outline-none max-w-2xl border-x border-secondary/5"
     >
       <Header
+        explore
         headerRef={headerRef}
         container_className="max-w-2xl"
         postsData={message ? [message] : []}
