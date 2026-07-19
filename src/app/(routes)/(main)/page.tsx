@@ -179,68 +179,6 @@ const Page = () => {
     };
   }, []);
 
-  const handleTestNotification = async () => {
-    if (typeof window === "undefined") return;
-
-    const isSecure = window.isSecureContext;
-    const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
-    const isIOS =
-      /iPad|iPhone|iPod/.test(ua) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-
-    if (!isSecure) {
-      console.warn(
-        "Notifications require HTTPS (secure context) on mobile browsers."
-      );
-      return;
-    }
-
-    if (!("Notification" in window)) {
-      console.warn("This browser does not support notifications.");
-      return;
-    }
-
-    // iOS Safari < 16.4 doesn't support Notification API at all
-    if (isIOS && (Notification as any).permission === undefined) {
-      console.warn(
-        "Notifications are not supported on this version of iOS Safari."
-      );
-      return;
-    }
-
-    const showNotification = () => {
-      try {
-        new Notification("Test Notification", {
-          body: "Browser notifications are working!",
-          icon: "/profile_image.png",
-        });
-      } catch (err) {
-        console.error("Failed to show notification", err);
-      }
-    };
-
-    if (Notification.permission === "granted") {
-      showNotification();
-      return;
-    }
-
-    if (Notification.permission === "denied") {
-      console.warn("Notification permission has been denied by the user.");
-      return;
-    }
-
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") {
-        showNotification();
-      } else {
-        console.warn("Notification permission not granted:", permission);
-      }
-    } catch (err) {
-      console.error("Notification permission request failed", err);
-    }
-  };
-
   // Whenever posts length changes, header height might change
   useEffect(() => {
     updateHeaderFooterOffsets();

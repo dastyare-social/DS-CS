@@ -46,7 +46,7 @@ export const PostSuccessResponse = z.object({
  * @description Returns paginated posts with reactions. Use query type=count for total count, type=shorts for vertical videos (1080x1920). Default type=list.
  * @tag Posts
  * @queryParams PostsQueryParams
- * @response 200 PostsResponse
+ * @response PostsResponse
  * @openapi
  */
 export async function GET(req: NextRequest) {
@@ -113,8 +113,8 @@ export async function GET(req: NextRequest) {
  * @tag Posts
  * @contentType application/json
  * @contentType multipart/form-data
- * @response 201 PostWithReactionsSchema
- * @response 200 PostSuccessResponse
+ * @response PostWithReactionsSchema
+ * @response PostSuccessResponse
  * @openapi
  */
 export async function POST(req: NextRequest) {

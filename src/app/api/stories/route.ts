@@ -47,7 +47,7 @@ export const StorySuccessResponse = z.object({
  * @description Returns paginated stories. Use query type=count for total. Filter by kind=image or kind=video.
  * @tag Stories
  * @queryParams StoriesQueryParams
- * @response 200 StoriesResponse
+ * @response StoriesResponse
  * @openapi
  */
 export async function GET(req: NextRequest) {
@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
  * @tag Stories
  * @contentType application/json
  * @contentType multipart/form-data
- * @response 201 StoryItemSchema
+ * @response StoryItemSchema
  * @openapi
  */
 export async function POST(req: NextRequest) {

@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer, openAPI, username } from "better-auth/plugins";
 import { db } from "@/lib/db";
@@ -23,7 +24,9 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    // disableSignUp: true,
+    // disableSignUp: true, // NOTE: don't use this — it throws for auth.api.signUpEmail()
+    // too (i.e. scripts/bootstrap-admin.ts), not just HTTP requests, so the admin bootstrap
+    // would break. Public sign-up is blocked below instead via databaseHooks.
     requireEmailVerification: false,
   },
   user: {
@@ -32,6 +35,23 @@ export const auth = betterAuth({
     },
     deleteUser: {
       enabled: false,
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (_user, ctx) => {
+          // ctx.request only exists when the endpoint was hit over HTTP. A direct
+          // server-side call (auth.api.signUpEmail from scripts/bootstrap-admin.ts)
+          // has no request object, so it passes through; anything coming through
+          // the actual /api/auth/sign-up/email HTTP route gets rejected.
+          if (ctx?.request) {
+            throw new APIError("BAD_REQUEST", {
+              message: "Signup is disabled",
+            });
+          }
+        },
+      },
     },
   },
   rateLimit: {

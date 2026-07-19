@@ -47,7 +47,7 @@ export const PostWithReactionsSchema = z.object({
  * @description Returns a single post with reactions.
  * @tag Posts
  * @pathParams PostParams
- * @response 200 PostWithReactionsSchema
+* @response PostWithReactionsSchema
  * @openapi
  */
 export async function GET(req: NextRequest, context: RouteParams) {
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest, context: RouteParams) {
  * @tag Posts
  * @pathParams PostParams
  * @body patchPostsSchema
- * @response 200 PostWithReactionsSchema
+* @response PostWithReactionsSchema
  * @openapi
  */
 export async function PATCH(req: NextRequest, context: RouteParams) {
@@ -106,8 +106,8 @@ export async function PATCH(req: NextRequest, context: RouteParams) {
  * @description Perform actions on a post. action=reaction requires emoji string. action=view increments the view count.
  * @tag Posts
  * @pathParams PostParams
- * @response 201 PostWithReactionsSchema
- * @response 200 PostSuccessResponse
+* @response PostWithReactionsSchema
+* @response PostSuccessResponse
  * @openapi
  */
 export async function POST(req: NextRequest, context: RouteParams) {
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest, context: RouteParams) {
  * @description Permanently deletes a post by ID.
  * @tag Posts
  * @pathParams PostParams
- * @response 200 PostSuccessResponse
+* @response PostSuccessResponse
  * @openapi
  */
 export async function DELETE(req: NextRequest, context: RouteParams) {
