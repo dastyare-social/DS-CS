@@ -4,7 +4,7 @@ import sharp from "sharp";
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 const APP_DIR = path.join(process.cwd(), "src", "app");
-const SOURCE_IMAGE = path.join(PUBLIC_DIR, "profile_image.png");
+const SOURCE_IMAGE = path.join(PUBLIC_DIR, "profile-image.png");
 
 const FAVICON_SIZES = [16, 32, 48] as const;
 
@@ -108,7 +108,7 @@ async function write_favicon_ico(square: Buffer) {
 }
 
 async function main() {
-  console.log("Generating favicon + PWA icons from public/profile_image.png...");
+  console.log("Generating favicon + PWA icons from public/profile-image.png...");
 
   assert_source_exists();
   const square = await crop_to_square();

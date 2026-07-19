@@ -20,12 +20,12 @@ export async function GET(
   const fontData = await readFile(fontPath);
 
   // Load profile image
-  const profileImagePath = join(process.cwd(), "public/profile_image.png");
+  const profileImagePath = join(process.cwd(), "public/profile-image.png");
   const profileImageData = await readFile(profileImagePath);
   const profileImageBase64 = `data:image/png;base64,${profileImageData.toString("base64")}`;
 
   // Load background image
-  const bgImagePath = join(process.cwd(), "public/bg_image.png");
+  const bgImagePath = join(process.cwd(), "public/bg-image.png");
   const bgImageData = await readFile(bgImagePath);
   const bgImageBase64 = `data:image/png;base64,${bgImageData.toString("base64")}`;
 

@@ -49,7 +49,7 @@ export async function sendPushNotification(payload: PushPayload) {
     title: payload.title,
     body: payload.body,
     url: payload.url,
-    icon: "/profile_image.png",
+    icon: "/profile-image.png",
   });
 
   const promises = subscriptions.map((subscription) =>

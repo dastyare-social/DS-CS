@@ -17,7 +17,7 @@ export default async function Layout({
       <PersonSchema
         name={app_config[locale].name}
         url={app_url}
-        image={`${app_url}/profile_image.png`}
+        image={`${app_url}/profile-image.png`}
         email={app_config.general.email}
       />
       <MainLayoutWrapper>{children}</MainLayoutWrapper>

@@ -378,8 +378,8 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Image
-          src="/profile_image.png"
-          alt="profile_image"
+          src="/profile-image.png"
+          alt="profile-image"
           width={size}
           height={size}
           loading="lazy"
@@ -492,9 +492,9 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                 className="relative z-10 flex gap-x-1.5 px-3 py-2 items-center"
               >
                 <Image
-                  src="/profile_image.png"
+                  src="/profile-image.png"
                   unoptimized
-                  alt="profile_image"
+                  alt="profile-image"
                   width={35}
                   height={35}
                   loading="lazy"

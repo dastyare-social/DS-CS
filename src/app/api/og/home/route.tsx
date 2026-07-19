@@ -15,8 +15,8 @@ export async function GET() {
   const fontData = await readFile(fontPath);
 
   // Load images
-  const profileImagePath = join(process.cwd(), "public/profile_image.png");
-  const bgImagePath = join(process.cwd(), "public/bg_image.png");
+  const profileImagePath = join(process.cwd(), "public/profile-image.png");
+  const bgImagePath = join(process.cwd(), "public/bg-image.png");
   const profileImageData = await readFile(profileImagePath);
   const bgImageData = await readFile(bgImagePath);
 

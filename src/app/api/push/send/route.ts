@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       title,
       body: bodyText,
       url,
-      icon: "/profile_image.png",
+      icon: "/profile-image.png",
     });
 
     const results = await Promise.allSettled(

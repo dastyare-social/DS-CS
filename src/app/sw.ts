@@ -35,7 +35,7 @@ self.addEventListener("push", (event) => {
   const title = data.title || "New update";
   const options = {
     body: data.body || "A new update is available",
-    icon: data.icon || "/profile_image.png",
+    icon: data.icon || "/profile-image.png",
     data: { url: data.url || "/" },
   };
 
