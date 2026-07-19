@@ -24,7 +24,7 @@ jobs:
           bun install || npm ci
       - name: Build app
         run: |
-          bun run build || npm run build
+          bunx next build
       - name: Validate sitemap
         run: |
           node scripts/validate-sitemap.js

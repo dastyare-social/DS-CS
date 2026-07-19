@@ -23,7 +23,7 @@ jobs:
           bun install || npm ci
       - name: Start server
         run: |
-          bun run build || npm run build
+          bunx next build
           bun run start &
           sleep 5
       - name: Run Lighthouse (SEO)
