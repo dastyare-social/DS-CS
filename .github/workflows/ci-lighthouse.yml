@@ -8,6 +8,9 @@ on:
 jobs:
   lighthouse:
     runs-on: ubuntu-latest
+    env:
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-only-auth-secret-not-for-production' }}
+      BETTER_AUTH_URL: http://localhost:8729
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js

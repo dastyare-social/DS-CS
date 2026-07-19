@@ -2,6 +2,10 @@ import type { MetadataRoute } from 'next'
 import { app_url } from '@/config/app'
 import { getPostsWithReactions } from '@/lib/api/posts/queries'
 
+// The sitemap depends on live post data, so it must be generated at request
+// time rather than during `next build` (where no database is available in CI).
+export const dynamic = 'force-dynamic'
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Get all posts
   const allPosts = []

@@ -258,6 +258,19 @@ See [AGENTS.md](./AGENTS.md) for a complete API reference written for AI agents,
 
 ## Deployment
 
+## Releases
+
+Push a version tag to publish a GitHub Release with automatically generated
+release notes:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Use semantic versions: patch releases for fixes (`v0.1.1`), minor releases for
+new features (`v0.2.0`), and major releases for breaking changes (`v1.0.0`).
+
 Docker multi-stage build included. See `Dockerfile`. Production build skips DB migration at image build time; run migrations at container start or via CI.
 
 For a complete self-hosting guide covering environment variables, PostgreSQL, S3-compatible storage, Docker, VPS, Vercel, Railway, Render, and browser push notifications, see [SELF-HOSTING.md](./SELF-HOSTING.md).
