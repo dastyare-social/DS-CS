@@ -7,7 +7,6 @@ const APP_DIR = path.join(process.cwd(), "src", "app");
 const SOURCE_IMAGE = path.join(PUBLIC_DIR, "profile_image.png");
 
 const FAVICON_SIZES = [16, 32, 48] as const;
-const WHITE = { r: 255, g: 255, b: 255, alpha: 1 };
 
 function assert_source_exists() {
   if (!fs.existsSync(SOURCE_IMAGE)) {
@@ -39,8 +38,8 @@ function circle_mask_svg(size: number): Buffer {
   );
 }
 
-// Full-circle cutout, transparent outside the circle. Used for the browser-tab
-// favicon, where transparency is standard and blends into the tab bar / OS chrome.
+// Full-circle cutout, transparent outside the circle. Used only for the browser-tab
+// favicon, which the OS never re-masks — no browser applies its own shape on top.
 async function round_transparent(square: Buffer, size: number): Promise<Buffer> {
   const resized = await sharp(square)
     .resize(size, size, { fit: "cover" })
@@ -52,16 +51,13 @@ async function round_transparent(square: Buffer, size: number): Promise<Buffer> 
     .toBuffer();
 }
 
-// Full-circle cutout composited onto an opaque white square. Used for iOS/Android
-// home-screen icons, which shouldn't rely on transparency (iOS in particular can
-// render a transparent apple-touch-icon with an ugly black fill).
-async function round_on_white(square: Buffer, size: number): Promise<Buffer> {
-  const circle = await round_transparent(square, size);
-
-  return sharp({
-    create: { width: size, height: size, channels: 4, background: WHITE },
-  })
-    .composite([{ input: circle }])
+// Plain square resize, no rounding. Used for iOS/Android home-screen icons: both
+// platforms apply their own icon-shape mask on top of whatever you give them
+// (iOS's rounded-squircle, Android's adaptive-icon shape). Pre-rounding here would
+// get double-masked and clipped unpredictably, so these stay full-bleed squares.
+async function square_icon(square: Buffer, size: number): Promise<Buffer> {
+  return sharp(square)
+    .resize(size, size, { fit: "cover" })
     .png()
     .toBuffer();
 }
@@ -125,15 +121,15 @@ async function main() {
   );
   fs.writeFileSync(
     path.join(APP_DIR, "apple-icon.png"),
-    await round_on_white(square, 180)
+    await square_icon(square, 180)
   );
   fs.writeFileSync(
     path.join(PUBLIC_DIR, "web-app-manifest-192x192.png"),
-    await round_on_white(square, 192)
+    await square_icon(square, 192)
   );
   fs.writeFileSync(
     path.join(PUBLIC_DIR, "web-app-manifest-512x512.png"),
-    await round_on_white(square, 512)
+    await square_icon(square, 512)
   );
 
   console.log("Generated:");
