@@ -4,13 +4,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "bun run generate:config && next dev -p 8729",
-    "build": "bun run generate:config && bun run db:migrate && bun run bootstrap:admin && next build",
+    "dev": "bun run generate:config && bun run generate:icons && next dev -p 8729",
+    "build": "bun run generate:config && bun run generate:icons && bun run db:migrate && bun run bootstrap:admin && next build",
     "start": "next start -p 8729",
     "lint": "eslint",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "generate:config": "tsx scripts/generate-app-config.ts",
+    "generate:icons": "tsx scripts/generate-icons.ts",
     "bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/lib/db/migrate.ts",
@@ -20,8 +21,8 @@
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
     "openapi:generate": "bunx next-openapi-gen generate",
-    "pwa-self-test": "node scripts/pwa-self-test.js"
-    ,"validate:sitemap": "node scripts/validate-sitemap.js"
+    "pwa-self-test": "node scripts/pwa-self-test.js",
+    "validate:sitemap": "node scripts/validate-sitemap.js"
   },
   "overrides": {
     "strip-json-comments": "3.1.1"
