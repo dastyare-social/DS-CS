@@ -18,6 +18,7 @@ import type {
 import { getPostById, invalidatePostsCache } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
 import { captureServerEvent } from "@/lib/analytics/server";
+import { getMediaDimensions } from "@/lib/utils/media";
 
 const s3 = new S3Client({
   region: process.env.S3_REGION!,
@@ -80,12 +81,20 @@ export async function buildMediaFromFile(
 
   const finalUrl = buildPublicFileUrl(key);
 
+  // Get dimensions for images and videos
+  let dimensions: { width: number; height: number; duration?: number } = { width: 0, height: 0, duration: 0 };
+  if (type === "image" || type === "video") {
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    dimensions = await getMediaDimensions(buffer, mimeType);
+  }
+
   switch (type) {
     case "image": {
       return {
         url: finalUrl,
-        width: 0,
-        height: 0,
+        width: dimensions.width,
+        height: dimensions.height,
       };
     }
     case "voice": {
@@ -98,9 +107,9 @@ export async function buildMediaFromFile(
     case "video": {
       return {
         url: finalUrl,
-        duration: 0,
-        width: 0,
-        height: 0,
+        duration: dimensions.duration || 0,
+        width: dimensions.width,
+        height: dimensions.height,
       };
     }
     case "file": {
@@ -109,6 +118,48 @@ export async function buildMediaFromFile(
         filename: name,
         filesize: size,
         mimeType,
+      };
+    }
+    case "text":
+    default:
+      return null;
+  }
+}
+
+export async function buildMediaFromUrl(
+  url: string,
+  type: PostType,
+  dimensions?: { width: number; height: number; duration?: number }
+): Promise<MediaPayload> {
+  switch (type) {
+    case "image": {
+      return {
+        url,
+        width: dimensions?.width || 0,
+        height: dimensions?.height || 0,
+      };
+    }
+    case "voice": {
+      return {
+        url,
+        duration: dimensions?.duration || 0,
+        waveform: [],
+      };
+    }
+    case "video": {
+      return {
+        url,
+        duration: dimensions?.duration || 0,
+        width: dimensions?.width || 0,
+        height: dimensions?.height || 0,
+      };
+    }
+    case "file": {
+      return {
+        url,
+        filename: url.split("/").pop() || "file",
+        filesize: 0,
+        mimeType: "application/octet-stream",
       };
     }
     case "text":
@@ -138,23 +189,53 @@ export async function uploadToS3(
   return key;
 }
 
+type MediaInput = {
+  file?: File | null;
+  url?: string | null;
+  type?: PostType | null;
+  dimensions?: { width: number; height: number; duration?: number } | undefined;
+};
+
 type CreatePostInput = {
   content?: string | null;
   file?: File | null;
+  media?: MediaInput[] | null;
 };
 
 export async function createPostWithOptionalUpload({
   content,
   file,
+  media: mediaInputs,
 }: CreatePostInput): Promise<PostWithReactions> {
   let type: PostType = "text";
   let media: MediaPayload = null;
 
-  if (file) {
+  // Handle legacy single file upload
+  if (file && !mediaInputs) {
     const mime = (file as any).type ?? null;
     type = inferPostTypeFromMime(mime);
     const key = await uploadToS3(file, mime);
     media = await buildMediaFromFile(file, key, type);
+  }
+  // Handle new media inputs (multiple files/URLs)
+  else if (mediaInputs && mediaInputs.length > 0) {
+    const firstMedia = mediaInputs[0];
+    
+    if (firstMedia.file) {
+      // Upload file and build media
+      const mime = (firstMedia.file as any).type ?? null;
+      type = inferPostTypeFromMime(mime);
+      const key = await uploadToS3(firstMedia.file, mime);
+      media = await buildMediaFromFile(firstMedia.file, key, type);
+    } else if (firstMedia.url) {
+      // Use URL directly
+      type = firstMedia.type || inferPostTypeFromMime(null);
+      media = await buildMediaFromUrl(
+        firstMedia.url,
+        type,
+        firstMedia.dimensions
+      );
+    }
   }
 
   const now = new Date();

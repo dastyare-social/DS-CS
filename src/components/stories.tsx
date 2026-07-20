@@ -77,7 +77,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
         setLoading(true);
         setError(null);
 
-        const data = await getStories({ type: "image", page: 1, limit: 20 });
+        const data = await getStories({ page: 1, limit: 20 });
         const items = data.items || [];
 
         const mapped: StoryItem[] = items.map((item: any) => ({

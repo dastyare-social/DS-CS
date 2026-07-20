@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
 
 /**
  * Create a story
- * @description Create a story with JSON body or multipart/form-data (type, file, views, likes, media). Types: image, video.
+ * @description Create a story with JSON body or multipart/form-data. Legacy: accepts type, file, views, likes, media. New: accepts files[], urls[], types[], widths[], heights[], durations[] for multiple media. Types: image, video.
  * @tag Stories
  * @contentType application/json
  * @contentType multipart/form-data
@@ -150,12 +150,56 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // Handle new media inputs (multiple files/URLs)
+      const mediaInputs: any[] = [];
+      const files = formData.getAll("files");
+      const urls = formData.getAll("urls");
+      const types = formData.getAll("types");
+      const widths = formData.getAll("widths");
+      const heights = formData.getAll("heights");
+      const durations = formData.getAll("durations");
+
+      if (files && files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+          const f = files[i];
+          if (f instanceof File) {
+            mediaInputs.push({
+              file: f,
+              type: types[i] || null,
+              dimensions: {
+                width: Number(widths[i]) || 0,
+                height: Number(heights[i]) || 0,
+                duration: Number(durations[i]) || undefined,
+              },
+            });
+          }
+        }
+      }
+
+      if (urls && urls.length > 0) {
+        for (let i = 0; i < urls.length; i++) {
+          const url = urls[i];
+          if (typeof url === "string" && url.length > 0) {
+            mediaInputs.push({
+              url,
+              type: types[i] || null,
+              dimensions: {
+                width: Number(widths[i]) || 0,
+                height: Number(heights[i]) || 0,
+                duration: Number(durations[i]) || undefined,
+              },
+            });
+          }
+        }
+      }
+
       const story = await createStoryWithOptionalUpload({
         type,
         views,
         likes,
         media,
         file: file && file instanceof File ? file : null,
+        mediaInputs: mediaInputs.length > 0 ? mediaInputs : null,
       });
 
       return NextResponse.json(story, { status: 201 });

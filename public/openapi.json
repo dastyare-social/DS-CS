@@ -48,6 +48,40 @@
       "insertStoriesSchema": {
         "type": "object"
       },
+      "MediaUploadResponse": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "width": {
+            "type": "number"
+          },
+          "height": {
+            "type": "number"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "url",
+          "key",
+          "width",
+          "height",
+          "mimeType",
+          "size"
+        ]
+      },
       "patchPostsSchema": {
         "type": "object"
       },
@@ -577,6 +611,17 @@
         "required": [
           "success"
         ]
+      },
+      "unsubscribeRequestSchema": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "endpoint"
+        ]
       }
     },
     "responses": {}
@@ -591,10 +636,106 @@
       "description": "Ephemeral image and video stories with view and like counters."
     },
     {
+      "name": "Auth"
+    },
+    {
+      "name": "Media"
+    },
+    {
       "name": "Push"
     }
   ],
   "paths": {
+    "/auth/{all}": {
+      "get": {
+        "operationId": "get-auth-{all}",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "name": "all",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "example",
+            "description": "Path parameter: all"
+          }
+        ],
+        "responses": {}
+      },
+      "post": {
+        "operationId": "post-auth-{all}",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "name": "all",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "example",
+            "description": "Path parameter: all"
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/media": {
+      "post": {
+        "operationId": "post-media",
+        "summary": "Upload media to S3",
+        "description": "Uploads media files (images, videos) to S3 storage with automatic dimension detection. Accepts multipart/form-data with files[] array. Returns array of uploaded media objects with URLs and dimensions.",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Multipart form data containing a file upload.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaUploadResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/posts": {
       "get": {
         "operationId": "get-posts",
@@ -647,7 +788,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/200 PostsResponse"
+                  "$ref": "#/components/schemas/PostsResponse"
                 }
               }
             }
@@ -657,7 +798,7 @@
       "post": {
         "operationId": "post-posts",
         "summary": "Create a post or batch-increment views",
-        "description": "Create a text post (JSON) or upload media (multipart/form-data with content and file). JSON body with action=batch-view and ids array increments views for multiple posts.",
+        "description": "Create a text post (JSON) or upload media (multipart/form-data). Legacy: accepts content and file. New: accepts files[], urls[], types[], widths[], heights[], durations[] for multiple media. JSON body with action=batch-view and ids array increments views for multiple posts.",
         "tags": [
           "Posts"
         ],
@@ -668,13 +809,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/201 PostWithReactionsSchema"
+                  "$ref": "#/components/schemas/PostWithReactionsSchema"
                 }
               }
             }
           },
-          "200 PostSuccessResponse": {
-            "$ref": "#/components/responses/200 PostSuccessResponse"
+          "PostSuccessResponse": {
+            "$ref": "#/components/responses/PostSuccessResponse"
           }
         }
       }
@@ -704,7 +845,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/200 PostWithReactionsSchema"
+                  "$ref": "#/components/schemas/PostWithReactionsSchema"
                 }
               }
             }
@@ -735,13 +876,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/201 PostWithReactionsSchema"
+                  "$ref": "#/components/schemas/PostWithReactionsSchema"
                 }
               }
             }
           },
-          "200 PostSuccessResponse": {
-            "$ref": "#/components/responses/200 PostSuccessResponse"
+          "PostSuccessResponse": {
+            "$ref": "#/components/responses/PostSuccessResponse"
           }
         }
       },
@@ -778,7 +919,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/200 PostWithReactionsSchema"
+                  "$ref": "#/components/schemas/PostWithReactionsSchema"
                 }
               }
             }
@@ -809,7 +950,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/200 PostSuccessResponse"
+                  "$ref": "#/components/schemas/PostSuccessResponse"
                 }
               }
             }
@@ -849,6 +990,48 @@
         }
       }
     },
+    "/push/check": {
+      "get": {
+        "operationId": "get-push-check",
+        "summary": "Check if a push subscription is active",
+        "description": "Check the status of a push subscription by endpoint",
+        "tags": [
+          "Push"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "endpoint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "example"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "active": {
+                      "type": "boolean",
+                      "nullable": false
+                    }
+                  },
+                  "required": [
+                    "active"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/push/send": {
       "post": {
         "operationId": "post-push-send",
@@ -874,6 +1057,47 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PushNotificationSendResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/push/unsubscribe": {
+      "post": {
+        "operationId": "post-push-unsubscribe",
+        "summary": "Mark a push subscription as inactive",
+        "description": "Unsubscribe from push notifications by marking subscription as inactive",
+        "tags": [
+          "Push"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/unsubscribeRequestSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "nullable": false
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ]
                 }
               }
             }
@@ -942,7 +1166,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/200 StoriesResponse"
+                  "$ref": "#/components/schemas/StoriesResponse"
                 }
               }
             }
@@ -952,7 +1176,7 @@
       "post": {
         "operationId": "post-stories",
         "summary": "Create a story",
-        "description": "Create a story with JSON body or multipart/form-data (type, file, views, likes, media). Types: image, video.",
+        "description": "Create a story with JSON body or multipart/form-data. Legacy: accepts type, file, views, likes, media. New: accepts files[], urls[], types[], widths[], heights[], durations[] for multiple media. Types: image, video.",
         "tags": [
           "Stories"
         ],
@@ -963,7 +1187,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/201 StoryItemSchema"
+                  "$ref": "#/components/schemas/StoryItemSchema"
                 }
               }
             }

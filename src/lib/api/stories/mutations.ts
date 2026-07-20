@@ -16,6 +16,7 @@ import type {
 import { getStoryById } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
 import { captureServerEvent } from "@/lib/analytics/server";
+import { getMediaDimensions } from "@/lib/utils/media";
 
 const s3 = new S3Client({
   region: process.env.S3_REGION!,
@@ -73,20 +74,54 @@ export async function buildStoryMediaFromFile(
   const mimeType = (file as any).type ?? "application/octet-stream";
   const finalUrl = buildPublicStoryFileUrl(key);
 
+  // Get dimensions for images and videos
+  let dimensions: { width: number; height: number; duration?: number } = { width: 0, height: 0, duration: 0 };
+  if (type === "image" || type === "video") {
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    dimensions = await getMediaDimensions(buffer, mimeType);
+  }
+
   switch (type) {
     case "image": {
       return {
         url: finalUrl,
-        width: 0,
-        height: 0,
+        width: dimensions.width,
+        height: dimensions.height,
       };
     }
     case "video": {
       return {
         url: finalUrl,
-        duration: 0,
-        width: 0,
-        height: 0,
+        duration: dimensions.duration || 0,
+        width: dimensions.width,
+        height: dimensions.height,
+      };
+    }
+    default:
+      return null;
+  }
+}
+
+export async function buildStoryMediaFromUrl(
+  url: string,
+  type: StoryType,
+  dimensions?: { width: number; height: number; duration?: number }
+): Promise<StoryMediaPayload> {
+  switch (type) {
+    case "image": {
+      return {
+        url,
+        width: dimensions?.width || 0,
+        height: dimensions?.height || 0,
+      };
+    }
+    case "video": {
+      return {
+        url,
+        duration: dimensions?.duration || 0,
+        width: dimensions?.width || 0,
+        height: dimensions?.height || 0,
       };
     }
     default:
@@ -115,12 +150,20 @@ export async function uploadStoryToS3(
   return key;
 }
 
+type StoryMediaInput = {
+  file?: File | null;
+  url?: string | null;
+  type?: StoryType | null;
+  dimensions?: { width: number; height: number; duration?: number } | undefined;
+};
+
 type CreateStoryInput = {
   type?: StoryType | null;
   views?: string | null;
   likes?: string | null;
   media?: StoryMediaPayload | any | null;
   file?: File | null;
+  mediaInputs?: StoryMediaInput[] | null;
 };
 
 export async function createStoryWithOptionalUpload({
@@ -129,15 +172,37 @@ export async function createStoryWithOptionalUpload({
   likes,
   media,
   file,
+  mediaInputs,
 }: CreateStoryInput): Promise<StoryItem> {
   let finalType: StoryType = type ?? "image";
   let finalMedia: StoryMediaPayload | any = media ?? null;
 
-  if (file) {
+  // Handle legacy single file upload
+  if (file && !mediaInputs) {
     const mime = (file as any).type ?? null;
     finalType = inferStoryTypeFromMime(mime);
     const key = await uploadStoryToS3(file, mime);
     finalMedia = await buildStoryMediaFromFile(file, key, finalType);
+  }
+  // Handle new media inputs (multiple files/URLs)
+  else if (mediaInputs && mediaInputs.length > 0) {
+    const firstMedia = mediaInputs[0];
+    
+    if (firstMedia.file) {
+      // Upload file and build media
+      const mime = (firstMedia.file as any).type ?? null;
+      finalType = inferStoryTypeFromMime(mime);
+      const key = await uploadStoryToS3(firstMedia.file, mime);
+      finalMedia = await buildStoryMediaFromFile(firstMedia.file, key, finalType);
+    } else if (firstMedia.url) {
+      // Use URL directly
+      finalType = firstMedia.type || "image";
+      finalMedia = await buildStoryMediaFromUrl(
+        firstMedia.url,
+        finalType,
+        firstMedia.dimensions
+      );
+    }
   }
 
   const now = new Date();

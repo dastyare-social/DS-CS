@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
 
 /**
  * Create a post or batch-increment views
- * @description Create a text post (JSON) or upload media (multipart/form-data with content and file). JSON body with action=batch-view and ids array increments views for multiple posts.
+ * @description Create a text post (JSON) or upload media (multipart/form-data). Legacy: accepts content and file. New: accepts files[], urls[], types[], widths[], heights[], durations[] for multiple media. JSON body with action=batch-view and ids array increments views for multiple posts.
  * @tag Posts
  * @contentType application/json
  * @contentType multipart/form-data
@@ -130,10 +130,54 @@ export async function POST(req: NextRequest) {
       const formData = await req.formData();
       const content = formData.get("content");
       const file = formData.get("file");
+      
+      // Handle new media inputs (multiple files/URLs)
+      const mediaInputs: any[] = [];
+      const files = formData.getAll("files");
+      const urls = formData.getAll("urls");
+      const types = formData.getAll("types");
+      const widths = formData.getAll("widths");
+      const heights = formData.getAll("heights");
+      const durations = formData.getAll("durations");
+
+      if (files && files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+          const f = files[i];
+          if (f instanceof File) {
+            mediaInputs.push({
+              file: f,
+              type: types[i] || null,
+              dimensions: {
+                width: Number(widths[i]) || 0,
+                height: Number(heights[i]) || 0,
+                duration: Number(durations[i]) || undefined,
+              },
+            });
+          }
+        }
+      }
+
+      if (urls && urls.length > 0) {
+        for (let i = 0; i < urls.length; i++) {
+          const url = urls[i];
+          if (typeof url === "string" && url.length > 0) {
+            mediaInputs.push({
+              url,
+              type: types[i] || null,
+              dimensions: {
+                width: Number(widths[i]) || 0,
+                height: Number(heights[i]) || 0,
+                duration: Number(durations[i]) || undefined,
+              },
+            });
+          }
+        }
+      }
 
       const post = await createPostWithOptionalUpload({
         content: typeof content === "string" ? content : null,
         file: file && file instanceof File ? file : null,
+        media: mediaInputs.length > 0 ? mediaInputs : null,
       });
 
       return NextResponse.json(post, { status: 201 });
