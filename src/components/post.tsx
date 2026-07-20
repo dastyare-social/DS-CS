@@ -10,6 +10,7 @@ import {
 } from "./context-menu";
 import Stories from "./stories";
 import Reaction from "./reaction";
+import ImageSlider from "./image-slider";
 import type { PostWithReactions } from "@/lib/api/posts";
 import { Dialog, DialogContent, DialogTrigger } from "./dialog";
 import { addReaction, deletePost, viewPost } from "@/lib/actions/posts";
@@ -681,6 +682,16 @@ const Post = memo(({
 
   const renderMedia = () => {
     if (!hasMedia || !media) return null;
+
+    // Check if media is an array (multiple images)
+    if (Array.isArray(media) && media.length > 0) {
+      const normalizedMedia = media.map((item: any) => ({
+        url: normalizeMediaUrl(item.url),
+        width: item.width || 0,
+        height: item.height || 0,
+      }));
+      return <ImageSlider media={normalizedMedia} content={content} />;
+    }
 
     const src = normalizeMediaUrl(media.url);
 

@@ -626,6 +626,9 @@
     },
     "responses": {}
   },
+  "exclude": [
+    "./src/app/api/auth/**"
+  ],
   "tags": [
     {
       "name": "Posts",
@@ -636,9 +639,6 @@
       "description": "Ephemeral image and video stories with view and like counters."
     },
     {
-      "name": "Auth"
-    },
-    {
       "name": "Media"
     },
     {
@@ -646,50 +646,6 @@
     }
   ],
   "paths": {
-    "/auth/{all}": {
-      "get": {
-        "operationId": "get-auth-{all}",
-        "summary": "",
-        "description": "",
-        "tags": [
-          "Auth"
-        ],
-        "parameters": [
-          {
-            "name": "all",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "example",
-            "description": "Path parameter: all"
-          }
-        ],
-        "responses": {}
-      },
-      "post": {
-        "operationId": "post-auth-{all}",
-        "summary": "",
-        "description": "",
-        "tags": [
-          "Auth"
-        ],
-        "parameters": [
-          {
-            "name": "all",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "example",
-            "description": "Path parameter: all"
-          }
-        ],
-        "responses": {}
-      }
-    },
     "/media": {
       "post": {
         "operationId": "post-media",

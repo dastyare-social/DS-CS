@@ -47,6 +47,10 @@ export const PostSuccessResponse = z.object({
  * @tag Posts
  * @queryParams PostsQueryParams
  * @response PostsResponse
+ * @example GET /api/posts?page=1&limit=20
+ * @example GET /api/posts?type=count
+ * @example GET /api/posts?type=shorts
+ * @example GET /api/posts?search=keyword
  * @openapi
  */
 export async function GET(req: NextRequest) {
@@ -120,6 +124,11 @@ export async function GET(req: NextRequest) {
  * @contentType multipart/form-data
  * @response PostWithReactionsSchema
  * @response PostSuccessResponse
+ * @example POST /api/posts {"content": "Hello world"}
+ * @example POST /api/posts multipart/form-data content=Hello&file=@image.jpg
+ * @example POST /api/posts multipart/form-data files[]=@image1.jpg&files[]=@image2.jpg
+ * @example POST /api/posts multipart/form-data urls[]=https://example.com/image.jpg&types[]=image
+ * @example POST /api/posts {"action": "batch-view", "ids": ["id1", "id2"]}
  * @openapi
  */
 export async function POST(req: NextRequest) {
@@ -179,13 +188,21 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const post = await createPostWithOptionalUpload({
+      const result = await createPostWithOptionalUpload({
         content: typeof content === "string" ? content : null,
         file: file && file instanceof File ? file : null,
         media: mediaInputs.length > 0 ? mediaInputs : null,
       });
 
-      return NextResponse.json(post, { status: 201 });
+      // Handle multiple posts created
+      if (result && (result as any)._multiple) {
+        return NextResponse.json(
+          { posts: (result as any).posts, multiple: true },
+          { status: 201 }
+        );
+      }
+
+      return NextResponse.json(result, { status: 201 });
     }
 
     // JSON body

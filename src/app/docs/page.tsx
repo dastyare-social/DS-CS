@@ -21,14 +21,12 @@ export default function ApiDocsPage() {
         expandAllResponses: true,
         hideSearch: true,
         hideModels: true,
-        hideDarkModeToggle: true,
-        darkMode: false,
         hideDownloadButton: true,
         showDeveloperTools: "never",
         searchHotKey: "s",
         persistAuth: true,
         mcp: {
-          disabled: false,
+          disabled: true,
         },
         hideClientButton: true,
         pathRouting: {

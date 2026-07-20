@@ -263,6 +263,127 @@ export async function createPostWithOptionalUpload({
         dimensions
       );
     }
+
+    // Handle multiple media items
+    if (mediaInputs.length > 1) {
+      const firstType = type;
+      
+      // If all are images, combine into one post with multiple media
+      const allImages = mediaInputs.every((input) => {
+        const inputType = input.type || (input.file ? inferPostTypeFromMime((input.file as any).type) : inferPostTypeFromUrl(input.url || ""));
+        return inputType === "image";
+      });
+
+      if (allImages) {
+        // Process all images and store as array
+        const mediaArray: MediaPayload[] = [];
+        
+        for (const input of mediaInputs) {
+          let itemMedia: MediaPayload;
+          let itemType: PostType;
+          
+          if (input.file) {
+            const mime = (input.file as any).type ?? null;
+            itemType = inferPostTypeFromMime(mime);
+            const key = await uploadToS3(input.file, mime);
+            itemMedia = await buildMediaFromFile(input.file, key, itemType);
+          } else if (input.url) {
+            itemType = input.type || inferPostTypeFromUrl(input.url);
+            let dimensions = input.dimensions;
+            if (!dimensions || (dimensions.width === 0 && dimensions.height === 0)) {
+              if (itemType === "image" || itemType === "video") {
+                dimensions = await getMediaDimensionsFromUrl(input.url, itemType);
+              }
+            }
+            itemMedia = await buildMediaFromUrl(input.url, itemType, dimensions);
+          } else {
+            continue;
+          }
+          
+          mediaArray.push(itemMedia);
+        }
+        
+        // Store as array in media field
+        media = mediaArray as any;
+      } else {
+        // Mixed types or non-images: create multiple posts
+        const createdPosts: PostWithReactions[] = [];
+        
+        for (let i = 0; i < mediaInputs.length; i++) {
+          const input = mediaInputs[i];
+          let itemMedia: MediaPayload;
+          let itemType: PostType;
+          
+          if (input.file) {
+            const mime = (input.file as any).type ?? null;
+            itemType = inferPostTypeFromMime(mime);
+            const key = await uploadToS3(input.file, mime);
+            itemMedia = await buildMediaFromFile(input.file, key, itemType);
+          } else if (input.url) {
+            itemType = input.type || inferPostTypeFromUrl(input.url);
+            let dimensions = input.dimensions;
+            if (!dimensions || (dimensions.width === 0 && dimensions.height === 0)) {
+              if (itemType === "image" || itemType === "video") {
+                dimensions = await getMediaDimensionsFromUrl(input.url, itemType);
+              }
+            }
+            itemMedia = await buildMediaFromUrl(input.url, itemType, dimensions);
+          } else {
+            continue;
+          }
+          
+          const now = new Date();
+          const itemContent = i === 0 ? content : "— content —";
+          
+          const parsedBase = insertPostsSchema.parse({
+            type: itemType,
+            content: itemContent ?? null,
+            views: "0",
+            pinnedAt: null,
+            media: itemMedia,
+          });
+
+          const toInsert = {
+            id: randomUUID(),
+            ...parsedBase,
+            createdAt: now,
+            updatedAt: now,
+          };
+
+          const [inserted] = await db.insert(posts).values(toInsert).returning();
+          
+          if (inserted) {
+            await captureServerEvent("post_created", {
+              post_id: inserted.id,
+              post_type: itemType,
+              has_media: Boolean(itemMedia),
+              content_length: itemContent?.length ?? 0,
+            });
+
+            if (i === 0) {
+              await sendPushNotification({
+                title: "New post published",
+                body: content ? content.slice(0, 80) : "A new post is now available",
+                url: "/",
+              });
+            }
+          }
+          
+          createdPosts.push({
+            ...inserted,
+            reactions: [],
+          });
+        }
+        
+        invalidatePostsCache();
+        
+        // Return special structure to indicate multiple posts created
+        return {
+          _multiple: true,
+          posts: createdPosts,
+        } as any;
+      }
+    }
   }
 
   const now = new Date();

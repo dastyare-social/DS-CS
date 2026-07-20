@@ -227,6 +227,78 @@ export async function createStoryWithOptionalUpload({
         dimensions
       );
     }
+
+    // Handle multiple media items
+    if (mediaInputs.length > 1) {
+      // Stories don't support multiple media in one story - create multiple stories
+      const createdStories: StoryItem[] = [];
+      
+      for (let i = 0; i < mediaInputs.length; i++) {
+        const input = mediaInputs[i];
+        let itemMedia: StoryMediaPayload;
+        let itemType: StoryType;
+        
+        if (input.file) {
+          const mime = (input.file as any).type ?? null;
+          itemType = inferStoryTypeFromMime(mime);
+          const key = await uploadStoryToS3(input.file, mime);
+          itemMedia = await buildStoryMediaFromFile(input.file, key, itemType);
+        } else if (input.url) {
+          itemType = input.type || inferStoryTypeFromUrl(input.url);
+          let dimensions = input.dimensions;
+          if (!dimensions || (dimensions.width === 0 && dimensions.height === 0)) {
+            if (itemType === "image" || itemType === "video") {
+              dimensions = await getMediaDimensionsFromUrl(input.url, itemType);
+            }
+          }
+          itemMedia = await buildStoryMediaFromUrl(input.url, itemType, dimensions);
+        } else {
+          continue;
+        }
+        
+        const now = new Date();
+        
+        const parsedBase = insertStoriesSchema.parse({
+          type: itemType,
+          views: views ?? "0",
+          likes: likes ?? "0",
+          media: itemMedia,
+        });
+
+        const toInsert = {
+          id: randomUUID(),
+          ...parsedBase,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        const [inserted] = await db.insert(stories).values(toInsert).returning();
+        
+        if (inserted) {
+          await captureServerEvent("story_created", {
+            story_id: inserted.id,
+            story_type: itemType,
+            has_media: Boolean(itemMedia),
+            views: inserted.views,
+            likes: inserted.likes,
+          });
+
+          if (i === 0) {
+            await sendPushNotification({
+              title: "New story published",
+              body: "A new story is now live",
+              url: "/",
+            });
+          }
+        }
+        
+        createdStories.push({
+          ...inserted,
+        });
+      }
+      
+      return createdStories[0]; // Return first story
+    }
   }
 
   const now = new Date();

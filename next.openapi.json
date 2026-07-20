@@ -18,6 +18,9 @@
   "schemaDir": "./src",
   "schemaType": ["typescript", "zod"],
   "docsUrl": "docs",
+  "exclude": [
+    "./src/app/api/auth/**"
+  ],
   "tags": [
     {
       "name": "Posts",

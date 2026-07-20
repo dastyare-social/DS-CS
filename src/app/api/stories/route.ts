@@ -48,6 +48,10 @@ export const StorySuccessResponse = z.object({
  * @tag Stories
  * @queryParams StoriesQueryParams
  * @response StoriesResponse
+ * @example GET /api/stories?page=1&limit=20
+ * @example GET /api/stories?type=count
+ * @example GET /api/stories?kind=image
+ * @example GET /api/stories?kind=video
  * @openapi
  */
 export async function GET(req: NextRequest) {
@@ -104,6 +108,10 @@ export async function GET(req: NextRequest) {
  * @contentType application/json
  * @contentType multipart/form-data
  * @response StoryItemSchema
+ * @example POST /api/stories multipart/form-data type=image&file=@image.jpg
+ * @example POST /api/stories multipart/form-data files[]=@image1.jpg&files[]=@image2.jpg
+ * @example POST /api/stories multipart/form-data urls[]=https://example.com/video.mp4&types[]=video
+ * @example POST /api/stories {"type": "image", "media": {"url": "https://example.com/image.jpg"}}
  * @openapi
  */
 export async function POST(req: NextRequest) {
