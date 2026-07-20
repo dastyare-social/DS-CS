@@ -1,4 +1,8 @@
 import sharp from "sharp";
+import probe from "ffmpeg-probe";
+import { writeFile, unlink } from "fs/promises";
+import { tmpdir } from "os";
+import { join } from "path";
 
 export interface MediaDimensions {
   width: number;
@@ -23,19 +27,26 @@ export async function getImageDimensions(buffer: Buffer): Promise<MediaDimension
 }
 
 /**
- * Get dimensions of a video file
- * Note: This is a basic implementation. For production, consider using ffprobe
+ * Get dimensions of a video file using ffprobe
  */
 export async function getVideoDimensions(buffer: Buffer): Promise<MediaDimensions> {
   try {
-    // For now, return default values
-    // In production, you'd want to use ffprobe or similar to get actual video dimensions
-    // This requires installing ffmpeg/ffprobe on the server
-    return {
-      width: 0,
-      height: 0,
-      duration: 0,
-    };
+    // Write buffer to temporary file for ffprobe to read
+    const tempFilePath = join(tmpdir(), `temp-video-${Date.now()}.mp4`);
+    await writeFile(tempFilePath, buffer);
+
+    try {
+      const metadata = await probe(tempFilePath);
+      
+      return {
+        width: metadata.width || 0,
+        height: metadata.height || 0,
+        duration: metadata.duration ? Math.round(metadata.duration * 1000) : 0, // Convert to milliseconds
+      };
+    } finally {
+      // Clean up temp file
+      await unlink(tempFilePath).catch(() => {});
+    }
   } catch (error) {
     console.error("Error getting video dimensions:", error);
     return { width: 0, height: 0, duration: 0 };

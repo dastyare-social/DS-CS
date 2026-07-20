@@ -61,15 +61,36 @@ const storyLikeInput = z.object({
 export const postsRouter = router({
   // Combined endpoint to fetch initial explore data (shorts + threads) in one request
   exploreInitial: publicProcedure.query(async () => {
-    const shortsResult = await getPostsWithReactions({ page: 1, limit: 2 });
+    const shortsResult = await getPostsWithReactions({ page: 1, limit: 20 });
     const threads = await getPostsWithReactions({ page: 1, limit: 5 });
     
-    // Filter shorts to only include vertical videos (1080x1920)
+    console.log("All shorts items:", shortsResult.items);
+    
+    // Filter shorts to only include vertical videos (9:16 aspect ratio)
     const filteredShorts = shortsResult.items.filter((item) => {
-      if (item.type !== "video" || !item.media) return false;
+      console.log("Filtering item:", item.id, item.type, item.media);
+      if (item.type !== "video" || !item.media) {
+        console.log("Filtered out: not video or no media");
+        return false;
+      }
       const media = item.media as { width?: number; height?: number };
-      return media.width === 1080 && media.height === 1920;
+      const width = media.width || 0;
+      const height = media.height || 0;
+      
+      // If dimensions are 0, include the video anyway (fallback for videos without dimension data)
+      if (width === 0 || height === 0) {
+        console.log("Including video with missing dimensions:", item.id, item.media);
+        return true;
+      }
+      
+      // Check for 9:16 aspect ratio (height > width, approximately 1.77:1 ratio)
+      const aspectRatio = height / width;
+      const isVertical = aspectRatio >= 1.6 && aspectRatio <= 2.0;
+      console.log("Aspect ratio check:", width, height, aspectRatio, isVertical);
+      return isVertical;
     });
+    
+    console.log("Filtered shorts:", filteredShorts);
     
     return {
       shorts: {
@@ -91,7 +112,12 @@ export const postsRouter = router({
       const filtered = result.items.filter((item) => {
         if (item.type !== "video" || !item.media) return false;
         const media = item.media as { width?: number; height?: number };
-        return media.width === 1080 && media.height === 1920;
+        const width = media.width || 0;
+        const height = media.height || 0;
+        if (width === 0 || height === 0) return false;
+        // Check for 9:16 aspect ratio (height > width, approximately 1.77:1 ratio)
+        const aspectRatio = height / width;
+        return aspectRatio >= 1.6 && aspectRatio <= 2.0;
       });
       return {
         ...result,

@@ -87,7 +87,12 @@ export async function GET(req: NextRequest) {
           width?: number;
           height?: number;
         };
-        return media.width === 1080 && media.height === 1920;
+        const width = media.width || 0;
+        const height = media.height || 0;
+        if (width === 0 || height === 0) return false;
+        // Check for 9:16 aspect ratio (height > width, approximately 1.77:1 ratio)
+        const aspectRatio = height / width;
+        return aspectRatio >= 1.6 && aspectRatio <= 2.0;
       });
       return NextResponse.json({
         ...result,

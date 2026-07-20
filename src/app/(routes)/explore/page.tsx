@@ -403,6 +403,114 @@ export default function Page() {
     [scrollToIndex, shorts.length]
   );
 
+  // Video event handlers
+  const handleVideoWaiting = useCallback(
+    (index: number) => {
+      setVideoLoadingStates((prev) => {
+        const next = [...prev];
+        next[index] = true;
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleVideoLoadStart = useCallback(
+    (index: number) => {
+      setVideoLoadingStates((prev) => {
+        const next = [...prev];
+        next[index] = true;
+        return next;
+      });
+      setVideoPreloadStates((prev) => {
+        const next = [...prev];
+        next[index] = true;
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleVideoLoadedData = useCallback(
+    (index: number) => {
+      setVideoLoadingStates((prev) => {
+        const next = [...prev];
+        next[index] = false;
+        return next;
+      });
+      setVideoPreloadStates((prev) => {
+        const next = [...prev];
+        next[index] = false;
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleVideoCanPlay = useCallback(
+    (index: number) => {
+      setVideoLoadingStates((prev) => {
+        const next = [...prev];
+        next[index] = false;
+        return next;
+      });
+      setVideoPreloadStates((prev) => {
+        const next = [...prev];
+        next[index] = false;
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleVideoPlaying = useCallback(
+    (index: number) => {
+      setVideoLoadingStates((prev) => {
+        const next = [...prev];
+        next[index] = false;
+        return next;
+      });
+      setVideoPreloadStates((prev) => {
+        const next = [...prev];
+        next[index] = false;
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleVideoStalled = useCallback(
+    (index: number) => {
+      setVideoLoadingStates((prev) => {
+        const next = [...prev];
+        next[index] = true;
+        return next;
+      });
+      setVideoPreloadStates((prev) => {
+        const next = [...prev];
+        next[index] = false;
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleVideoError = useCallback(
+    (index: number) => {
+      setVideoLoadingStates((prev) => {
+        const next = [...prev];
+        next[index] = false;
+        return next;
+      });
+      setVideoPreloadStates((prev) => {
+        const next = [...prev];
+        next[index] = false;
+        return next;
+      });
+    },
+    []
+  );
+
   const loadMoreThreads = useCallback(async () => {
     if (isLoadingMoreThreads || !hasMoreThreads) return;
     try {
@@ -760,106 +868,13 @@ export default function Page() {
             pauseAllVideos();
             setExploreState("threads");
           }}
-          onWaiting={useCallback(
-            (index: number) => {
-              setVideoLoadingStates((prev) => {
-                const next = [...prev];
-                next[index] = true;
-                return next;
-              });
-            },
-            []
-          )}
-          onLoadStart={useCallback(
-            (index: number) => {
-              setVideoLoadingStates((prev) => {
-                const next = [...prev];
-                next[index] = true;
-                return next;
-              });
-              setVideoPreloadStates((prev) => {
-                const next = [...prev];
-                next[index] = true;
-                return next;
-              });
-            },
-            []
-          )}
-          onLoadedData={useCallback(
-            (index: number) => {
-              setVideoLoadingStates((prev) => {
-                const next = [...prev];
-                next[index] = false;
-                return next;
-              });
-              setVideoPreloadStates((prev) => {
-                const next = [...prev];
-                next[index] = false;
-                return next;
-              });
-            },
-            []
-          )}
-          onCanPlay={useCallback(
-            (index: number) => {
-              setVideoLoadingStates((prev) => {
-                const next = [...prev];
-                next[index] = false;
-                return next;
-              });
-              setVideoPreloadStates((prev) => {
-                const next = [...prev];
-                next[index] = false;
-                return next;
-              });
-            },
-            []
-          )}
-          onPlaying={useCallback(
-            (index: number) => {
-              setVideoLoadingStates((prev) => {
-                const next = [...prev];
-                next[index] = false;
-                return next;
-              });
-              setVideoPreloadStates((prev) => {
-                const next = [...prev];
-                next[index] = false;
-                return next;
-              });
-            },
-            []
-          )}
-          onStalled={useCallback(
-            (index: number) => {
-              setVideoLoadingStates((prev) => {
-                const next = [...prev];
-                next[index] = true;
-                return next;
-              });
-              setVideoPreloadStates((prev) => {
-                const next = [...prev];
-                next[index] = false;
-                return next;
-              });
-            },
-            []
-          )}
-          onError={useCallback(
-            (index: number) => {
-              setVideoLoadingStates((prev) => {
-                const next = [...prev];
-                next[index] = false;
-                return next;
-              });
-              setVideoPreloadStates((prev) => {
-                const next = [...prev];
-                next[index] = false;
-                return next;
-              });
-            },
-            []
-          )}
+          onWaiting={handleVideoWaiting}
+          onLoadStart={handleVideoLoadStart}
+          onLoadedData={handleVideoLoadedData}
+          onCanPlay={handleVideoCanPlay}
+          onPlaying={handleVideoPlaying}
+          onStalled={handleVideoStalled}
+          onError={handleVideoError}
         />
       )}
     </div>

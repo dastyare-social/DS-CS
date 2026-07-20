@@ -22,7 +22,7 @@ Dastyare Social CS is a production-ready creator studio built around:
 
 ## Quick start
 
-**Requirements:** Bun, Node.js 20+, PostgreSQL, and an S3-compatible storage provider.
+**Requirements:** Bun, Node.js 20+, PostgreSQL, an S3-compatible storage provider, and FFmpeg/FFprobe (for video dimension detection).
 
 ### Local quick start
 
