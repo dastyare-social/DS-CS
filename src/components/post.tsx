@@ -705,6 +705,7 @@ const Post = memo(({
                 src={src}
                 alt={content || "image_message"}
                 fill
+                unoptimized
                 sizes="(max-width: 768px) 80vw, 320px"
                 loading="lazy"
                 className="object-cover p-1"
@@ -733,6 +734,7 @@ const Post = memo(({
                   src={src}
                   alt={content || "image_message"}
                   fill
+                  unoptimized
                   sizes="(max-width: 768px) 80vw, 320px"
                   loading="lazy"
                   className="object-contain p-1"

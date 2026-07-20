@@ -38,14 +38,27 @@ function joinUrl(base: string, ...parts: string[]): string {
 }
 
 function buildPublicFileUrl(key: string): string {
-  const base =
-    process.env.S3_PUBLIC_BASE_URL &&
-    process.env.S3_PUBLIC_BASE_URL.trim().length
-      ? process.env.S3_PUBLIC_BASE_URL
-      : process.env.S3_ENDPOINT || "";
+  // Use S3_PUBLIC_BASE_URL if explicitly set (recommended for all providers)
+  if (process.env.S3_PUBLIC_BASE_URL && process.env.S3_PUBLIC_BASE_URL.trim().length) {
+    return joinUrl(process.env.S3_PUBLIC_BASE_URL, key);
+  }
 
-  const rawUrl = joinUrl(base, BUCKET, key);
-  return rawUrl.replace(/^([a-zA-Z][a-zA-Z0-9+\-.]*:)(\/)([^/])/, "$1//$3");
+  // Fallback: try to construct public URL from S3_ENDPOINT
+  const endpoint = process.env.S3_ENDPOINT || "";
+  if (!endpoint) {
+    throw new Error("S3_PUBLIC_BASE_URL or S3_ENDPOINT must be set");
+  }
+
+  // Handle Supabase: convert storage endpoint to public URL
+  if (endpoint.includes(".storage.supabase.co")) {
+    const publicUrl = endpoint
+      .replace(".storage.supabase.co", ".supabase.co")
+      .replace("/storage/v1/s3", "/storage/v1/object/public");
+    return joinUrl(publicUrl, BUCKET, key);
+  }
+
+  // For other S3-compatible providers (MinIO, R2, AWS S3), use endpoint with bucket
+  return joinUrl(endpoint, BUCKET, key);
 }
 
 export function inferPostTypeFromMime(mime: string | null): PostType {

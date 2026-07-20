@@ -173,6 +173,14 @@ See `.env.example`. Critical vars:
 - `NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY` — Browser public key for Web Push
 - `WEBPUSH_PRIVATE_KEY` — Private VAPID key for server-side sending
 - `WEBPUSH_SUBJECT` — Contact URI such as `mailto:hey@omidshabab.com`
+- `NEXT_PUBLIC_ADDITIONAL_IMAGE_DOMAINS` — Comma-separated list of domains for Next.js Image optimization (e.g., `"example.com,cdn.example.com"`). Media from S3 storage is automatically included.
+
+## Image Optimization Notes
+
+- Remote images from S3 storage (`S3_ENDPOINT` or `S3_PUBLIC_BASE_URL`) are automatically configured for Next.js Image optimization
+- Additional domains can be added via `NEXT_PUBLIC_ADDITIONAL_IMAGE_DOMAINS` environment variable
+- Images from unconfigured domains use `unoptimized` mode (no size/format optimization)
+- The `next.config.ts` dynamically builds `remotePatterns` from environment variables
 
 ## Search Console / SEO (agent notes)
 

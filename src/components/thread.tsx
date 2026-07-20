@@ -89,6 +89,7 @@ export default function ThreadItem({
                   src={thread.media.url}
                   alt={thread.content || "image_post"}
                   fill
+                  unoptimized
                   sizes="(max-width: 768px) 80vw, 320px"
                   loading="lazy"
                   className="object-cover p-1"

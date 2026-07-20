@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: {
       default: t("general.app_name", { owner_name: app_config[locale].name }),
       template:
-        "%s | " +
+        "%s — " +
         t("general.app_name", { owner_name: app_config[locale].name }),
     },
     description: app_config[locale].desc,

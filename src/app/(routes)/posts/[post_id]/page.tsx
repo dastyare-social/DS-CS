@@ -6,7 +6,6 @@ import { Button } from "@/components/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
 import Post from "@/components/post";
 import NewsletterModal from "@/components/modals/notifications";
-import { InstallButton } from "@/components/pwa-install";
 import Loader from "@/components/loader";
 import Header from "@/components/header";
 import type { PostWithReactions } from "@/lib/api/posts";
@@ -236,11 +235,10 @@ const Page = () => {
       {/* Bottom CTA (now fixed footer, using footerRef + CSS var) */}
       <div ref={footerRef} className="fixed bottom-0 max-w-2xl w-full z-50">
         <div className="flex gap-x-1.5 sm:gap-x-2 px-4 pb-3 lg:pb-5 justify-center items-center">
-          <InstallButton />
           <Dialog>
             <DialogTrigger asChild>
               <Button className="text-sm md:text-sm px-3.5 py-1.5 backdrop-blur-3xl bg-white/50 text-nowrap">
-                {t("general.sub_newsletter_now")}
+                {t("general.join_my_channel")}
               </Button>
             </DialogTrigger>
 

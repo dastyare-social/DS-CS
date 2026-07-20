@@ -10,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase: new URL(app_url),
-    title: `Resume | ${app_config[locale].name}`,
+    title: `Resume — ${app_config[locale].name}`,
     description: `Resume of ${app_config[locale].name}`,
     robots: {
       index: false,

@@ -414,6 +414,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                         src={currentStory.url}
                         alt={`story_${currentIndex}`}
                         fill
+                        unoptimized
                         sizes="(max-width: 768px) 80vw, 320px"
                         className="p-1 object-cover"
                         loading="lazy"

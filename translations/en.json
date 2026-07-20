@@ -13,7 +13,7 @@
     "copy_post_link": "Copy Post Link",
     "delete_post": "Delete Post",
     "view_other_contents": "View Other Contents",
-    "sub_newsletter_now": "Sub Notifications Now",
+    "join_my_channel": "Join My Channel",
     "new_story": "New Story",
     "posts": "Posts",
     "posted": "Posted",
@@ -27,7 +27,9 @@
     "lorem_ipsum": "Here’s to the crazy ones The misfits The rebels The troublemakers The round pegs in the square holes The ones who see things differently They’re not fond of rules And they have no respect for the status quo You can quote them, disagree with them, glorify or vilify them About the only thing you can’t do is ignore them Because they change things They push the human race forward And while some may see them as the crazy ones, we see genius Because the people who are crazy enough to think they can change the world, are the ones who do",
     "login_panel_subtitle": "Use Email and Password Defined on the Configurations",
     "login_panel_title": "Panel — Dastyare Social — CS",
-    "login_panel_title_span": "To Manage Your Personal Brand"
+    "login_panel_title_span": "To Manage Your Personal Brand",
+    "login_error": "Login Error",
+    "logout": "Logout Your Account"
   },
   "last_time": {
     "just_now": "Just now",
