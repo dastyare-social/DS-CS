@@ -3,6 +3,8 @@ import probe from "ffmpeg-probe";
 import { writeFile, unlink } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
+import https from "https";
+import http from "http";
 
 export interface MediaDimensions {
   width: number;
@@ -67,4 +69,46 @@ export async function getMediaDimensions(
     return getVideoDimensions(buffer);
   }
   return { width: 0, height: 0 };
+}
+
+/**
+ * Download a file from URL and return as buffer
+ */
+function downloadFile(url: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const protocol = url.startsWith('https') ? https : http;
+    
+    protocol.get(url, (res) => {
+      if (res.statusCode !== 200) {
+        reject(new Error(`Failed to download file: ${res.statusCode}`));
+        return;
+      }
+
+      const chunks: Buffer[] = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+/**
+ * Get dimensions from a URL by downloading the file first
+ */
+export async function getMediaDimensionsFromUrl(url: string, type: string): Promise<MediaDimensions> {
+  try {
+    const buffer = await downloadFile(url);
+    
+    if (type === "image") {
+      return getImageDimensions(buffer);
+    }
+    if (type === "video") {
+      return getVideoDimensions(buffer);
+    }
+    
+    return { width: 0, height: 0 };
+  } catch (error) {
+    console.error("Error getting dimensions from URL:", error);
+    return { width: 0, height: 0 };
+  }
 }

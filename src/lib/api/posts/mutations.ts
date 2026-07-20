@@ -18,7 +18,7 @@ import type {
 import { getPostById, invalidatePostsCache } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
 import { captureServerEvent } from "@/lib/analytics/server";
-import { getMediaDimensions } from "@/lib/utils/media";
+import { getMediaDimensions, getMediaDimensionsFromUrl } from "@/lib/utils/media";
 
 const s3 = new S3Client({
   region: process.env.S3_REGION!,
@@ -67,6 +67,24 @@ export function inferPostTypeFromMime(mime: string | null): PostType {
   if (mime.startsWith("image/")) return "image";
   if (mime.startsWith("audio/")) return "voice";
   if (mime.startsWith("video/")) return "video";
+  return "file";
+}
+
+export function inferPostTypeFromUrl(url: string): PostType {
+  const lowerUrl = url.toLowerCase();
+  const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico'];
+  const videoExts = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.m4v'];
+  const audioExts = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac'];
+
+  for (const ext of imageExts) {
+    if (lowerUrl.endsWith(ext)) return "image";
+  }
+  for (const ext of videoExts) {
+    if (lowerUrl.endsWith(ext)) return "video";
+  }
+  for (const ext of audioExts) {
+    if (lowerUrl.endsWith(ext)) return "voice";
+  }
   return "file";
 }
 
@@ -229,11 +247,20 @@ export async function createPostWithOptionalUpload({
       media = await buildMediaFromFile(firstMedia.file, key, type);
     } else if (firstMedia.url) {
       // Use URL directly
-      type = firstMedia.type || inferPostTypeFromMime(null);
+      type = firstMedia.type || inferPostTypeFromUrl(firstMedia.url);
+      
+      // Fetch dimensions if not provided or if they're 0
+      let dimensions = firstMedia.dimensions;
+      if (!dimensions || (dimensions.width === 0 && dimensions.height === 0)) {
+        if (type === "image" || type === "video") {
+          dimensions = await getMediaDimensionsFromUrl(firstMedia.url, type);
+        }
+      }
+      
       media = await buildMediaFromUrl(
         firstMedia.url,
         type,
-        firstMedia.dimensions
+        dimensions
       );
     }
   }

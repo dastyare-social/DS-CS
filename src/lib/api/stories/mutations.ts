@@ -16,6 +16,7 @@ import type {
 import { getStoryById } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
 import { captureServerEvent } from "@/lib/analytics/server";
+import { getMediaDimensionsFromUrl } from "@/lib/utils/media";
 import { getMediaDimensions } from "@/lib/utils/media";
 
 const s3 = new S3Client({
@@ -63,6 +64,20 @@ function buildPublicStoryFileUrl(key: string): string {
 export function inferStoryTypeFromMime(mime: string | null): StoryType {
   if (!mime) return "image";
   if (mime.startsWith("video/")) return "video";
+  return "image";
+}
+
+export function inferStoryTypeFromUrl(url: string): StoryType {
+  const lowerUrl = url.toLowerCase();
+  const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico'];
+  const videoExts = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.m4v'];
+
+  for (const ext of videoExts) {
+    if (lowerUrl.endsWith(ext)) return "video";
+  }
+  for (const ext of imageExts) {
+    if (lowerUrl.endsWith(ext)) return "image";
+  }
   return "image";
 }
 
@@ -196,11 +211,20 @@ export async function createStoryWithOptionalUpload({
       finalMedia = await buildStoryMediaFromFile(firstMedia.file, key, finalType);
     } else if (firstMedia.url) {
       // Use URL directly
-      finalType = firstMedia.type || "image";
+      finalType = firstMedia.type || inferStoryTypeFromUrl(firstMedia.url);
+      
+      // Fetch dimensions if not provided or if they're 0
+      let dimensions = firstMedia.dimensions;
+      if (!dimensions || (dimensions.width === 0 && dimensions.height === 0)) {
+        if (finalType === "image" || finalType === "video") {
+          dimensions = await getMediaDimensionsFromUrl(firstMedia.url, finalType);
+        }
+      }
+      
       finalMedia = await buildStoryMediaFromUrl(
         firstMedia.url,
         finalType,
-        firstMedia.dimensions
+        dimensions
       );
     }
   }

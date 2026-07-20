@@ -77,25 +77,27 @@ export default function ThreadItem({
             </div>
 
             {/* Media Content */}
-            {thread.type === "image" && thread.media?.url && (
-              <div
-                className={cn(
-                  "relative w-full max-w-2xs mt-2 max-h-[960px] overflow-hidden border border-secondary/5 aspect-video cursor-pointer",
-                  thread.media["width"] === thread.media["height"] && "aspect-square",
-                  thread.media["width"] > thread.media["height"] && "aspect-video"
-                )}
-              >
-                <Image
-                  src={thread.media.url}
-                  alt={thread.content || "image_post"}
-                  fill
-                  unoptimized
-                  sizes="(max-width: 768px) 80vw, 320px"
-                  loading="lazy"
-                  className="object-cover p-1"
-                />
-              </div>
-            )}
+            {thread.type === "image" && thread.media?.url && (() => {
+              const aspectRatio = thread.media["width"] && thread.media["height"]
+                ? thread.media["width"] / thread.media["height"]
+                : 16 / 9;
+              return (
+                <div
+                  className="relative w-full max-w-2xs mt-2 max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer"
+                  style={{ aspectRatio }}
+                >
+                  <Image
+                    src={thread.media.url}
+                    alt={thread.content || "image_post"}
+                    fill
+                    unoptimized
+                    sizes="(max-width: 768px) 80vw, 320px"
+                    loading="lazy"
+                    className="object-cover p-1"
+                  />
+                </div>
+              );
+            })()}
 
             {thread.type === "video" && thread.media?.url && (
               <video

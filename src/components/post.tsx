@@ -687,19 +687,16 @@ const Post = memo(({
     if (!src) return null;
 
     if (type === "image") {
+      const aspectRatio = post.media["width"] && post.media["height"]
+        ? post.media["width"] / post.media["height"]
+        : 16 / 9;
+
       return (
         <Dialog>
           <DialogTrigger className="outline-none">
             <div
-              className={cn(
-                "relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 aspect-video cursor-pointer",
-                post.media["width"] === post.media["height"] &&
-                  "aspect-square",
-                post.media["width"] > post.media["height"] &&
-                  "aspect-video",
-                post.media["width"] < post.media["height"] &&
-                  "aspect-9/16"
-              )}
+              className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer"
+              style={{ aspectRatio }}
             >
               <Image
                 src={src}
@@ -714,32 +711,18 @@ const Post = memo(({
           </DialogTrigger>
           <DialogContent>
             <div
-              className={cn(
-                "relative w-full min-w-sm max-w-xl max-h-[560px] overflow-hidden backdrop-blur-3xl p-1 border border-secondary/5 bg-white/50",
-                post.media["width"] === post.media["height"] &&
-                  "aspect-square",
-                post.media["width"] > post.media["height"] &&
-                  "aspect-video",
-                post.media["width"] < post.media["height"] &&
-                  "aspect-9/16"
-              )}
+              className="relative w-full min-w-sm max-w-xl max-h-[560px] overflow-hidden backdrop-blur-3xl p-1 border border-secondary/5 bg-white/50"
+              style={{ aspectRatio }}
             >
-              <div
-                style={{
-                  width: post.media["width"],
-                  height: post.media["height"],
-                }}
-              >
-                <Image
-                  src={src}
-                  alt={content || "image_message"}
-                  fill
-                  unoptimized
-                  sizes="(max-width: 768px) 80vw, 320px"
-                  loading="lazy"
-                  className="object-contain p-1"
-                />
-              </div>
+              <Image
+                src={src}
+                alt={content || "image_message"}
+                fill
+                unoptimized
+                sizes="(max-width: 768px) 80vw, 320px"
+                loading="lazy"
+                className="object-contain p-1"
+              />
             </div>
           </DialogContent>
         </Dialog>
@@ -747,19 +730,16 @@ const Post = memo(({
     }
 
     if (type === "video") {
+      const aspectRatio = post.media["width"] && post.media["height"]
+        ? post.media["width"] / post.media["height"]
+        : 16 / 9;
+
       return (
         <Dialog>
           <DialogTrigger className="outline-none">
             <div
-              className={cn(
-                "relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer",
-                post.media["width"] === post.media["height"] &&
-                  "aspect-square",
-                post.media["width"] > post.media["height"] &&
-                  "aspect-video",
-                post.media["width"] < post.media["height"] &&
-                  "aspect-9/16"
-              )}
+              className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer"
+              style={{ aspectRatio }}
             >
               {videoThumb && (
                 <>
@@ -781,15 +761,8 @@ const Post = memo(({
           {videoThumb && (
             <DialogContent>
               <div
-                className={cn(
-                  "overflow-hidden backdrop-blur-3xl border border-secondary/5 bg-white/50",
-                  post.media["width"] === post.media["height"] &&
-                    "aspect-square max-w-sm min-w-sm",
-                  post.media["width"] > post.media["height"] &&
-                    "aspect-video max-w-xl min-w-sm",
-                  post.media["width"] < post.media["height"] &&
-                    "aspect-9/16 min-w-xs max-h-screen"
-                )}
+                className="overflow-hidden backdrop-blur-3xl border border-secondary/5 bg-white/50"
+                style={{ aspectRatio }}
               >
                 <video
                   src={src}

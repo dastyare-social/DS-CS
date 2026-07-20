@@ -844,7 +844,7 @@ export default function Page() {
 
       <div
         className={cn(
-          "hidden sm:block w-1 h-full bg-secondary/5",
+          "hidden sm:block w-[1px] h-full bg-secondary/5",
           shorts.length === 0 || threads.length === 0 && "sm:hidden"
         )}
       />
