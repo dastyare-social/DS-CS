@@ -33,7 +33,7 @@ const mediaInput = z.object({
     width: z.number(),
     height: z.number(),
     duration: z.number().optional(),
-  }).nullable().optional(),
+  }).optional(),
 });
 
 const postCreateInput = z.object({

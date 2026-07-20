@@ -3,7 +3,7 @@
   "info": {
     "title": "Dastyare Social — CS",
     "version": "1.0.0",
-    "description": "REST API for Dastyare Social Creator Studio. Manage posts (threads, shorts, media) and stories. Supports JSON and multipart uploads, reactions, views, and likes. Authentication via Better Auth (bearer token or API key). See /llms.txt for LLM-oriented documentation."
+    "description": "REST API for Dastyare Social Creator Studio. Manage posts (threads, shorts, media) and stories. Supports JSON and multipart uploads, reactions, views, and likes. Authentication via Your API key. See /llms.txt for LLM-oriented documentation."
   },
   "components": {
     "securitySchemes": {
@@ -17,18 +17,6 @@
   "apiDir": "./src/app/api",
   "schemaDir": "./src",
   "schemaType": ["typescript", "zod"],
-  "docsUrl": "docs",
-  "exclude": [
-    "./src/app/api/auth/**"
-  ],
-  "tags": [
-    {
-      "name": "Posts",
-      "description": "Create, read, update, and delete posts. Supports text, image, video, voice, and file types. Includes reactions and view tracking."
-    },
-    {
-      "name": "Stories",
-      "description": "Ephemeral image and video stories with view and like counters."
-    }
-  ]
+  "docsUrl": "/docs",
+  "includeOpenApiRoutes": true
 }

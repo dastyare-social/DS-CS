@@ -34,7 +34,7 @@
     "@radix-ui/react-context-menu": "^2.2.16",
     "@radix-ui/react-slot": "^1.2.4",
     "@scalar/api-reference-react": "^0.9.27",
-    "@scalar/nextjs-api-reference": "^0.10.10",
+    "@scalar/nextjs-api-reference": "^0.11.11",
     "@scalar/nextjs-openapi": "^0.3.10",
     "@serwist/next": "9.5.11",
     "@tanstack/react-query": "^5.101.2",

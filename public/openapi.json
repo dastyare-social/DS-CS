@@ -48,6 +48,46 @@
       "insertStoriesSchema": {
         "type": "object"
       },
+      "mediaInput": {
+        "type": "object",
+        "properties": {
+          "file": {},
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "image",
+              "video",
+              "voice",
+              "file"
+            ],
+            "nullable": true
+          },
+          "dimensions": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              },
+              "duration": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "width",
+              "height"
+            ],
+            "nullable": true
+          }
+        }
+      },
       "MediaUploadResponse": {
         "type": "object",
         "properties": {
@@ -110,6 +150,12 @@
           "content": {
             "type": "string",
             "nullable": true
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/mediaInput"
+            }
           }
         }
       },
@@ -626,25 +672,6 @@
     },
     "responses": {}
   },
-  "exclude": [
-    "./src/app/api/auth/**"
-  ],
-  "tags": [
-    {
-      "name": "Posts",
-      "description": "Create, read, update, and delete posts. Supports text, image, video, voice, and file types. Includes reactions and view tracking."
-    },
-    {
-      "name": "Stories",
-      "description": "Ephemeral image and video stories with view and like counters."
-    },
-    {
-      "name": "Media"
-    },
-    {
-      "name": "Push"
-    }
-  ],
   "paths": {
     "/media": {
       "post": {
@@ -1290,9 +1317,23 @@
       }
     }
   },
+  "tags": [
+    {
+      "name": "Media"
+    },
+    {
+      "name": "Posts"
+    },
+    {
+      "name": "Push"
+    },
+    {
+      "name": "Stories"
+    }
+  ],
   "servers": [
     {
-      "url": "/api",
+      "url": "/docs",
       "description": "API server"
     }
   ]
