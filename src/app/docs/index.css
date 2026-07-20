@@ -1,0 +1,9 @@
+/* src/index.css */
+@layer scalar-base, scalar-theme, scalar-config, theme, base, components, utilities;
+@import "tailwindcss";
+
+:root {
+  --scalar-background-1: var(--color-background);
+  --scalar-color-1: var(--color-foreground);
+  --scalar-color-accent: var(--color-primary);
+}

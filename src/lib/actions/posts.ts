@@ -39,8 +39,8 @@ export async function getPostById(id: string) {
   return trpc.posts.getById.query({ id });
 }
 
-export async function createPost(content: string | null) {
-  const result = await trpc.posts.create.mutate({ content });
+export async function createPost(content: string | null, media?: any[] | undefined) {
+  const result = await trpc.posts.create.mutate({ content, media });
   void captureClientEvent("post_created", {
     post_type: result.type,
     has_media: Boolean(result.media),

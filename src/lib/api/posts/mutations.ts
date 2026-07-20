@@ -38,7 +38,7 @@ function joinUrl(base: string, ...parts: string[]): string {
   return [trimmedBase, ...cleanedParts].join("/");
 }
 
-function buildPublicFileUrl(key: string): string {
+export function buildPublicFileUrl(key: string): string {
   // Use S3_PUBLIC_BASE_URL if explicitly set (recommended for all providers)
   if (process.env.S3_PUBLIC_BASE_URL && process.env.S3_PUBLIC_BASE_URL.trim().length) {
     return joinUrl(process.env.S3_PUBLIC_BASE_URL, key);

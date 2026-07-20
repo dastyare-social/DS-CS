@@ -17,25 +17,27 @@ export default function ApiDocsPage() {
       configuration={{
         url: "/openapi.json",
         theme: "mars",
-        defaultOpenAllTags: true,
-        expandAllResponses: true,
-        hideSearch: true,
+        // defaultOpenAllTags: true,
+        // expandAllResponses: true,
+        // hideSearch: true,
         hideModels: true,
-        hideDownloadButton: true,
-        showDeveloperTools: "never",
-        searchHotKey: "s",
-        persistAuth: true,
-        mcp: {
-          disabled: true,
-        },
-        hideClientButton: true,
+        // hideDownloadButton: true,
+        // showDeveloperTools: "never",
+        // darkMode: false,
+        // hideDarkModeToggle: false,
+        // searchHotKey: "s",
+        // persistAuth: true,
+        // mcp: {
+        //   disabled: true,
+        // },
+        // hideClientButton: true,
         pathRouting: {
           basePath: "/docs",
         },
         baseServerURL: baseServerURL,
-        metaData: {
-          //
-        },
+        // metaData: {
+        //   //
+        // },
       }}
     />
   );

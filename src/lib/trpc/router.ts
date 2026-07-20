@@ -25,8 +25,20 @@ const postListInput = z.object({
   type: z.enum(["list", "shorts"]).optional(),
 });
 
+const mediaInput = z.object({
+  file: z.any().optional(),
+  url: z.string().nullable().optional(),
+  type: z.enum(["text", "image", "video", "voice", "file"]).nullable().optional(),
+  dimensions: z.object({
+    width: z.number(),
+    height: z.number(),
+    duration: z.number().optional(),
+  }).nullable().optional(),
+});
+
 const postCreateInput = z.object({
   content: z.string().nullish(),
+  media: z.array(mediaInput).optional(),
 });
 
 const postIdInput = z.object({
@@ -144,6 +156,7 @@ export const postsRouter = router({
     return createPostWithOptionalUpload({
       content: input.content ?? null,
       file: null,
+      media: input.media ?? null,
     });
   }),
 
