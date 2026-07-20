@@ -54,7 +54,7 @@ export default function Shorts({
   onError,
 }: ShortsProps) {
   return (
-    <div className="sm:flex flex-col max-sm:flex-1 h-[var(--page-height)]">
+    <div className="sm:flex flex-col flex-1 h-[var(--page-height)]">
       <div className="hidden sm:block h-[var(--chat-header-height)] w-full" />
       <div
         ref={scrollContainerRef}

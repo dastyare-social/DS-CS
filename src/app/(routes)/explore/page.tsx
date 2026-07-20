@@ -1,14 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { AsteriskIcon } from "lucide-react";
 import Header from "@/components/header";
 import Loader from "@/components/loader";
 import Shorts from "@/components/shorts";
 import Threads from "@/components/threads";
 import { cn } from "@/lib/utils";
-import { Locale } from "@/config/locale";
 import type { PostWithReactions } from "@/lib/api/posts";
 import {
   addReaction,
@@ -21,7 +20,6 @@ type ExploreStateType = "shorts" | "threads";
 
 export default function Page() {
   const t = useTranslations();
-  const locale = useLocale() as Locale;
   const [exploreState, setExploreState] = useState<ExploreStateType>("shorts");
   const [isLoading, setIsLoading] = useState(true);
   const [shorts, setShorts] = useState<PostWithReactions[]>([]);
@@ -154,11 +152,14 @@ export default function Page() {
         setIsLoading(true);
         setThreadsError(null);
         const combined = await getExploreInitial();
+        console.log("Combined data from API:", combined);
         const shortsData = combined.shorts;
         const threadsData = combined.threads;
         const fetchedShorts = shortsData.items || [];
+        console.log("Fetched shorts:", fetchedShorts);
         setShorts(fetchedShorts);
         if (fetchedShorts.length === 0) {
+          console.log("No shorts found, switching to threads");
           setExploreState("threads");
         }
         setLikedStates(fetchedShorts.map(() => false));

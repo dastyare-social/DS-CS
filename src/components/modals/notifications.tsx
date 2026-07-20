@@ -81,13 +81,13 @@ const NotifModal = () => {
   const helperText = useMemo(() => getPushStatusMessage(status), [status]);
 
   const getButtonText = () => {
-    if (!isPWA) return "Install app first";
-    if (status === "loading") return isSubscribed ? "Turning off..." : "Enabling...";
+    if (!isPWA) return "Install App First";
+    if (status === "loading") return isSubscribed ? "Turning Off ..." : "Enabling ...";
     if (isSubscribed) return "Turn Off Notifications";
     if (status === "unsupported-browser") return "Use a supported browser";
-    if (status === "permission-denied") return "Allow notifications";
+    if (status === "permission-denied") return "Allow Notifications";
     if (status === "missing-vapid") return "Setup required";
-    if (status === "not-pwa") return "Install app first";
+    if (status === "not-pwa") return "Install App First";
     if (status === "error") return "Try again";
     return "Enable Notifications";
   };
@@ -114,8 +114,8 @@ const NotifModal = () => {
 
         {/* Show installation guide when not in PWA mode */}
         {!isPWA && (
-          <div className="mt-4 p-4 bg-primary/5 border border-primary/10 rounded-xl">
-            <div className="text-sm font-medium mb-2">📱 How to install this app:</div>
+          <div className="mt-4 p-4 bg-primary/[3%] border border-primary/5">
+            <div className="text-sm mb-2">— How to Install the App</div>
             <div className="text-sm text-foreground/80 mb-3">
               {installInstructions}
             </div>
