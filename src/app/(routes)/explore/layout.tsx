@@ -39,6 +39,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description: `Explore amazing content, shorts, and conversations from ${app_config[locale].name}!`,
       images: [`${app_url}/api/og/explore`],
     },
+    alternates: {
+      canonical: `${app_url}/explore`,
+    },
   };
 }
 

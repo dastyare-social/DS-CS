@@ -25,7 +25,6 @@ const withSerwist = withSerwistInit({
   register: false,
   disable: process.env.NODE_ENV !== "production",
   cacheOnNavigation: true,
-  additionalPrecacheEntries: [{ url: "/~offline", revision }],
 });
 
 // Build a remotePattern entry from an arbitrary URL string (e.g. S3_ENDPOINT).
@@ -127,10 +126,9 @@ const nextConfig: NextConfig = {
     const alwaysNoIndex = [
       "/os/(.*)", // operator/admin UI
       "/api/(.*)", // API endpoints
-      "/~offline", // offline page
-      "/pwa-self-test", // PWA test page
       "/agents.md", // agent guidance page
       "/docs/(.*)", // interactive docs (optional private)
+      "/posts", // posts listing page (doesn't exist, only /[post_id] does)
     ].map((source) => ({ source, headers: [robotsHeader] }))
 
     if (!allowIndexing) {

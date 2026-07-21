@@ -140,7 +140,6 @@ Dastyare Social CS includes these pages:
 - `/posts` — create, edit, and review posts
 - `/stories` — upload and manage story content
 - `/docs` — interactive API docs and agent reference
-- `/pwa-self-test` — PWA install verification and service worker test page
 - `/resume` — public profile / creator resume page
 
 ### Demo preview

@@ -50,8 +50,6 @@ NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE_CONTENT="<the-exact-file-content-googl
 - The app enforces `X-Robots-Tag: noindex, nofollow, noarchive` for sensitive or internal routes regardless of the global indexing flag. These include (by default):
   - `/os/*` — operator/admin UI
   - `/api/*` — API endpoints
-  - `/~offline` — offline page
-  - `/pwa-self-test` — PWA test page
   - `/agents.md` and `/docs/*` — agent or docs pages that may be private
 
 These are configured in `next.config.ts` so they remain blocked even when `NEXT_PUBLIC_ALLOW_INDEXING=true` in production. If you want to change which routes are blocked, edit the `alwaysNoIndex` list in `next.config.ts`.

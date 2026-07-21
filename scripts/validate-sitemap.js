@@ -4,7 +4,7 @@ const path = require('path')
 const sitemapPath = path.join(__dirname, '..', 'src', 'app', 'sitemap.ts')
 // These patterns are checked only inside template-literal URL strings (backtick expressions),
 // so import paths like '@/lib/api/...' are not false-positives.
-const blockedRoutes = ['/os/', '/api/', '/~offline', '/pwa-self-test', '/agents.md', '/docs/']
+const blockedRoutes = ['/os/', '/api/', '/agents.md', '/docs/']
 const requiredPatterns = [
   {
     description: 'generate the sitemap dynamically',

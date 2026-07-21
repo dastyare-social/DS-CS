@@ -122,3 +122,40 @@ export function ImageObjectSchema({
     />
   );
 }
+
+interface CollectionPageSchemaProps {
+  name: string;
+  description: string;
+  url: string;
+  author: {
+    name: string;
+    url: string;
+  };
+}
+
+export function CollectionPageSchema({
+  name,
+  description,
+  url,
+  author,
+}: CollectionPageSchemaProps) {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name,
+    description,
+    url,
+    author: {
+      '@type': 'Person',
+      name: author.name,
+      url: author.url,
+    },
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+}
