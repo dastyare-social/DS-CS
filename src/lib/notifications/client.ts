@@ -124,49 +124,56 @@ export async function registerPushSubscription(): Promise<PushStatus | null> {
   }
 
   try {
-    await navigator.serviceWorker.register("/sw.js");
-  } catch {
-    return "error";
-  }
+    // Wait for service worker to be ready (Serwist handles registration)
+    const swRegistration = await navigator.serviceWorker.ready;
+    
+    if (!swRegistration.pushManager) {
+      console.error("PushManager not available");
+      return "unsupported-browser";
+    }
 
-  const swRegistration = await navigator.serviceWorker.ready;
-  if (!swRegistration.pushManager) {
-    return "unsupported-browser";
-  }
+    const existingPermission = Notification.permission;
+    if (existingPermission === "denied") {
+      return "permission-denied";
+    }
 
-  const existingPermission = Notification.permission;
-  if (existingPermission === "denied") {
-    return "permission-denied";
-  }
+    // Request permission first
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      return "permission-denied";
+    }
 
-  const permission = await Notification.requestPermission();
-  if (permission !== "granted") {
-    return "permission-denied";
-  }
+    // Subscribe to push
+    const subscription = await swRegistration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY),
+    });
 
-  const subscription = await swRegistration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY),
-  });
+    const response = await fetch("/api/push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(subscription),
+    });
 
-  const response = await fetch("/api/push", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(subscription),
-  });
+    if (!response.ok) {
+      console.error("Push subscription save failed", await response.text());
+      void captureClientEvent("push_subscription_failed", {
+        status: response.status,
+        ok: false,
+      });
+      return "error";
+    }
 
-  if (!response.ok) {
-    console.error("Push subscription save failed", await response.text());
+    void captureClientEvent("push_subscription_enabled", {
+      endpoint: subscription.endpoint,
+    });
+
+    return "enabled";
+  } catch (error) {
+    console.error("Push subscription error:", error);
     void captureClientEvent("push_subscription_failed", {
-      status: response.status,
-      ok: false,
+      error: error instanceof Error ? error.message : "unknown",
     });
     return "error";
   }
-
-  void captureClientEvent("push_subscription_enabled", {
-    endpoint: subscription.endpoint,
-  });
-
-  return "enabled";
 }
