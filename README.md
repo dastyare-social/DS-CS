@@ -1,9 +1,9 @@
 # Dastyare Social — CS
 
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![Deploy](https://img.shields.io/badge/deploy-Docker%20%7C%20Bun-lightgrey)](https://github.com/yourname/dastyare_social_cs)
-[![Stars](https://img.shields.io/badge/stars-PLACEHOLDER-yellow)](https://github.com/yourname/dastyare_social_cs/stargazers)
-[![Forks](https://img.shields.io/badge/forks-PLACEHOLDER-lightgrey)](https://github.com/yourname/dastyare_social_cs/network/members)
+[![Deploy](https://img.shields.io/badge/deploy-Docker%20%7C%20Bun-lightgrey)](https://github.com/omidshabab/dastyare_social_cs)
+[![Stars](https://img.shields.io/github/stars/omidshabab/dastyare_social_cs)](https://github.com/omidshabab/dastyare_social_cs/stargazers)
+[![Forks](https://img.shields.io/github/forks/omidshabab/dastyare_social_cs)](https://github.com/omidshabab/dastyare_social_cs/network/members)
 
 ## Why this project
 
@@ -17,8 +17,6 @@ Dastyare Social CS is a production-ready creator studio built around:
 - clear deployment and self-hosting documentation
 - a fast developer workflow with Bun and Drizzle migrations
 - a growing open-source mindset for maintainability and QA
-
-> Replace the badge placeholders above with live GitHub stars/forks once the repo is public.
 
 ## Quick start
 
@@ -36,7 +34,7 @@ bun run dev          # http://localhost:8729
 
 Use the install script to bootstrap the repository on a fresh server or VPS.
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yourname/dastyare_social_cs/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/omidshabab/dastyare_social_cs/main/scripts/install.sh | bash
 ```
 > The script creates a default `.env`, builds Docker Compose services, and starts the app.
 
@@ -144,17 +142,15 @@ Dastyare Social CS includes these pages:
 
 ### Demo preview
 
-![Demo placeholder](./public/demo-placeholder.png)
-*Alt text:* Dastyare Social CS demo placeholder screenshot showing the home feed, explore page, admin dashboard, and API documentation.
+Capture a screenshot of the running app (home feed, explore, admin dashboard, and API docs) and place it at `public/demo-placeholder.png`. The screenshot is rendered here:
 
-> Replace this image with a screenshot or GIF once your app is running.
+![Demo placeholder](./public/demo-placeholder.png)
 
 ### Video demo
 
-[![Video demo placeholder](./public/video-demo-placeholder.png)](https://example.com)
-*Alt text:* Dastyare Social CS product demo video placeholder.
+Record a short product walkthrough and update the link and thumbnail below:
 
-> Replace this link and thumbnail with your actual demo video after recording.
+[![Video demo placeholder](./public/video-demo-placeholder.png)](https://example.com)
 
 ## Scripts
 
@@ -197,6 +193,26 @@ The `docker-compose.dev.yml` file mounts the repository into the container and r
 
 ```
 src/
+├── app/
+│   ├── (routes)/          # Pages: home, explore, os (admin), resume
+│   ├── api/               # REST API (OpenAPI-documented)
+│   │   ├── posts/         # Posts CRUD, reactions, views
+│   │   ├── stories/       # Stories CRUD, likes, views
+│   │   ├── auth/          # Better Auth handler
+│   │   └── trpc/          # Internal tRPC (used by frontend)
+│   └── docs/              # Scalar API reference UI
+├── components/            # React UI components
+├── config/                # App config, routes, constants
+├── lib/
+│   ├── api/               # Business logic (posts, stories)
+│   ├── auth/              # Better Auth server + client
+│   ├── db/                # Drizzle schema + migrations
+│   ├── filters/           # Content sanitization (NSFW, HTML)
+│   └── trpc/              # tRPC router (frontend data layer)
+└── services/              # Shared services
+```
+
+**Stack:** Next.js 16 · React 19 · Bun · PostgreSQL · Drizzle ORM · Better Auth · tRPC · Tailwind CSS 4 · next-intl · AWS S3 (media uploads)
 
 ## Production checklist (SEO / Search Console)
 
@@ -213,28 +229,6 @@ Follow these before going live:
 - After deploying, add your site in Google Search Console and verify ownership using the chosen method. Then submit `/sitemap.xml` in the Sitemaps section.
 
 For a full verification and Lighthouse guide, see [SEARCH-CONSOLE.md](SEARCH-CONSOLE.md).
-
-├── app/
-│   ├── (routes)/          # Pages: home, explore, os (admin), resume
-│   ├── api/                 # REST API (OpenAPI-documented)
-│   │   ├── posts/           # Posts CRUD, reactions, views
-│   │   ├── stories/         # Stories CRUD, likes, views
-│   │   ├── auth/            # Better Auth handler
-│   │   └── trpc/            # Internal tRPC (used by frontend)
-│   └── docs/                # Scalar API reference UI
-├── components/              # React UI components
-├── config/                  # App config, routes, constants
-├── lib/
-│   ├── api/                 # Business logic (posts, stories)
-│   ├── auth/                # Better Auth server + client
-│   ├── db/                  # Drizzle schema + migrations
-│   ├── filters/             # Content sanitization (NSFW, HTML)
-│   └── trpc/                # tRPC router (frontend data layer)
-config/
-└── app.config.yml           # Profile metadata (name, bio, username)
-```
-
-**Stack:** Next.js 16 · React 19 · Bun · PostgreSQL · Drizzle ORM · Better Auth · tRPC · Tailwind CSS 4 · next-intl · AWS S3 (media uploads)
 
 ## API documentation
 
@@ -295,7 +289,7 @@ In your `.env` or deployment secrets, set:
 ```dotenv
 NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY="<public-key>"
 WEBPUSH_PRIVATE_KEY="<private-key>"
-WEBPUSH_SUBJECT="mailto:hey@omidshabab.com"
+WEBPUSH_SUBJECT="mailto:you@example.com"
 ```
 
 You can set `WEBPUSH_SUBJECT` to any valid contact string, but `mailto:your-email@example.com` is the most common and recommended format.

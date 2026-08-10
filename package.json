@@ -2,7 +2,6 @@
   "name": "dastyare_social_cs",
   "author": "Dastyare Social — Team",
   "version": "0.1.0",
-  "private": true,
   "scripts": {
     "dev": "bun run generate:config && bun run generate:icons && next dev -p 8729",
     "build": "bun run generate:config && bun run generate:icons && bun run db:migrate && bun run bootstrap:admin && next build",

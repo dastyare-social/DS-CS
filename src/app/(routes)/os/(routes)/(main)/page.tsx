@@ -497,7 +497,7 @@ const Page = () => {
                   const objectUrl = URL.createObjectURL(file);
                   const progress = uploadProgress[index] || 0;
                   const error = uploadErrors[index];
-                  const isUploadingFile = progress > 0 && progress < 100;
+                  const isUploadingFile = progress >= 0 && progress < 100;
                   const isUploaded = progress === 100 && !error;
                   const hasError = !!error;
 

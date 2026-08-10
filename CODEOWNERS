@@ -1,0 +1,10 @@
+# Default reviewers for key areas of the repository.
+# Each line is a pattern followed by one or more owners.
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Whole repo
+* @omidshabab
+
+# Security-critical paths
+SECURITY.md @omidshabab
+.github/workflows/ @omidshabab

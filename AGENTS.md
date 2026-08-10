@@ -172,7 +172,7 @@ See `.env.example`. Critical vars:
 - `NEXT_PUBLIC_APP_URL` — Public URL for SEO/metadata
 - `NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY` — Browser public key for Web Push
 - `WEBPUSH_PRIVATE_KEY` — Private VAPID key for server-side sending
-- `WEBPUSH_SUBJECT` — Contact URI such as `mailto:hey@omidshabab.com`
+- `WEBPUSH_SUBJECT` — Contact URI such as `mailto:you@example.com`
 - `NEXT_PUBLIC_ADDITIONAL_IMAGE_DOMAINS` — Comma-separated list of domains for Next.js Image optimization (e.g., `"example.com,cdn.example.com"`). Media from S3 storage is automatically included.
 
 ## Image Optimization Notes

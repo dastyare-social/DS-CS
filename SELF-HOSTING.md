@@ -178,7 +178,7 @@ bun run start
 Use the install script to bootstrap the repository on a fresh server or VPS.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yourname/dastyare_social_cs/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/omidshabab/dastyare_social_cs/main/scripts/install.sh | bash
 ```
 
 The script will:
@@ -222,8 +222,8 @@ Push the image to a registry such as Docker Hub or GitHub Container Registry, th
 Example:
 
 ```bash
-docker build -t yourname/dastyare-social-cs:latest .
-docker push yourname/dastyare-social-cs:latest
+docker build -t omidshabab/dastyare-social-cs:latest .
+docker push omidshabab/dastyare-social-cs:latest
 ```
 
 ## 8) Deploy on a VPS
@@ -235,7 +235,7 @@ Use the included Dockerfile and a compose file such as:
 ```yaml
 services:
   app:
-    image: yourname/dastyare-social-cs:latest
+    image: omidshabab/dastyare-social-cs:latest
     ports:
       - "8729:8729"
     env_file:
