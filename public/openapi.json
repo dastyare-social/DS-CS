@@ -14,6 +14,83 @@
       }
     },
     "schemas": {
+      "CreatePostBody": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "nullable": true
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "text",
+                    "image",
+                    "video",
+                    "voice",
+                    "file"
+                  ],
+                  "nullable": true
+                },
+                "width": {
+                  "type": "number"
+                },
+                "height": {
+                  "type": "number"
+                },
+                "duration": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "url"
+              ]
+            }
+          }
+        }
+      },
+      "CreateStoryBody": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "nullable": true
+          },
+          "views": {
+            "type": "string",
+            "nullable": true
+          },
+          "likes": {
+            "type": "string",
+            "nullable": true
+          },
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoryMediaItem"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/StoryMediaItem"
+                }
+              }
+            ]
+          }
+        }
+      },
       "insertPostsSchema": {
         "type": "object"
       },
@@ -648,6 +725,32 @@
           }
         }
       },
+      "StoryMediaItem": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "width": {
+            "type": "number"
+          },
+          "height": {
+            "type": "number"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "thumbnail": {
+            "type": "string"
+          },
+          "caption": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
       "StoryParams": {
         "type": "object",
         "properties": {
@@ -689,7 +792,7 @@
       "post": {
         "operationId": "post-media",
         "summary": "Upload media files",
-        "description": "Uploads one or more media files to S3-compatible storage. Accepts multipart/form-data with a files[] field. Each file is validated against the configured size limits and MIME allowlist, then uploaded under a media/ key prefix. Returns an array of uploaded media objects with public URLs and probed dimensions. Use the returned url (and dimensions) when creating a post or story.",
+        "description": "Uploads one or more media files to S3-compatible storage. Accepts multipart/form-data with a `files[]` field. Each file is validated against the configured size limits and MIME allowlist, then uploaded under a `media/<kind>/` key prefix. Returns an array of media objects. Use the returned `url`, `kind`, `width`, `height`, and `duration` when creating a post or story.",
         "tags": [
           "Media"
         ],
@@ -724,6 +827,21 @@
                   "items": {
                     "$ref": "#/components/schemas/MediaUploadResponse"
                   }
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "url": "https://cdn.example.com/media/image/abc.jpg",
+                      "key": "media/image/abc.jpg",
+                      "kind": "image",
+                      "mimeType": "image/jpeg",
+                      "size": 12345,
+                      "width": 1080,
+                      "height": 1920,
+                      "duration": 0,
+                      "filename": "photo.jpg"
+                    }
+                  }
                 }
               }
             }
@@ -735,7 +853,7 @@
       "post": {
         "operationId": "post-upload",
         "summary": "Upload a single media file",
-        "description": "Single-file upload convenience endpoint (multipart/form-data with a file field). Returns the same metadata as /api/media but for one file, with an object response instead of an array. Intended as a lightweight alias of /api/media for clients that upload one file at a time.",
+        "description": "Single-file upload convenience endpoint (multipart/form-data with a `file` field). Returns the same metadata as `/api/media` but for one file, with an object response instead of an array. Use the returned `url`, `kind`, `width`, `height`, and `duration` when creating a post or story.",
         "tags": [
           "Media"
         ],
@@ -767,6 +885,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MediaUploadResponse"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "url": "https://cdn.example.com/media/image/abc.jpg",
+                      "key": "media/image/abc.jpg",
+                      "kind": "image",
+                      "mimeType": "image/jpeg",
+                      "size": 12345,
+                      "width": 1080,
+                      "height": 1920,
+                      "duration": 0,
+                      "filename": "photo.jpg"
+                    }
+                  }
                 }
               }
             }
@@ -836,11 +969,35 @@
       "post": {
         "operationId": "post-posts",
         "summary": "Create a post or batch-increment views",
-        "description": "Create a post from a JSON body. Media must be referenced by URL — upload files to /api/media first, then pass the returned url and dimensions. Accepts a single post or, when multiple media items are provided, one post per item (or a single image post for multiple images). JSON body with action=batch-view and ids array increments views for multiple posts.",
+        "description": "Create a post from a JSON body. Media must be referenced by URL — upload files to `/api/media` first, then map the returned `url`, `kind` (as `type`), `width`, `height`, and `duration` into the `media` array below. JSON body with action=batch-view and ids array increments views for multiple posts.",
         "tags": [
           "Posts"
         ],
         "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePostBody"
+              },
+              "examples": {
+                "example": {
+                  "value": {
+                    "content": "Hello",
+                    "media": [
+                      {
+                        "url": "https://cdn.example.com/media/image/abc.jpg",
+                        "type": "image",
+                        "width": 1080,
+                        "height": 1920
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful response",
@@ -1214,11 +1371,32 @@
       "post": {
         "operationId": "post-stories",
         "summary": "Create a story",
-        "description": "Create a story from a JSON body. Media must be referenced by URL — upload files to /api/media first, then pass the returned url and dimensions. Accepts a single media item or an array (multiple media creates one story per item). Types: image, video.",
+        "description": "Create a story from a JSON body. Media must be referenced by URL — upload files to `/api/media` first, then map the returned `url`, `kind` (as `type`), `width`, `height`, and `duration` into the `media` field below. Types: image, video. An array of media items creates one story per item.",
         "tags": [
           "Stories"
         ],
         "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStoryBody"
+              },
+              "examples": {
+                "example": {
+                  "value": {
+                    "type": "image",
+                    "media": {
+                      "url": "https://cdn.example.com/media/image/abc.jpg",
+                      "width": 1080,
+                      "height": 1920
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful response",
@@ -1229,6 +1407,9 @@
                 }
               }
             }
+          },
+          "StorySuccessResponse": {
+            "$ref": "#/components/responses/StorySuccessResponse"
           }
         }
       }

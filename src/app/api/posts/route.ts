@@ -42,6 +42,25 @@ export const PostSuccessResponse = z.object({
   success: z.boolean(),
 });
 
+/** @id CreatePostBody */
+export const CreatePostBody = z.object({
+  content: z.string().nullable().optional(),
+  media: z
+    .array(
+      z.object({
+        url: z.string(),
+        type: z
+          .enum(["text", "image", "video", "voice", "file"])
+          .nullable()
+          .optional(),
+        width: z.number().optional(),
+        height: z.number().optional(),
+        duration: z.number().optional(),
+      })
+    )
+    .optional(),
+});
+
 /**
  * List or count posts
  * @description Returns paginated posts with reactions. Use query type=count for total count, type=shorts for vertical videos (1080x1920). Default type=list.
@@ -121,15 +140,13 @@ export async function GET(req: NextRequest) {
 
 /**
  * Create a post or batch-increment views
- * @description Create a post from a JSON body. Media must be referenced by URL — upload files to /api/media first, then pass the returned url and dimensions. Accepts a single post or, when multiple media items are provided, one post per item (or a single image post for multiple images). JSON body with action=batch-view and ids array increments views for multiple posts.
+ * @description Create a post from a JSON body. Media must be referenced by URL — upload files to `/api/media` first, then map the returned `url`, `kind` (as `type`), `width`, `height`, and `duration` into the `media` array below. JSON body with action=batch-view and ids array increments views for multiple posts.
  * @tag Posts
  * @contentType application/json
+ * @body CreatePostBody
  * @response PostWithReactionsSchema
  * @response PostSuccessResponse
- * @example POST /api/posts {"content": "Hello world"}
- * @example POST /api/posts {"content": "Hello", "media": [{"url": "https://cdn.example.com/media/image/abc.jpg", "type": "image", "width": 1080, "height": 1920}]}
- * @example POST /api/posts {"content": "Hello", "media": [{"url": "https://cdn.example.com/media/video/abc.mp4", "type": "video"}]}
- * @example POST /api/posts {"action": "batch-view", "ids": ["id1", "id2"]}
+ * @examples request: {"content":"Hello","media":[{"url":"https://cdn.example.com/media/image/abc.jpg","type":"image","width":1080,"height":1920}]}
  * @openapi
  */
 export async function POST(req: NextRequest) {

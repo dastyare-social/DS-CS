@@ -43,6 +43,23 @@ export const StorySuccessResponse = z.object({
   success: z.boolean(),
 });
 
+const StoryMediaItem = z.object({
+  url: z.string(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  duration: z.number().optional(),
+  thumbnail: z.string().optional(),
+  caption: z.string().optional(),
+});
+
+/** @id CreateStoryBody */
+export const CreateStoryBody = z.object({
+  type: z.enum(["image", "video"]).nullable().optional(),
+  views: z.string().nullable().optional(),
+  likes: z.string().nullable().optional(),
+  media: z.union([StoryMediaItem, z.array(StoryMediaItem)]).optional(),
+});
+
 /**
  * List or count stories
  * @description Returns paginated stories. Use query type=count for total. Filter by kind=image or kind=video.
@@ -106,12 +123,13 @@ export async function GET(req: NextRequest) {
 
 /**
  * Create a story
- * @description Create a story from a JSON body. Media must be referenced by URL — upload files to /api/media first, then pass the returned url and dimensions. Accepts a single media item or an array (multiple media creates one story per item). Types: image, video.
+ * @description Create a story from a JSON body. Media must be referenced by URL — upload files to `/api/media` first, then map the returned `url`, `kind` (as `type`), `width`, `height`, and `duration` into the `media` field below. Types: image, video. An array of media items creates one story per item.
  * @tag Stories
  * @contentType application/json
+ * @body CreateStoryBody
  * @response StoryItemSchema
- * @example POST /api/stories {"type": "image", "media": {"url": "https://cdn.example.com/media/image/abc.jpg", "width": 1080, "height": 1920}}
- * @example POST /api/stories {"type": "video", "media": {"url": "https://cdn.example.com/media/video/abc.mp4", "duration": 8000}}
+ * @response StorySuccessResponse
+ * @examples request: {"type":"image","media":{"url":"https://cdn.example.com/media/image/abc.jpg","width":1080,"height":1920}}
  * @openapi
  */
 export async function POST(req: NextRequest) {

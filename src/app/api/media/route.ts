@@ -23,11 +23,11 @@ export const MediaUploadResponse = z.object({
 
 /**
  * Upload media files
- * @description Uploads one or more media files to S3-compatible storage. Accepts multipart/form-data with a files[] field. Each file is validated against the configured size limits and MIME allowlist, then uploaded under a media/ key prefix. Returns an array of uploaded media objects with public URLs and probed dimensions. Use the returned url (and dimensions) when creating a post or story.
+ * @description Uploads one or more media files to S3-compatible storage. Accepts multipart/form-data with a `files[]` field. Each file is validated against the configured size limits and MIME allowlist, then uploaded under a `media/<kind>/` key prefix. Returns an array of media objects. Use the returned `url`, `kind`, `width`, `height`, and `duration` when creating a post or story.
  * @tag Media
  * @contentType multipart/form-data
  * @response MediaUploadResponse[]
- * @example POST /api/media multipart/form-data files[]=@image1.jpg&files[]=@video.mp4
+ * @examples response: [{"url":"https://cdn.example.com/media/image/abc.jpg","key":"media/image/abc.jpg","kind":"image","mimeType":"image/jpeg","size":12345,"width":1080,"height":1920,"duration":0,"filename":"photo.jpg"}]
  * @openapi
  */
 export async function POST(req: NextRequest) {
