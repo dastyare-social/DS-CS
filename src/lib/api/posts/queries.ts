@@ -124,7 +124,7 @@ export async function getPostsWithReactions({
       .select()
       .from(posts)
       .where(where)
-      .orderBy(desc(posts.createdAt))
+      .orderBy(desc(posts.pinnedAt), desc(posts.createdAt))
       .limit(limit)
       .offset(offset),
     db

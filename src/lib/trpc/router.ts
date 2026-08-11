@@ -8,6 +8,7 @@ import {
   deletePostById,
   getPostById,
   getPostsWithReactions,
+  updatePost,
   viewPost,
 } from "@/lib/api/posts";
 import {
@@ -42,6 +43,12 @@ const postCreateInput = z.object({
 
 const postIdInput = z.object({
   id: z.string().min(1),
+});
+
+const postUpdateInput = z.object({
+  id: z.string().min(1),
+  content: z.string().nullish(),
+  pinnedAt: z.string().datetime().nullish(),
 });
 
 const postBatchViewInput = z.object({
@@ -190,6 +197,26 @@ export const postsRouter = router({
     }
     return { success: true };
   }),
+
+  update: publicProcedure
+    .input(postUpdateInput)
+    .mutation(async ({ input }) => {
+      const patch: {
+        content?: string | null;
+        pinnedAt?: Date | null;
+      } = {};
+      if (input.content !== undefined) {
+        patch.content = input.content;
+      }
+      if (input.pinnedAt !== undefined) {
+        patch.pinnedAt = input.pinnedAt ? new Date(input.pinnedAt) : null;
+      }
+      const updated = await updatePost({ id: input.id, patch });
+      if (!updated) {
+        throw new Error("Post not found");
+      }
+      return updated;
+    }),
 });
 
 export const storiesRouter = router({

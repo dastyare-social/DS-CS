@@ -20,6 +20,7 @@ import {
   PlayIcon,
   BoxIcon,
   EraserIcon,
+  PinIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -60,8 +61,12 @@ type PostProps = {
   can_pin_post?: boolean;
   can_edit_post?: boolean;
   can_delete_post?: boolean;
+  pinned?: boolean;
   // NEW: allow parent to remove from list optimistically
   onDelete?: (id: string) => void;
+  // NEW: allow parent to pin/unpin and edit from context menu
+  onPin?: (post: PostWithReactions) => void;
+  onEdit?: (post: PostWithReactions) => void;
 };
 
 /* -------------------- VOICE PLAYER COMPONENT -------------------- */
@@ -551,7 +556,10 @@ const Post = memo(({
   can_pin_post = false,
   can_edit_post = false,
   can_delete_post = false,
+  pinned = false,
   onDelete,
+  onPin,
+  onEdit,
 }: PostProps) => {
   const t = useTranslations();
 
@@ -827,6 +835,13 @@ const Post = memo(({
           <Stories size={35} />
 
           <div className="flex flex-col gap-y-2.5">
+            {pinned && (
+              <div className="flex items-center gap-x-1.5 text-[11px] opacity-60 pl-1">
+                <PinIcon className="size-3.5 stroke-[1.5px] rotate-45" />
+                <span>{t("general.pinned_to_top")}</span>
+              </div>
+            )}
+
             {renderMedia()}
 
             <div className="rounded-2xl border border-secondary/5 bg-secondary/1 px-3.5 py-2 max-w-2xs min-w-[220px] backdrop-blur-sm bg-white/10">
@@ -890,20 +905,22 @@ const Post = memo(({
         {can_pin_post && (
           <ContextMenuItem
             className="flex gap-x-2 py-1.5"
-            onClick={() => console.log("deleted")}
+            onClick={() => onPin?.(post)}
           >
-            <div className="flex-1">Pin To Top —</div>
-            {/* <EraserIcon className="stroke-[1.5px] size-4" /> */}
+            <div className="flex-1">
+              {pinned ? t("general.unpin") : t("general.pin_to_top")} —
+            </div>
+            <PinIcon className="stroke-[1.5px] size-4 rotate-45" />
           </ContextMenuItem>
         )}
 
         {can_edit_post && (
           <ContextMenuItem
             className="flex gap-x-2 py-1.5"
-            onClick={() => console.log("deleted")}
+            onClick={() => onEdit?.(post)}
           >
-            <div className="flex-1">Edit Post —</div>
-            {/* <EraserIcon className="stroke-[1.5px] size-4" /> */}
+            <div className="flex-1">{t("general.edit_post")} —</div>
+            <BoxIcon className="stroke-[1.5px] size-4" />
           </ContextMenuItem>
         )}
 

@@ -16,6 +16,10 @@ type UsePostsState = {
   // NEW: helpers for Page
   addPost: (msg: PostWithReactions) => void;
   removePost: (id: string) => void;
+  updatePost: (
+    updated: PostWithReactions,
+    opts?: { toTop?: boolean }
+  ) => void;
 };
 
 export function usePosts(initialLimit = 8): UsePostsState {
@@ -89,6 +93,22 @@ export function usePosts(initialLimit = 8): UsePostsState {
     setTotal((prev) => (prev && prev > 0 ? prev - 1 : prev));
   }, []);
 
+  const updatePost = useCallback(
+    (updated: PostWithReactions, opts?: { toTop?: boolean }) => {
+      setPosts((prev) => {
+        const without = prev.filter((m) => m.id !== updated.id);
+        if (opts?.toTop) {
+          // posts array is rendered with flex-col-reverse => last item is visually on top
+          return [...without, updated];
+        }
+        return without.length === prev.length
+          ? prev.map((m) => (m.id === updated.id ? updated : m))
+          : prev;
+      });
+    },
+    []
+  );
+
   return {
     posts,
     total,
@@ -99,5 +119,6 @@ export function usePosts(initialLimit = 8): UsePostsState {
     loadMore,
     addPost,
     removePost,
+    updatePost,
   };
 }

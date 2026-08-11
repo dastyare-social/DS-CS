@@ -80,3 +80,23 @@ export async function viewPost(id: string) {
 export async function deletePost(id: string) {
   return trpc.posts.delete.mutate({ id });
 }
+
+export async function updatePostContent(id: string, content: string) {
+  const result = await trpc.posts.update.mutate({ id, content });
+  void captureClientEvent("post_updated", {
+    post_id: id,
+    content_length: content.length,
+  });
+  return result;
+}
+
+export async function togglePinPost(id: string, pinned: boolean) {
+  const result = await trpc.posts.update.mutate({
+    id,
+    pinnedAt: pinned ? new Date().toISOString() : null,
+  });
+  void captureClientEvent(pinned ? "post_pinned" : "post_unpinned", {
+    post_id: id,
+  });
+  return result;
+}

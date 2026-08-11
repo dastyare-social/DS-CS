@@ -3,12 +3,18 @@
 import Message from "@/components/post";
 import Loader from "@/components/loader";
 import { usePosts } from "@/lib/hooks/use-posts";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-import { createPost, viewPost } from "@/lib/actions/posts";
+import {
+  createPost,
+  togglePinPost,
+  updatePostContent,
+  viewPost,
+} from "@/lib/actions/posts";
 import {
   GalleryVerticalEndIcon,
+  PinIcon,
   PlayIcon,
   SendHorizonalIcon,
   XIcon,
@@ -31,6 +37,8 @@ const Page = () => {
 
   const headerRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
+  const pinnedBarRef = useRef<HTMLDivElement | null>(null);
+  const [showPinnedBar, setShowPinnedBar] = useState(true);
   const [pageHeight, setPageHeight] = useState<number | null>(null);
 
   // Selected media state (upload + progress handled by the hook)
@@ -49,6 +57,10 @@ const Page = () => {
     requestAnimationFrame(() => {
       const headerHeight = headerRef.current?.offsetHeight ?? 0;
       const footerHeight = footerRef.current?.offsetHeight ?? 0;
+      const pinnedBarHeight =
+        showPinnedBar && pinnedBarRef.current
+          ? pinnedBarRef.current.offsetHeight
+          : 0;
       document.documentElement.style.setProperty(
         "--chat-header-height",
         `${headerHeight + 20}px`
@@ -56,6 +68,10 @@ const Page = () => {
       document.documentElement.style.setProperty(
         "--chat-footer-height",
         `${footerHeight + 20}px`
+      );
+      document.documentElement.style.setProperty(
+        "--pinned-bar-height",
+        `${pinnedBarHeight}px`
       );
     });
   };
@@ -122,7 +138,28 @@ const Page = () => {
     loadMore,
     addPost,
     removePost,
+    updatePost,
   } = usePosts(8);
+
+  // Pinned posts + editing state
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [activePinnedIndex, setActivePinnedIndex] = useState(0);
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(
+    null
+  );
+
+  const pinnedPosts = useMemo(
+    () => posts.filter((post) => post.pinnedAt != null),
+    [posts]
+  );
+
+  const activeEditPost = useMemo(
+    () =>
+      editingPostId
+        ? posts.find((post) => post.id === editingPostId)
+        : undefined,
+    [editingPostId, posts]
+  );
 
   useEffect(() => {
     // when posts change, header height might change, so just update offsets
@@ -228,6 +265,26 @@ const Page = () => {
   // =========================
   const handleSendMessage = async () => {
     const trimmed = inputValue.trim();
+
+    // Editing an existing post
+    if (editingPostId) {
+      if (!trimmed) return;
+      const target = posts.find((p) => p.id === editingPostId);
+      if (target) {
+        // Optimistically update
+        updatePost({ ...target, content: trimmed, updatedAt: new Date() });
+        try {
+          await updatePostContent(editingPostId, trimmed);
+        } catch (err) {
+          console.error("Failed to edit post", err);
+          updatePost({ ...target, content: trimmed });
+        }
+      }
+      setEditingPostId(null);
+      setInputValue("");
+      return;
+    }
+
     const validUrls = completedMedia.map((m) => m.url);
     if (!trimmed && validUrls.length === 0) return;
     if (isUploading) return; // Don't send while uploading
@@ -310,10 +367,71 @@ const Page = () => {
     removeFile(index);
   };
 
-  // When selectedFiles changes, the footer height changes, so update offsets
+  // =========================
+  // pinned posts
+  // =========================
+  const resolvePostPreview = (post?: PostWithReactions) => {
+    if (!post) return "";
+    if (post.type === "text") return post.content ?? "";
+    return `${post.type.charAt(0).toUpperCase()}${post.type.slice(1)} Post`;
+  };
+
+  const scrollToPost = (targetId: string) => {
+    const el = document.getElementById(`message-${targetId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedPostId(targetId);
+    setTimeout(() => {
+      setHighlightedPostId((current) =>
+        current === targetId ? null : current
+      );
+    }, 3000);
+  };
+
+  const handlePinnedBarClick = () => {
+    if (pinnedPosts.length === 0) return;
+    const safeIndex =
+      activePinnedIndex >= pinnedPosts.length ? 0 : activePinnedIndex;
+    const target = pinnedPosts[safeIndex];
+    if (!target) return;
+    scrollToPost(target.id);
+    const nextIndex =
+      safeIndex + 1 >= pinnedPosts.length ? 0 : safeIndex + 1;
+    setActivePinnedIndex(nextIndex);
+  };
+
+  const handleEditPost = (post: PostWithReactions) => {
+    if (!post.content) return;
+    setInputValue(post.content);
+    setEditingPostId(post.id);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPostId(null);
+    setInputValue("");
+  };
+
+  const handleTogglePinPost = (post: PostWithReactions) => {
+    const currentlyPinned = post.pinnedAt != null;
+    // Optimistically toggle
+    updatePost(
+      { ...post, pinnedAt: currentlyPinned ? null : new Date() },
+      { toTop: !currentlyPinned }
+    );
+    setShowPinnedBar(true);
+    void togglePinPost(post.id, !currentlyPinned).catch(() => {
+      // Rollback on failure
+      updatePost(
+        { ...post, pinnedAt: currentlyPinned ? new Date() : null },
+        { toTop: currentlyPinned }
+      );
+    });
+  };
+
+  // When selectedFiles/editing changes, the footer height changes, so update offsets
   useEffect(() => {
     updateHeaderFooterOffsets();
-  }, [selectedFiles.length]);
+  }, [selectedFiles.length, editingPostId, showPinnedBar]);
 
   return (
     <div
@@ -327,6 +445,46 @@ const Page = () => {
         headerRef={headerRef}
         container_className="max-w-2xl"
       />
+
+      {/* Pinned posts bar */}
+      {showPinnedBar && pinnedPosts.length > 0 && (
+        <div className="fixed top-[var(--chat-header-height)] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4">
+          <div
+            ref={pinnedBarRef}
+            onClick={handlePinnedBarClick}
+            className="w-full backdrop-blur-md border border-secondary/5 cursor-pointer px-3 py-2 rounded-2xl bg-background/50"
+          >
+            <div className="flex items-center gap-x-2.5">
+              <PinIcon className="size-5 stroke-[1.5px] rotate-45" />
+              <div className="flex flex-col flex-1 text-xs">
+                <span>
+                  {t("general.pinned_post")}
+                  {pinnedPosts.length > 1
+                    ? ` — ${Math.min(
+                        activePinnedIndex + 1,
+                        pinnedPosts.length
+                      )}/${pinnedPosts.length}`
+                    : ""}
+                </span>
+                <span className="line-clamp-1 whitespace-pre-wrap wrap-break-word opacity-60">
+                  {resolvePostPreview(
+                    pinnedPosts[
+                      Math.min(activePinnedIndex, pinnedPosts.length - 1)
+                    ] ?? pinnedPosts[0]
+                  )}
+                </span>
+              </div>
+              <XIcon
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPinnedBar(false);
+                }}
+                className="size-3 stroke-[1.5px]"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* —— List —— */}
       <div className="flex-1 px-2.5 w-full">
@@ -358,16 +516,28 @@ const Page = () => {
         {/* Posts */}
         <div
           ref={listRef}
-          className="flex flex-col-reverse min-h-[var(--page-height)] pt-[var(--chat-header-height)] pb-[var(--chat-footer-height)]"
+          className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height))] pb-[var(--chat-footer-height)]"
         >
           {posts.map((msg: PostWithReactions) => (
-            <div key={msg.id} data-message-id={msg.id}>
+            <div
+              key={msg.id}
+              id={`message-${msg.id}`}
+              data-message-id={msg.id}
+              className={cn(
+                "rounded-2xl",
+                highlightedPostId === msg.id &&
+                  "bg-primary/5 ring-2 ring-primary/40"
+              )}
+            >
               <Message
                 can_pin_post
                 can_edit_post
                 can_delete_post
                 post={msg}
+                pinned={msg.pinnedAt != null}
                 onDelete={removePost}
+                onPin={handleTogglePinPost}
+                onEdit={handleEditPost}
               />
             </div>
           ))}
@@ -506,6 +676,26 @@ const Page = () => {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Editing post bar */}
+            {activeEditPost && (
+              <div className="w-full flex justify-center items-center tracking-tight px-4 pb-3 xl:px-0">
+                <div className="w-full max-w-3xl backdrop-blur-md border border-secondary/5 cursor-pointer px-3 py-2 rounded-2xl bg-background/50">
+                  <div className="flex items-center gap-x-2.5">
+                    <div className="flex flex-col flex-1 text-xs">
+                      <span>{t("general.editing_post")}</span>
+                      <span className="line-clamp-1 whitespace-pre-wrap wrap-break-word opacity-60">
+                        {resolvePostPreview(activeEditPost)}
+                      </span>
+                    </div>
+                    <XIcon
+                      onClick={handleCancelEdit}
+                      className="size-3 stroke-[1.5px] cursor-pointer"
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
