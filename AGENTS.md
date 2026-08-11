@@ -29,9 +29,46 @@ Better Auth with email/password, bearer tokens, and API keys.
 - **Bearer token:** `Authorization: Bearer <token>` on protected routes
 - **API keys:** Created via Better Auth API key plugin; pass as bearer token
 
-Public read endpoints (GET posts/stories) do not require auth. Write operations (POST, PATCH, DELETE) may require authentication depending on deployment configuration — check `/docs` for `@auth` annotations after regeneration.
+Public read endpoints (GET posts/stories) do not require auth. Write operations (POST, PATCH, DELETE) and media uploads require either the shared API key (`Authorization: Bearer <API_KEY>`) or a valid Better Auth session.
 
 Admin bootstrap: set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`; `bun run bootstrap:admin` creates or updates the admin user.
+
+## Media uploads
+
+Upload files first, then reference the returned URL when creating posts or stories.
+
+- **`POST /api/media`** — multipart/form-data with `files[]`. Validates MIME and size limits, uploads to S3 under `media/<kind>/<uuid>.<ext>`, and returns an array:
+
+```json
+[
+  {
+    "url": "https://cdn.example.com/media/image/abc.jpg",
+    "key": "media/image/abc.jpg",
+    "kind": "image",
+    "mimeType": "image/jpeg",
+    "size": 12345,
+    "width": 1080,
+    "height": 1920,
+    "duration": 0,
+    "filename": "photo.jpg"
+  }
+]
+```
+
+- **`POST /api/upload`** — single-file alias of `/api/media` using field `file`. Returns one object (not an array).
+
+Pass the returned `url` (and optionally `width`/`height`/`duration`) as `media` when creating a post or story.
+
+### Media upload configuration (env)
+
+| Variable | Default |
+|----------|---------|
+| `MEDIA_MAX_IMAGE_SIZE_MB` | `10` |
+| `MEDIA_MAX_VIDEO_SIZE_MB` | `100` |
+| `MEDIA_MAX_AUDIO_SIZE_MB` | `25` |
+| `MEDIA_MAX_FILE_SIZE_MB` | `25` |
+| `MEDIA_ALLOWED_MIME_TYPES` | built-in allowlist (image/video/audio/pdf/text) |
+| `MEDIA_KEY_PREFIX` | `media` |
 
 ## REST API — Posts
 
@@ -49,7 +86,7 @@ Response: `{ items: PostWithReactions[], total, hasMore, page, limit }`
 
 Post types: `text`, `image`, `video`, `voice`, `file`
 
-### Create post
+### Create post (URL-based media)
 
 ```
 POST /api/posts
@@ -57,11 +94,11 @@ Content-Type: application/json
 { "content": "Hello world" }
 
 POST /api/posts
-Content-Type: multipart/form-data
-content=<string>, file=<File>
+Content-Type: application/json
+{ "content": "Hello", "media": [{ "url": "https://cdn.example.com/media/image/abc.jpg", "type": "image", "width": 1080, "height": 1920 }] }
 ```
 
-Returns `201` with the created post. File uploads infer type from MIME and store in S3.
+Returns `201` with the created post. Upload files via `/api/media` first, then reference the returned URL. Multiple media items create one post per item, or a single image post when all items are images.
 
 ### Batch increment views
 
@@ -103,17 +140,19 @@ GET /api/stories?kind=image        → filter by kind
 GET /api/stories?kind=video
 ```
 
-### Create story
+### Create story (URL-based media)
 
 ```
 POST /api/stories
-Content-Type: multipart/form-data
-type=image|video, file=<File>, views=<string>, likes=<string>, media=<JSON string>
+Content-Type: application/json
+{ "type": "image", "media": { "url": "https://cdn.example.com/media/image/abc.jpg", "width": 1080, "height": 1920 } }
 
 POST /api/stories
 Content-Type: application/json
-{ "type": "image", "media": { ... } }
+{ "type": "video", "media": [{ "url": "https://cdn.example.com/media/video/abc.mp4", "duration": 8000 }] }
 ```
+
+Upload files via `/api/media` first, then reference the returned URL. An array of media creates one story per item (returns the first).
 
 ### Single story
 

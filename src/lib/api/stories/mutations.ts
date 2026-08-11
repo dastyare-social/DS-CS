@@ -6,7 +6,6 @@ import {
   patchStoriesSchema,
 } from "@/lib/db/schema/stories";
 import { z } from "zod";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
 import type {
   StoryItem,
@@ -17,55 +16,6 @@ import { getStoryById } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
 import { captureServerEvent } from "@/lib/analytics/server";
 import { getMediaDimensionsFromUrl } from "@/lib/utils/media";
-import { getMediaDimensions } from "@/lib/utils/media";
-
-const s3 = new S3Client({
-  region: process.env.S3_REGION!,
-  endpoint: process.env.S3_ENDPOINT || undefined,
-  credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-  },
-  forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
-});
-
-const BUCKET = process.env.S3_BUCKET_NAME!;
-
-function joinUrl(base: string, ...parts: string[]): string {
-  const trimmedBase = base.replace(/\/+$/, "");
-  const cleanedParts = parts.map((p) => p.replace(/^\/+/, ""));
-  return [trimmedBase, ...cleanedParts].join("/");
-}
-
-function buildPublicStoryFileUrl(key: string): string {
-  // Use S3_PUBLIC_BASE_URL if explicitly set (recommended for all providers)
-  if (process.env.S3_PUBLIC_BASE_URL && process.env.S3_PUBLIC_BASE_URL.trim().length) {
-    return joinUrl(process.env.S3_PUBLIC_BASE_URL, key);
-  }
-
-  // Fallback: try to construct public URL from S3_ENDPOINT
-  const endpoint = process.env.S3_ENDPOINT || "";
-  if (!endpoint) {
-    throw new Error("S3_PUBLIC_BASE_URL or S3_ENDPOINT must be set");
-  }
-
-  // Handle Supabase: convert storage endpoint to public URL
-  if (endpoint.includes(".storage.supabase.co")) {
-    const publicUrl = endpoint
-      .replace(".storage.supabase.co", ".supabase.co")
-      .replace("/storage/v1/s3", "/storage/v1/object/public");
-    return joinUrl(publicUrl, BUCKET, key);
-  }
-
-  // For other S3-compatible providers (MinIO, R2, AWS S3), use endpoint with bucket
-  return joinUrl(endpoint, BUCKET, key);
-}
-
-export function inferStoryTypeFromMime(mime: string | null): StoryType {
-  if (!mime) return "image";
-  if (mime.startsWith("video/")) return "video";
-  return "image";
-}
 
 export function inferStoryTypeFromUrl(url: string): StoryType {
   const lowerUrl = url.toLowerCase();
@@ -79,43 +29,6 @@ export function inferStoryTypeFromUrl(url: string): StoryType {
     if (lowerUrl.endsWith(ext)) return "image";
   }
   return "image";
-}
-
-export async function buildStoryMediaFromFile(
-  file: File | Blob,
-  key: string,
-  type: StoryType
-): Promise<StoryMediaPayload> {
-  const mimeType = (file as any).type ?? "application/octet-stream";
-  const finalUrl = buildPublicStoryFileUrl(key);
-
-  // Get dimensions for images and videos
-  let dimensions: { width: number; height: number; duration?: number } = { width: 0, height: 0, duration: 0 };
-  if (type === "image" || type === "video") {
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    dimensions = await getMediaDimensions(buffer, mimeType);
-  }
-
-  switch (type) {
-    case "image": {
-      return {
-        url: finalUrl,
-        width: dimensions.width,
-        height: dimensions.height,
-      };
-    }
-    case "video": {
-      return {
-        url: finalUrl,
-        duration: dimensions.duration || 0,
-        width: dimensions.width,
-        height: dimensions.height,
-      };
-    }
-    default:
-      return null;
-  }
 }
 
 export async function buildStoryMediaFromUrl(
@@ -144,170 +57,80 @@ export async function buildStoryMediaFromUrl(
   }
 }
 
-export async function uploadStoryToS3(
-  file: File | Blob,
-  mimeType: string | null
-): Promise<string> {
-  const ext = (mimeType && mimeType.split("/")[1]) || "bin";
-  const key = `stories/${randomUUID()}.${ext}`;
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: BUCKET,
-      Key: key,
-      Body: buffer,
-      ContentType: mimeType || "application/octet-stream",
-    })
-  );
-
-  return key;
-}
-
-type StoryMediaInput = {
-  file?: File | null;
-  url?: string | null;
+export type StoryMediaInput = {
+  url: string;
   type?: StoryType | null;
-  dimensions?: { width: number; height: number; duration?: number } | undefined;
+  width?: number;
+  height?: number;
+  duration?: number;
+  thumbnail?: string;
+  caption?: string;
 };
 
 type CreateStoryInput = {
   type?: StoryType | null;
   views?: string | null;
   likes?: string | null;
-  media?: StoryMediaPayload | any | null;
-  file?: File | null;
-  mediaInputs?: StoryMediaInput[] | null;
+  media?: StoryMediaInput | StoryMediaInput[] | null;
 };
 
-export async function createStoryWithOptionalUpload({
+async function buildStoryMediaForInput(input: StoryMediaInput): Promise<{
+  type: StoryType;
+  media: StoryMediaPayload;
+}> {
+  const type = input.type || inferStoryTypeFromUrl(input.url);
+
+  let dimensions: { width: number; height: number; duration?: number } = {
+    width: input.width || 0,
+    height: input.height || 0,
+    duration: input.duration,
+  };
+
+  if (!dimensions.width && !dimensions.height) {
+    if (type === "image" || type === "video") {
+      dimensions = await getMediaDimensionsFromUrl(input.url, type);
+    }
+  }
+
+  const built =
+    (await buildStoryMediaFromUrl(input.url, type, dimensions)) ?? {
+      url: input.url,
+      width: 0,
+      height: 0,
+      duration: 0,
+    };
+
+  const media = { ...built };
+  if (input.thumbnail) {
+    media.thumbnail = input.thumbnail;
+  }
+  if (input.caption) {
+    media.caption = input.caption;
+  }
+
+  return { type, media };
+}
+
+async function insertStory({
   type,
   views,
   likes,
   media,
-  file,
-  mediaInputs,
-}: CreateStoryInput): Promise<StoryItem> {
-  let finalType: StoryType = type ?? "image";
-  let finalMedia: StoryMediaPayload | any = media ?? null;
-
-  // Handle legacy single file upload
-  if (file && !mediaInputs) {
-    const mime = (file as any).type ?? null;
-    finalType = inferStoryTypeFromMime(mime);
-    const key = await uploadStoryToS3(file, mime);
-    finalMedia = await buildStoryMediaFromFile(file, key, finalType);
-  }
-  // Handle new media inputs (multiple files/URLs)
-  else if (mediaInputs && mediaInputs.length > 0) {
-    const firstMedia = mediaInputs[0];
-    
-    if (firstMedia.file) {
-      // Upload file and build media
-      const mime = (firstMedia.file as any).type ?? null;
-      finalType = inferStoryTypeFromMime(mime);
-      const key = await uploadStoryToS3(firstMedia.file, mime);
-      finalMedia = await buildStoryMediaFromFile(firstMedia.file, key, finalType);
-    } else if (firstMedia.url) {
-      // Use URL directly
-      finalType = firstMedia.type || inferStoryTypeFromUrl(firstMedia.url);
-      
-      // Fetch dimensions if not provided or if they're 0
-      let dimensions = firstMedia.dimensions;
-      if (!dimensions || (dimensions.width === 0 && dimensions.height === 0)) {
-        if (finalType === "image" || finalType === "video") {
-          dimensions = await getMediaDimensionsFromUrl(firstMedia.url, finalType);
-        }
-      }
-      
-      finalMedia = await buildStoryMediaFromUrl(
-        firstMedia.url,
-        finalType,
-        dimensions
-      );
-    }
-
-    // Handle multiple media items
-    if (mediaInputs.length > 1) {
-      // Stories don't support multiple media in one story - create multiple stories
-      const createdStories: StoryItem[] = [];
-      
-      for (let i = 0; i < mediaInputs.length; i++) {
-        const input = mediaInputs[i];
-        let itemMedia: StoryMediaPayload;
-        let itemType: StoryType;
-        
-        if (input.file) {
-          const mime = (input.file as any).type ?? null;
-          itemType = inferStoryTypeFromMime(mime);
-          const key = await uploadStoryToS3(input.file, mime);
-          itemMedia = await buildStoryMediaFromFile(input.file, key, itemType);
-        } else if (input.url) {
-          itemType = input.type || inferStoryTypeFromUrl(input.url);
-          let dimensions = input.dimensions;
-          if (!dimensions || (dimensions.width === 0 && dimensions.height === 0)) {
-            if (itemType === "image" || itemType === "video") {
-              dimensions = await getMediaDimensionsFromUrl(input.url, itemType);
-            }
-          }
-          itemMedia = await buildStoryMediaFromUrl(input.url, itemType, dimensions);
-        } else {
-          continue;
-        }
-        
-        const now = new Date();
-        
-        const parsedBase = insertStoriesSchema.parse({
-          type: itemType,
-          views: views ?? "0",
-          likes: likes ?? "0",
-          media: itemMedia,
-        });
-
-        const toInsert = {
-          id: randomUUID(),
-          ...parsedBase,
-          createdAt: now,
-          updatedAt: now,
-        };
-
-        const [inserted] = await db.insert(stories).values(toInsert).returning();
-        
-        if (inserted) {
-          await captureServerEvent("story_created", {
-            story_id: inserted.id,
-            story_type: itemType,
-            has_media: Boolean(itemMedia),
-            views: inserted.views,
-            likes: inserted.likes,
-          });
-
-          if (i === 0) {
-            await sendPushNotification({
-              title: "New story published",
-              body: "A new story is now live",
-              url: "/",
-            });
-          }
-        }
-        
-        createdStories.push({
-          ...inserted,
-        });
-      }
-      
-      return createdStories[0]; // Return first story
-    }
-  }
-
+  push,
+}: {
+  type: StoryType;
+  views?: string | null;
+  likes?: string | null;
+  media: StoryMediaPayload | null;
+  push: boolean;
+}): Promise<StoryItem> {
   const now = new Date();
 
   const parsedBase = insertStoriesSchema.parse({
-    type: finalType,
+    type,
     views: views ?? "0",
     likes: likes ?? "0",
-    media: finalMedia,
+    media,
   });
 
   const toInsert = {
@@ -322,22 +145,71 @@ export async function createStoryWithOptionalUpload({
   if (inserted) {
     await captureServerEvent("story_created", {
       story_id: inserted.id,
-      story_type: finalType,
-      has_media: Boolean(finalMedia),
+      story_type: type,
+      has_media: Boolean(media),
       views: inserted.views,
       likes: inserted.likes,
     });
 
-    await sendPushNotification({
-      title: "New story published",
-      body: "A new story is now live",
-      url: "/",
-    });
+    if (push) {
+      await sendPushNotification({
+        title: "New story published",
+        body: "A new story is now live",
+        url: "/",
+      });
+    }
   }
 
   return {
     ...inserted,
   };
+}
+
+export async function createStory({
+  type,
+  views,
+  likes,
+  media,
+}: CreateStoryInput): Promise<StoryItem> {
+  const items = media ? (Array.isArray(media) ? media : [media]) : [];
+
+  if (items.length === 0) {
+    return insertStory({
+      type: type ?? "image",
+      views,
+      likes,
+      media: null,
+      push: true,
+    });
+  }
+
+  if (items.length === 1) {
+    const { type: itemType, media: itemMedia } =
+      await buildStoryMediaForInput(items[0]);
+    return insertStory({
+      type: itemType,
+      views,
+      likes,
+      media: itemMedia,
+      push: true,
+    });
+  }
+
+  const createdStories: StoryItem[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const { type: itemType, media: itemMedia } =
+      await buildStoryMediaForInput(items[i]);
+    const created = await insertStory({
+      type: itemType,
+      views,
+      likes,
+      media: itemMedia,
+      push: i === 0,
+    });
+    createdStories.push(created);
+  }
+
+  return createdStories[0];
 }
 
 type UpdateStoryInput = {

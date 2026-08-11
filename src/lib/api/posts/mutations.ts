@@ -8,7 +8,6 @@ import {
 } from "@/lib/db/schema/posts";
 import { insertReactionsSchema } from "@/lib/db/schema/reactions";
 import { z } from "zod";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
 import type {
   MediaPayload,
@@ -18,57 +17,7 @@ import type {
 import { getPostById, invalidatePostsCache } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
 import { captureServerEvent } from "@/lib/analytics/server";
-import { getMediaDimensions, getMediaDimensionsFromUrl } from "@/lib/utils/media";
-
-const s3 = new S3Client({
-  region: process.env.S3_REGION!,
-  endpoint: process.env.S3_ENDPOINT || undefined,
-  credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-  },
-  forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
-});
-
-const BUCKET = process.env.S3_BUCKET_NAME!;
-
-function joinUrl(base: string, ...parts: string[]): string {
-  const trimmedBase = base.replace(/\/+$/, "");
-  const cleanedParts = parts.map((p) => p.replace(/^\/+/, ""));
-  return [trimmedBase, ...cleanedParts].join("/");
-}
-
-export function buildPublicFileUrl(key: string): string {
-  // Use S3_PUBLIC_BASE_URL if explicitly set (recommended for all providers)
-  if (process.env.S3_PUBLIC_BASE_URL && process.env.S3_PUBLIC_BASE_URL.trim().length) {
-    return joinUrl(process.env.S3_PUBLIC_BASE_URL, key);
-  }
-
-  // Fallback: try to construct public URL from S3_ENDPOINT
-  const endpoint = process.env.S3_ENDPOINT || "";
-  if (!endpoint) {
-    throw new Error("S3_PUBLIC_BASE_URL or S3_ENDPOINT must be set");
-  }
-
-  // Handle Supabase: convert storage endpoint to public URL
-  if (endpoint.includes(".storage.supabase.co")) {
-    const publicUrl = endpoint
-      .replace(".storage.supabase.co", ".supabase.co")
-      .replace("/storage/v1/s3", "/storage/v1/object/public");
-    return joinUrl(publicUrl, BUCKET, key);
-  }
-
-  // For other S3-compatible providers (MinIO, R2, AWS S3), use endpoint with bucket
-  return joinUrl(endpoint, BUCKET, key);
-}
-
-export function inferPostTypeFromMime(mime: string | null): PostType {
-  if (!mime) return "text";
-  if (mime.startsWith("image/")) return "image";
-  if (mime.startsWith("audio/")) return "voice";
-  if (mime.startsWith("video/")) return "video";
-  return "file";
-}
+import { getMediaDimensionsFromUrl } from "@/lib/utils/media";
 
 export function inferPostTypeFromUrl(url: string): PostType {
   const lowerUrl = url.toLowerCase();
@@ -86,62 +35,6 @@ export function inferPostTypeFromUrl(url: string): PostType {
     if (lowerUrl.endsWith(ext)) return "voice";
   }
   return "file";
-}
-
-export async function buildMediaFromFile(
-  file: File | Blob,
-  key: string,
-  type: PostType
-): Promise<MediaPayload> {
-  const size = (file as any).size ?? 0;
-  const name = (file as any).name ?? key;
-  const mimeType = (file as any).type ?? "application/octet-stream";
-
-  const finalUrl = buildPublicFileUrl(key);
-
-  // Get dimensions for images and videos
-  let dimensions: { width: number; height: number; duration?: number } = { width: 0, height: 0, duration: 0 };
-  if (type === "image" || type === "video") {
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    dimensions = await getMediaDimensions(buffer, mimeType);
-  }
-
-  switch (type) {
-    case "image": {
-      return {
-        url: finalUrl,
-        width: dimensions.width,
-        height: dimensions.height,
-      };
-    }
-    case "voice": {
-      return {
-        url: finalUrl,
-        duration: 0,
-        waveform: [],
-      };
-    }
-    case "video": {
-      return {
-        url: finalUrl,
-        duration: dimensions.duration || 0,
-        width: dimensions.width,
-        height: dimensions.height,
-      };
-    }
-    case "file": {
-      return {
-        url: finalUrl,
-        filename: name,
-        filesize: size,
-        mimeType,
-      };
-    }
-    case "text":
-    default:
-      return null;
-  }
 }
 
 export async function buildMediaFromUrl(
@@ -186,211 +79,63 @@ export async function buildMediaFromUrl(
   }
 }
 
-export async function uploadToS3(
-  file: File | Blob,
-  mimeType: string | null
-): Promise<string> {
-  const ext = (mimeType && mimeType.split("/")[1]) || "bin";
-  const key = `posts/${randomUUID()}.${ext}`;
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: BUCKET,
-      Key: key,
-      Body: buffer,
-      ContentType: mimeType || "application/octet-stream",
-    })
-  );
-
-  return key;
-}
-
-type MediaInput = {
-  file?: File | null;
-  url?: string | null;
+export type PostMediaInput = {
+  url: string;
   type?: PostType | null;
-  dimensions?: { width: number; height: number; duration?: number } | undefined;
+  width?: number;
+  height?: number;
+  duration?: number;
 };
 
 type CreatePostInput = {
   content?: string | null;
-  file?: File | null;
-  media?: MediaInput[] | null;
+  media?: PostMediaInput[] | null;
 };
 
-export async function createPostWithOptionalUpload({
+async function resolveMediaDimensions(
+  input: PostMediaInput,
+  type: PostType
+): Promise<{ width: number; height: number; duration?: number }> {
+  if (input.width || input.height || input.duration) {
+    return {
+      width: input.width || 0,
+      height: input.height || 0,
+      duration: input.duration,
+    };
+  }
+
+  if (type === "image" || type === "video") {
+    return getMediaDimensionsFromUrl(input.url, type);
+  }
+
+  return { width: 0, height: 0 };
+}
+
+async function buildMediaForInput(input: PostMediaInput): Promise<{
+  type: PostType;
+  media: MediaPayload;
+}> {
+  const type = input.type || inferPostTypeFromUrl(input.url);
+  const dimensions = await resolveMediaDimensions(input, type);
+  return { type, media: await buildMediaFromUrl(input.url, type, dimensions) };
+}
+
+async function insertPost({
+  type,
   content,
-  file,
-  media: mediaInputs,
-}: CreatePostInput): Promise<PostWithReactions> {
-  let type: PostType = "text";
-  let media: MediaPayload = null;
-
-  // Handle legacy single file upload
-  if (file && !mediaInputs) {
-    const mime = (file as any).type ?? null;
-    type = inferPostTypeFromMime(mime);
-    const key = await uploadToS3(file, mime);
-    media = await buildMediaFromFile(file, key, type);
-  }
-  // Handle new media inputs (multiple files/URLs)
-  else if (mediaInputs && mediaInputs.length > 0) {
-    const firstMedia = mediaInputs[0];
-    
-    if (firstMedia.file) {
-      // Upload file and build media
-      const mime = (firstMedia.file as any).type ?? null;
-      type = inferPostTypeFromMime(mime);
-      const key = await uploadToS3(firstMedia.file, mime);
-      media = await buildMediaFromFile(firstMedia.file, key, type);
-    } else if (firstMedia.url) {
-      // Use URL directly
-      type = firstMedia.type || inferPostTypeFromUrl(firstMedia.url);
-      
-      // Fetch dimensions if not provided or if they're 0
-      let dimensions = firstMedia.dimensions;
-      if (!dimensions || (dimensions.width === 0 && dimensions.height === 0)) {
-        if (type === "image" || type === "video") {
-          dimensions = await getMediaDimensionsFromUrl(firstMedia.url, type);
-        }
-      }
-      
-      media = await buildMediaFromUrl(
-        firstMedia.url,
-        type,
-        dimensions
-      );
-    }
-
-    // Handle multiple media items
-    if (mediaInputs.length > 1) {
-      const firstType = type;
-      
-      // If all are images, combine into one post with multiple media
-      const allImages = mediaInputs.every((input) => {
-        const inputType = input.type || (input.file ? inferPostTypeFromMime((input.file as any).type) : inferPostTypeFromUrl(input.url || ""));
-        return inputType === "image";
-      });
-
-      if (allImages) {
-        // Process all images and store as array
-        const mediaArray: MediaPayload[] = [];
-        
-        for (const input of mediaInputs) {
-          let itemMedia: MediaPayload;
-          let itemType: PostType;
-          
-          if (input.file) {
-            const mime = (input.file as any).type ?? null;
-            itemType = inferPostTypeFromMime(mime);
-            const key = await uploadToS3(input.file, mime);
-            itemMedia = await buildMediaFromFile(input.file, key, itemType);
-          } else if (input.url) {
-            itemType = input.type || inferPostTypeFromUrl(input.url);
-            let dimensions = input.dimensions;
-            if (!dimensions || (dimensions.width === 0 && dimensions.height === 0)) {
-              if (itemType === "image" || itemType === "video") {
-                dimensions = await getMediaDimensionsFromUrl(input.url, itemType);
-              }
-            }
-            itemMedia = await buildMediaFromUrl(input.url, itemType, dimensions);
-          } else {
-            continue;
-          }
-          
-          mediaArray.push(itemMedia);
-        }
-        
-        // Store as array in media field
-        media = mediaArray as any;
-      } else {
-        // Mixed types or non-images: create multiple posts
-        const createdPosts: PostWithReactions[] = [];
-        
-        for (let i = 0; i < mediaInputs.length; i++) {
-          const input = mediaInputs[i];
-          let itemMedia: MediaPayload;
-          let itemType: PostType;
-          
-          if (input.file) {
-            const mime = (input.file as any).type ?? null;
-            itemType = inferPostTypeFromMime(mime);
-            const key = await uploadToS3(input.file, mime);
-            itemMedia = await buildMediaFromFile(input.file, key, itemType);
-          } else if (input.url) {
-            itemType = input.type || inferPostTypeFromUrl(input.url);
-            let dimensions = input.dimensions;
-            if (!dimensions || (dimensions.width === 0 && dimensions.height === 0)) {
-              if (itemType === "image" || itemType === "video") {
-                dimensions = await getMediaDimensionsFromUrl(input.url, itemType);
-              }
-            }
-            itemMedia = await buildMediaFromUrl(input.url, itemType, dimensions);
-          } else {
-            continue;
-          }
-          
-          const now = new Date();
-          const itemContent = i === 0 ? content : "— content —";
-          
-          const parsedBase = insertPostsSchema.parse({
-            type: itemType,
-            content: itemContent ?? null,
-            views: "0",
-            pinnedAt: null,
-            media: itemMedia,
-          });
-
-          const toInsert = {
-            id: randomUUID(),
-            ...parsedBase,
-            createdAt: now,
-            updatedAt: now,
-          };
-
-          const [inserted] = await db.insert(posts).values(toInsert).returning();
-          
-          if (inserted) {
-            await captureServerEvent("post_created", {
-              post_id: inserted.id,
-              post_type: itemType,
-              has_media: Boolean(itemMedia),
-              content_length: itemContent?.length ?? 0,
-            });
-
-            if (i === 0) {
-              await sendPushNotification({
-                title: "New post published",
-                body: content ? content.slice(0, 80) : "A new post is now available",
-                url: "/",
-              });
-            }
-          }
-          
-          createdPosts.push({
-            ...inserted,
-            reactions: [],
-          });
-        }
-        
-        invalidatePostsCache();
-        
-        // Return special structure to indicate multiple posts created
-        return {
-          _multiple: true,
-          posts: createdPosts,
-        } as any;
-      }
-    }
-  }
-
+  media,
+  push = true,
+}: {
+  type: PostType;
+  content: string | null;
+  media: MediaPayload | MediaPayload[] | null;
+  push?: boolean;
+}): Promise<PostWithReactions> {
   const now = new Date();
 
   const parsedBase = insertPostsSchema.parse({
     type,
-    content: content ?? null,
+    content,
     views: "0",
     pinnedAt: null,
     media,
@@ -414,17 +159,72 @@ export async function createPostWithOptionalUpload({
       content_length: content?.length ?? 0,
     });
 
-    await sendPushNotification({
-      title: "New post published",
-      body: content ? content.slice(0, 80) : "A new post is now available",
-      url: "/",
-    });
+    if (push) {
+      await sendPushNotification({
+        title: "New post published",
+        body: content ? content.slice(0, 80) : "A new post is now available",
+        url: "/",
+      });
+    }
   }
 
   return {
     ...inserted,
     reactions: [],
   };
+}
+
+export type CreatePostResult =
+  | PostWithReactions
+  | { _multiple: true; posts: PostWithReactions[] };
+
+export async function createPost({
+  content,
+  media: mediaInputs,
+}: CreatePostInput): Promise<CreatePostResult> {
+  if (mediaInputs && mediaInputs.length === 1) {
+    const { type, media } = await buildMediaForInput(mediaInputs[0]);
+    return insertPost({ type, content: content ?? null, media });
+  }
+
+  if (mediaInputs && mediaInputs.length > 1) {
+    const allImages = mediaInputs.every(
+      (input) => (input.type || inferPostTypeFromUrl(input.url)) === "image"
+    );
+
+    if (allImages) {
+      const mediaArray: MediaPayload[] = [];
+      for (const input of mediaInputs) {
+        const { media } = await buildMediaForInput(input);
+        mediaArray.push(media);
+      }
+      return insertPost({
+        type: "image",
+        content: content ?? null,
+        media: mediaArray,
+      });
+    }
+
+    const createdPosts: PostWithReactions[] = [];
+    for (let i = 0; i < mediaInputs.length; i++) {
+      const { type, media } = await buildMediaForInput(mediaInputs[i]);
+      const itemContent = i === 0 ? content : "— content —";
+      const created = await insertPost({
+        type,
+        content: itemContent ?? null,
+        media,
+        push: i === 0,
+      });
+      createdPosts.push(created);
+    }
+
+    return {
+      _multiple: true,
+      posts: createdPosts,
+    };
+  }
+
+  return insertPost({ type: "text", content: content ?? null, media: null });
 }
 
 type UpdatePostInput = {

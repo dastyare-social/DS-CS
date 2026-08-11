@@ -241,6 +241,8 @@ For a full verification and Lighthouse guide, see [SEARCH-CONSOLE.md](SEARCH-CON
 
 Base URL for REST endpoints: `{APP_URL}/api`
 
+**Upload-first flow:** `POST /api/media` (multipart `files[]`) validates and stores files, then returns `{ url, key, kind, mimeType, size, width, height, duration }`. Use the returned `url` as `media` when creating posts or stories via `POST /api/posts` / `POST /api/stories`. `POST /api/upload` is a single-file alias. Limits are configurable via `MEDIA_MAX_*_SIZE_MB`, `MEDIA_ALLOWED_MIME_TYPES`, and `MEDIA_KEY_PREFIX`.
+
 See [AGENTS.md](./AGENTS.md) for a complete API reference written for AI agents, and [CONTRIBUTING.md](./CONTRIBUTING.md) for development workflow.
 
 ## Configuration

@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
   getPostsWithReactions,
-  createPostWithOptionalUpload,
+  createPost,
   countPosts,
   batchIncrementViews,
+  PostMediaInput,
 } from "@/lib/api/posts";
 import { requireApiKeyAuth } from "@/lib/auth/api-key";
 import { captureServerEvent } from "@/lib/analytics/server";
@@ -107,10 +108,12 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("GET /api/posts error", err);
+    const message =
+      err instanceof Error ? err.message : "Internal Server Error";
     return NextResponse.json(
-      { error: err?.message ?? "Internal Server Error" },
+      { error: message },
       { status: 500 }
     );
   }
@@ -118,16 +121,14 @@ export async function GET(req: NextRequest) {
 
 /**
  * Create a post or batch-increment views
- * @description Create a text post (JSON) or upload media (multipart/form-data). Legacy: accepts content and file. New: accepts files[], urls[], types[], widths[], heights[], durations[] for multiple media. JSON body with action=batch-view and ids array increments views for multiple posts.
+ * @description Create a post from a JSON body. Media must be referenced by URL — upload files to /api/media first, then pass the returned url and dimensions. Accepts a single post or, when multiple media items are provided, one post per item (or a single image post for multiple images). JSON body with action=batch-view and ids array increments views for multiple posts.
  * @tag Posts
  * @contentType application/json
- * @contentType multipart/form-data
  * @response PostWithReactionsSchema
  * @response PostSuccessResponse
  * @example POST /api/posts {"content": "Hello world"}
- * @example POST /api/posts multipart/form-data content=Hello&file=@image.jpg
- * @example POST /api/posts multipart/form-data files[]=@image1.jpg&files[]=@image2.jpg
- * @example POST /api/posts multipart/form-data urls[]=https://example.com/image.jpg&types[]=image
+ * @example POST /api/posts {"content": "Hello", "media": [{"url": "https://cdn.example.com/media/image/abc.jpg", "type": "image", "width": 1080, "height": 1920}]}
+ * @example POST /api/posts {"content": "Hello", "media": [{"url": "https://cdn.example.com/media/video/abc.mp4", "type": "video"}]}
  * @example POST /api/posts {"action": "batch-view", "ids": ["id1", "id2"]}
  * @openapi
  */
@@ -138,78 +139,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const contentType = req.headers.get("content-type") || "";
-
-    if (contentType.includes("multipart/form-data")) {
-      const formData = await req.formData();
-      const content = formData.get("content");
-      const file = formData.get("file");
-      
-      // Handle new media inputs (multiple files/URLs)
-      const mediaInputs: any[] = [];
-      const files = formData.getAll("files");
-      const urls = formData.getAll("urls");
-      const types = formData.getAll("types");
-      const widths = formData.getAll("widths");
-      const heights = formData.getAll("heights");
-      const durations = formData.getAll("durations");
-
-      if (files && files.length > 0) {
-        for (let i = 0; i < files.length; i++) {
-          const f = files[i];
-          if (f instanceof File) {
-            mediaInputs.push({
-              file: f,
-              type: types[i] || null,
-              dimensions: {
-                width: Number(widths[i]) || 0,
-                height: Number(heights[i]) || 0,
-                duration: Number(durations[i]) || undefined,
-              },
-            });
-          }
-        }
-      }
-
-      if (urls && urls.length > 0) {
-        for (let i = 0; i < urls.length; i++) {
-          const url = urls[i];
-          if (typeof url === "string" && url.length > 0) {
-            mediaInputs.push({
-              url,
-              type: types[i] || null,
-              dimensions: {
-                width: Number(widths[i]) || 0,
-                height: Number(heights[i]) || 0,
-                duration: Number(durations[i]) || undefined,
-              },
-            });
-          }
-        }
-      }
-
-      const result = await createPostWithOptionalUpload({
-        content: typeof content === "string" ? content : null,
-        file: file && file instanceof File ? file : null,
-        media: mediaInputs.length > 0 ? mediaInputs : null,
-      });
-
-      // Handle multiple posts created
-      if (result && (result as any)._multiple) {
-        return NextResponse.json(
-          { posts: (result as any).posts, multiple: true },
-          { status: 201 }
-        );
-      }
-
-      return NextResponse.json(result, { status: 201 });
-    }
-
-    // JSON body
     const body = await req.json().catch(() => null);
 
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+
     // ----- BATCH VIEW -----
-    if (body?.action === "batch-view") {
+    if (body.action === "batch-view") {
       const ids = body.ids;
       if (!Array.isArray(ids)) {
         return NextResponse.json(
@@ -221,20 +158,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true }, { status: 200 });
     }
 
-    // JSON fallback (text-only posts)
+    // ----- CREATE -----
     const content =
-      body && typeof body.content === "string" ? body.content : null;
+      typeof body.content === "string" ? body.content : null;
 
-    const post = await createPostWithOptionalUpload({
-      content,
-      file: null,
-    });
+    const media = Array.isArray(body.media)
+      ? (body.media as PostMediaInput[])
+      : null;
+
+    const post = await createPost({ content, media });
+
+    if (post && "_multiple" in post) {
+      return NextResponse.json(
+        { posts: post.posts, multiple: true },
+        { status: 201 }
+      );
+    }
 
     return NextResponse.json(post, { status: 201 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("POST /api/posts error", err);
+    const message =
+      err instanceof Error ? err.message : "Internal Server Error";
     return NextResponse.json(
-      { error: err?.message ?? "Internal Server Error" },
+      { error: message },
       { status: 500 }
     );
   }

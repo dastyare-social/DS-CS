@@ -4,7 +4,7 @@ import {
   addReaction,
   batchIncrementViews,
   countPosts,
-  createPostWithOptionalUpload,
+  createPost,
   deletePostById,
   getPostById,
   getPostsWithReactions,
@@ -26,7 +26,6 @@ const postListInput = z.object({
 });
 
 const mediaInput = z.object({
-  file: z.any().optional(),
   url: z.string().nullable().optional(),
   type: z.enum(["text", "image", "video", "voice", "file"]).nullable().optional(),
   dimensions: z.object({
@@ -153,11 +152,20 @@ export const postsRouter = router({
   }),
 
   create: publicProcedure.input(postCreateInput).mutation(async ({ input }) => {
-    return createPostWithOptionalUpload({
+    const media = input.media
+      ?.filter((m) => typeof m.url === "string" && m.url.length > 0)
+      .map((m) => ({
+        url: m.url as string,
+        type: m.type ?? null,
+        width: m.dimensions?.width,
+        height: m.dimensions?.height,
+        duration: m.dimensions?.duration,
+      }));
+    const result = await createPost({
       content: input.content ?? null,
-      file: null,
-      media: input.media ?? null,
+      media: media && media.length > 0 ? media : null,
     });
+    return "_multiple" in result ? result.posts[0] : result;
   }),
 
   batchView: publicProcedure

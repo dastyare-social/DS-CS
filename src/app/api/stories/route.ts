@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
   getStories,
-  createStoryWithOptionalUpload,
+  createStory,
   countStories,
   StoryType,
+  StoryMediaInput,
 } from "@/lib/api/stories";
 import { requireApiKeyAuth } from "@/lib/auth/api-key";
 import { captureServerEvent } from "@/lib/analytics/server";
@@ -92,10 +93,12 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("GET /api/stories error", err);
+    const message =
+      err instanceof Error ? err.message : "Internal Server Error";
     return NextResponse.json(
-      { error: err?.message ?? "Internal Server Error" },
+      { error: message },
       { status: 500 }
     );
   }
@@ -103,15 +106,12 @@ export async function GET(req: NextRequest) {
 
 /**
  * Create a story
- * @description Create a story with JSON body or multipart/form-data. Legacy: accepts type, file, views, likes, media. New: accepts files[], urls[], types[], widths[], heights[], durations[] for multiple media. Types: image, video.
+ * @description Create a story from a JSON body. Media must be referenced by URL — upload files to /api/media first, then pass the returned url and dimensions. Accepts a single media item or an array (multiple media creates one story per item). Types: image, video.
  * @tag Stories
  * @contentType application/json
- * @contentType multipart/form-data
  * @response StoryItemSchema
- * @example POST /api/stories multipart/form-data type=image&file=@image.jpg
- * @example POST /api/stories multipart/form-data files[]=@image1.jpg&files[]=@image2.jpg
- * @example POST /api/stories multipart/form-data urls[]=https://example.com/video.mp4&types[]=video
- * @example POST /api/stories {"type": "image", "media": {"url": "https://example.com/image.jpg"}}
+ * @example POST /api/stories {"type": "image", "media": {"url": "https://cdn.example.com/media/image/abc.jpg", "width": 1080, "height": 1920}}
+ * @example POST /api/stories {"type": "video", "media": {"url": "https://cdn.example.com/media/video/abc.mp4", "duration": 8000}}
  * @openapi
  */
 export async function POST(req: NextRequest) {
@@ -121,99 +121,6 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const contentType = req.headers.get("content-type") || "";
-
-    if (contentType.includes("multipart/form-data")) {
-      const formData = await req.formData();
-
-      const typeValue = formData.get("type");
-      const viewsValue = formData.get("views");
-      const likesValue = formData.get("likes");
-      const mediaValue = formData.get("media");
-      const file = formData.get("file");
-
-      const type =
-        typeof typeValue === "string" &&
-        (typeValue === "image" || typeValue === "video")
-          ? (typeValue as StoryType)
-          : undefined;
-
-      const views =
-        typeof viewsValue === "string" && viewsValue.length > 0
-          ? viewsValue
-          : undefined;
-
-      const likes =
-        typeof likesValue === "string" && likesValue.length > 0
-          ? likesValue
-          : undefined;
-
-      let media: any = undefined;
-      if (typeof mediaValue === "string" && mediaValue.length > 0) {
-        try {
-          media = JSON.parse(mediaValue);
-        } catch {
-          // ignore invalid JSON, will be validated in schema if needed
-          media = undefined;
-        }
-      }
-
-      // Handle new media inputs (multiple files/URLs)
-      const mediaInputs: any[] = [];
-      const files = formData.getAll("files");
-      const urls = formData.getAll("urls");
-      const types = formData.getAll("types");
-      const widths = formData.getAll("widths");
-      const heights = formData.getAll("heights");
-      const durations = formData.getAll("durations");
-
-      if (files && files.length > 0) {
-        for (let i = 0; i < files.length; i++) {
-          const f = files[i];
-          if (f instanceof File) {
-            mediaInputs.push({
-              file: f,
-              type: types[i] || null,
-              dimensions: {
-                width: Number(widths[i]) || 0,
-                height: Number(heights[i]) || 0,
-                duration: Number(durations[i]) || undefined,
-              },
-            });
-          }
-        }
-      }
-
-      if (urls && urls.length > 0) {
-        for (let i = 0; i < urls.length; i++) {
-          const url = urls[i];
-          if (typeof url === "string" && url.length > 0) {
-            mediaInputs.push({
-              url,
-              type: types[i] || null,
-              dimensions: {
-                width: Number(widths[i]) || 0,
-                height: Number(heights[i]) || 0,
-                duration: Number(durations[i]) || undefined,
-              },
-            });
-          }
-        }
-      }
-
-      const story = await createStoryWithOptionalUpload({
-        type,
-        views,
-        likes,
-        media,
-        file: file && file instanceof File ? file : null,
-        mediaInputs: mediaInputs.length > 0 ? mediaInputs : null,
-      });
-
-      return NextResponse.json(story, { status: 201 });
-    }
-
-    // JSON fallback (no file upload)
     const body = await req.json().catch(() => null);
 
     if (!body || typeof body !== "object") {
@@ -236,21 +143,19 @@ export async function POST(req: NextRequest) {
         : undefined;
 
     const media =
-      body.media && typeof body.media === "object" ? body.media : undefined;
+      body.media && typeof body.media === "object"
+        ? (body.media as StoryMediaInput | StoryMediaInput[])
+        : null;
 
-    const story = await createStoryWithOptionalUpload({
-      type,
-      views,
-      likes,
-      media,
-      file: null,
-    });
+    const story = await createStory({ type, views, likes, media });
 
     return NextResponse.json(story, { status: 201 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("POST /api/stories error", err);
+    const message =
+      err instanceof Error ? err.message : "Internal Server Error";
     return NextResponse.json(
-      { error: err?.message ?? "Internal Server Error" },
+      { error: message },
       { status: 500 }
     );
   }

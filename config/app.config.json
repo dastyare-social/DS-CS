@@ -1,10 +1,10 @@
 {
   "general": {
-    "username": "dastyare-social",
-    "email": "admin@example.com"
+    "username": "omidshabab",
+    "email": "hey@omidshabab.com"
   },
   "en": {
-    "name": "Dastyare Social",
+    "name": "Omid Shabab",
     "desc": "Dastyare Social CS is a production-ready creator studio: a REST API with OpenAPI docs, self-hosted S3-compatible media uploads, and Better Auth for sessions, API keys, and admin bootstrap."
   }
 }

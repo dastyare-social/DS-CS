@@ -1,24 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
-import { uploadToS3, buildPublicFileUrl } from "@/lib/api/posts/mutations";
+import {
+  MediaValidationError,
+  requireMediaAuth,
+  uploadFileToS3,
+} from "@/lib/media";
 
+export const dynamic = "force-dynamic";
+
+/**
+ * Upload a single media file
+ * @description Single-file upload convenience endpoint (multipart/form-data with a file field). Returns the same metadata as /api/media but for one file, with an object response instead of an array. Intended as a lightweight alias of /api/media for clients that upload one file at a time.
+ * @tag Media
+ * @contentType multipart/form-data
+ * @response MediaUploadResponse
+ * @example POST /api/upload multipart/form-data file=@image.jpg
+ * @openapi
+ */
 export async function POST(request: NextRequest) {
-  try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+  const authError = await requireMediaAuth(request);
+  if (authError) return authError;
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+  try {
+    const contentType = request.headers.get("content-type") || "";
+
+    if (!contentType.includes("multipart/form-data")) {
+      return NextResponse.json(
+        { error: "Content-Type must be multipart/form-data" },
+        { status: 400 }
+      );
     }
 
-    // Upload file to S3
-    const key = await uploadToS3(file, file.type);
-    
-    // Build public URL
-    const url = buildPublicFileUrl(key);
+    const formData = await request.formData();
+    const file = formData.get("file");
 
-    return NextResponse.json({ url, key });
-  } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+    if (!(file instanceof File)) {
+      return NextResponse.json(
+        { error: "No file provided (field name: file)" },
+        { status: 400 }
+      );
+    }
+
+    const uploaded = await uploadFileToS3(file);
+
+    return NextResponse.json(uploaded, { status: 200 });
+  } catch (err: unknown) {
+    console.error("POST /api/upload error", err);
+    if (err instanceof MediaValidationError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    const message =
+      err instanceof Error ? err.message : "Internal Server Error";
+    return NextResponse.json(
+      { error: message },
+      { status: 500 }
+    );
   }
 }

@@ -3,7 +3,7 @@
   "info": {
     "title": "Dastyare Social — CS",
     "version": "1.0.0",
-    "description": "REST API for Dastyare Social Creator Studio. Manage posts (threads, shorts, media) and stories. Supports JSON and multipart uploads, reactions, views, and likes. Authentication via Better Auth (bearer token or API key). See /llms.txt for LLM-oriented documentation."
+    "description": "REST API for Dastyare Social Creator Studio. Manage posts (threads, shorts, media) and stories. Supports JSON and multipart uploads, reactions, views, and likes. Authentication via Your API key. See /llms.txt for LLM-oriented documentation."
   },
   "components": {
     "securitySchemes": {
@@ -51,7 +51,6 @@
       "mediaInput": {
         "type": "object",
         "properties": {
-          "file": {},
           "url": {
             "type": "string",
             "nullable": true
@@ -83,8 +82,7 @@
             "required": [
               "width",
               "height"
-            ],
-            "nullable": true
+            ]
           }
         }
       },
@@ -97,6 +95,21 @@
           "key": {
             "type": "string"
           },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video",
+              "audio",
+              "file"
+            ]
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number"
+          },
           "width": {
             "type": "number"
           },
@@ -106,20 +119,19 @@
           "duration": {
             "type": "number"
           },
-          "mimeType": {
+          "filename": {
             "type": "string"
-          },
-          "size": {
-            "type": "number"
           }
         },
         "required": [
           "url",
           "key",
+          "kind",
+          "mimeType",
+          "size",
           "width",
           "height",
-          "mimeType",
-          "size"
+          "filename"
         ]
       },
       "patchPostsSchema": {
@@ -282,7 +294,7 @@
         }
       },
       "PostsResponse": {
-        "oneOf": [
+        "anyOf": [
           {
             "$ref": "#/components/schemas/PostsListResponse"
           },
@@ -530,7 +542,7 @@
         }
       },
       "StoriesResponse": {
-        "oneOf": [
+        "anyOf": [
           {
             "$ref": "#/components/schemas/StoriesListResponse"
           },
@@ -676,8 +688,8 @@
     "/media": {
       "post": {
         "operationId": "post-media",
-        "summary": "Upload media to S3",
-        "description": "Uploads media files (images, videos) to S3 storage with automatic dimension detection. Accepts multipart/form-data with files[] array. Returns array of uploaded media objects with URLs and dimensions.",
+        "summary": "Upload media files",
+        "description": "Uploads one or more media files to S3-compatible storage. Accepts multipart/form-data with a files[] field. Each file is validated against the configured size limits and MIME allowlist, then uploaded under a media/ key prefix. Returns an array of uploaded media objects with public URLs and probed dimensions. Use the returned url (and dimensions) when creating a post or story.",
         "tags": [
           "Media"
         ],
@@ -712,6 +724,49 @@
                   "items": {
                     "$ref": "#/components/schemas/MediaUploadResponse"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/upload": {
+      "post": {
+        "operationId": "post-upload",
+        "summary": "Upload a single media file",
+        "description": "Single-file upload convenience endpoint (multipart/form-data with a file field). Returns the same metadata as /api/media but for one file, with an object response instead of an array. Intended as a lightweight alias of /api/media for clients that upload one file at a time.",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Multipart form data containing a file upload.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaUploadResponse"
                 }
               }
             }
@@ -781,7 +836,7 @@
       "post": {
         "operationId": "post-posts",
         "summary": "Create a post or batch-increment views",
-        "description": "Create a text post (JSON) or upload media (multipart/form-data). Legacy: accepts content and file. New: accepts files[], urls[], types[], widths[], heights[], durations[] for multiple media. JSON body with action=batch-view and ids array increments views for multiple posts.",
+        "description": "Create a post from a JSON body. Media must be referenced by URL — upload files to /api/media first, then pass the returned url and dimensions. Accepts a single post or, when multiple media items are provided, one post per item (or a single image post for multiple images). JSON body with action=batch-view and ids array increments views for multiple posts.",
         "tags": [
           "Posts"
         ],
@@ -1159,7 +1214,7 @@
       "post": {
         "operationId": "post-stories",
         "summary": "Create a story",
-        "description": "Create a story with JSON body or multipart/form-data. Legacy: accepts type, file, views, likes, media. New: accepts files[], urls[], types[], widths[], heights[], durations[] for multiple media. Types: image, video.",
+        "description": "Create a story from a JSON body. Media must be referenced by URL — upload files to /api/media first, then pass the returned url and dimensions. Accepts a single media item or an array (multiple media creates one story per item). Types: image, video.",
         "tags": [
           "Stories"
         ],
@@ -1333,7 +1388,7 @@
   ],
   "servers": [
     {
-      "url": "/docs",
+      "url": "/api",
       "description": "API server"
     }
   ]
