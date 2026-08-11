@@ -18,6 +18,11 @@ import Header from "@/components/header";
 import type { PostWithReactions } from "@/lib/api/posts";
 import { app_config } from "@/config/app";
 import { Locale } from "@/config/locale";
+import {
+  buildMediaInputs,
+  inferPostType,
+  useMediaUpload,
+} from "@/lib/hooks/use-media-upload";
 
 const Page = () => {
   const t = useTranslations();
@@ -28,13 +33,16 @@ const Page = () => {
   const footerRef = useRef<HTMLDivElement | null>(null);
   const [pageHeight, setPageHeight] = useState<number | null>(null);
 
-  // Selected files state
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploadedMediaUrls, setUploadedMediaUrls] = useState<(string | null)[]>([]);
-  const [uploadProgress, setUploadProgress] = useState<number[]>([]);
-  const [uploadErrors, setUploadErrors] = useState<(string | null)[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const MAX_ATTACHMENTS = 10;
+  // Selected media state (upload + progress handled by the hook)
+  const {
+    items: selectedFiles,
+    isUploading,
+    completedMedia,
+    hasError,
+    selectFiles,
+    removeFile,
+    clear,
+  } = useMediaUpload();
 
   // only update header/footer CSS variables
   const updateHeaderFooterOffsets = () => {
@@ -220,31 +228,15 @@ const Page = () => {
   // =========================
   const handleSendMessage = async () => {
     const trimmed = inputValue.trim();
-    const validUrls = uploadedMediaUrls.filter((url): url is string => url !== null);
+    const validUrls = completedMedia.map((m) => m.url);
     if (!trimmed && validUrls.length === 0) return;
     if (isUploading) return; // Don't send while uploading
 
-    // Prepare media inputs from successfully uploaded URLs only
-    const mediaInputs = validUrls.map((url) => ({
-      url,
-      type: null as any, // Will be inferred from URL
-      dimensions: undefined,
-    }));
+    // Prepare media inputs from successfully uploaded URLs (with type + dimensions)
+    const mediaInputs = buildMediaInputs(selectedFiles);
 
-    // Determine post type based on media
-    let postType: "text" | "image" | "video" | "voice" | "file" = "text";
-    if (validUrls.length > 0) {
-      const firstUrl = validUrls[0].toLowerCase();
-      if (firstUrl.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)$/i)) {
-        postType = "image";
-      } else if (firstUrl.match(/\.(mp4|webm|mov|avi|mkv|m4v)$/i)) {
-        postType = "video";
-      } else if (firstUrl.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i)) {
-        postType = "voice";
-      } else {
-        postType = "file";
-      }
-    }
+    // Determine post type based on the uploaded media kind
+    const postType = inferPostType(selectedFiles);
 
     // Optimistic post: must conform to PostWithReactions
     const tempId = `temp-${Date.now()}`;
@@ -264,10 +256,9 @@ const Page = () => {
     // 1) Optimistically add post
     addPost(optimisticPost);
 
-    // 2) Clear input + reset state
+    // 2) Clear input + reset media state
     setInputValue("");
-    setSelectedFiles([]);
-    setUploadedMediaUrls([]);
+    clear();
     if (inputRef.current) {
       inputRef.current.style.height = "auto";
       inputRef.current.style.overflowY = "hidden";
@@ -303,115 +294,26 @@ const Page = () => {
   };
 
   // handle file selection - accept multiple files
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-
-    // Add new files to selection (up to max)
-    setSelectedFiles((prev) => {
-      const combined = [...prev, ...files].slice(0, MAX_ATTACHMENTS);
-      return combined;
-    });
-
-    // Initialize progress and error arrays for new files
-    setUploadProgress((prev) => [...prev, ...files.map(() => 0)]);
-    setUploadedMediaUrls((prev) => [...prev, ...files.map(() => null)]);
-    setUploadErrors((prev) => [...prev, ...files.map(() => null)]);
 
     // Allow re-selecting the same file
     e.target.value = "";
 
-    // Start uploading files
-    await uploadFiles(files, selectedFiles.length);
-  };
-
-  // Upload files to S3 and get URLs with progress tracking
-  const uploadFiles = async (files: File[], startIndex: number) => {
-    setIsUploading(true);
-    
-    const uploadPromises = files.map((file, index) => {
-      return new Promise<string | null>((resolve) => {
-        const xhr = new XMLHttpRequest();
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const actualIndex = startIndex + index;
-        
-        // Track upload progress
-        xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable) {
-            const percentComplete = (e.loaded / e.total) * 100;
-            setUploadProgress((prev) => {
-              const updated = [...prev];
-              updated[actualIndex] = percentComplete;
-              return updated;
-            });
-          }
-        });
-        
-        xhr.addEventListener('load', () => {
-          if (xhr.status === 200) {
-            try {
-              const data = JSON.parse(xhr.responseText);
-              setUploadedMediaUrls((prev) => {
-                const updated = [...prev];
-                updated[actualIndex] = data.url;
-                return updated;
-              });
-              setUploadProgress((prev) => {
-                const updated = [...prev];
-                updated[actualIndex] = 100;
-                return updated;
-              });
-              resolve(data.url);
-            } catch (error) {
-              setUploadErrors((prev) => {
-                const updated = [...prev];
-                updated[actualIndex] = 'Failed to parse response';
-                return updated;
-              });
-              resolve(null);
-            }
-          } else {
-            setUploadErrors((prev) => {
-              const updated = [...prev];
-              updated[actualIndex] = `Upload failed: ${xhr.status}`;
-              return updated;
-            });
-            resolve(null);
-          }
-        });
-        
-        xhr.addEventListener('error', () => {
-          setUploadErrors((prev) => {
-            const updated = [...prev];
-            updated[actualIndex] = 'Network error';
-            return updated;
-          });
-          resolve(null);
-        });
-        
-        xhr.open('POST', '/api/upload');
-        xhr.send(formData);
-      });
-    });
-
-    await Promise.all(uploadPromises);
-    setIsUploading(false);
+    // Add new files to selection (up to max) and start uploading
+    selectFiles(files);
   };
 
   // remove a selected file from the preview
   const handleRemoveFile = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-    setUploadedMediaUrls((prev) => prev.filter((_, i) => i !== index));
-    setUploadProgress((prev) => prev.filter((_, i) => i !== index));
-    setUploadErrors((prev) => prev.filter((_, i) => i !== index));
+    removeFile(index);
   };
 
-  // When selectedFiles or uploadedMediaUrls changes, the footer height changes, so update offsets
+  // When selectedFiles changes, the footer height changes, so update offsets
   useEffect(() => {
     updateHeaderFooterOffsets();
-  }, [selectedFiles.length, uploadedMediaUrls.length]);
+  }, [selectedFiles.length]);
 
   return (
     <div
@@ -489,14 +391,15 @@ const Page = () => {
             {/* selected attachments preview */}
             {selectedFiles.length > 0 && (
               <div className="flex flex-wrap gap-x-2">
-                {selectedFiles.map((file, index) => {
+                {selectedFiles.map((item, index) => {
+                  const file = item.file;
+                  const progress = item.progress;
+                  const error = item.error;
                   const isImage = file.type.startsWith("image/");
                   const isVideo = file.type.startsWith("video/");
                   const isAudio = file.type.startsWith("audio/");
                   const sizeKB = Math.round(file.size / 1024);
                   const objectUrl = URL.createObjectURL(file);
-                  const progress = uploadProgress[index] || 0;
-                  const error = uploadErrors[index];
                   const isUploadingFile = progress >= 0 && progress < 100;
                   const isUploaded = progress === 100 && !error;
                   const hasError = !!error;
@@ -642,10 +545,10 @@ const Page = () => {
               <button
                 type="button"
                 onClick={handleSendMessage}
-                disabled={(!inputValue.trim() && uploadedMediaUrls.filter(u => u !== null).length === 0) || isUploading || uploadErrors.some(e => e !== null)}
+                disabled={(!inputValue.trim() && completedMedia.length === 0) || isUploading || hasError}
                 className={cn(
                   "flex justify-center items-center w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full",
-                  ((!inputValue.trim() && uploadedMediaUrls.filter(u => u !== null).length === 0) || isUploading || uploadErrors.some(e => e !== null)) && "opacity-60"
+                  ((!inputValue.trim() && completedMedia.length === 0) || isUploading || hasError) && "opacity-60"
                 )}
               >
                 {isUploading ? (
