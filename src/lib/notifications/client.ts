@@ -1,6 +1,7 @@
 import type { PushStatus } from "./status";
 import { captureClientEvent } from "@/lib/analytics/client";
-import { isRunningAsPWA } from "@/lib/utils/pwa";
+
+const SW_READY_TIMEOUT_MS = 10_000;
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -16,17 +17,53 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 /**
+ * Resolves to an active service worker registration, or null after a timeout.
+ * `navigator.serviceWorker.ready` never resolves when no SW is registered (or a
+ * stale one fails to activate), so we never want to await it without a timeout.
+ */
+async function getActiveServiceWorker(
+  timeoutMs = SW_READY_TIMEOUT_MS
+): Promise<ServiceWorkerRegistration | null> {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+    return null;
+  }
+
+  const existing = await navigator.serviceWorker.getRegistration();
+  if (existing?.active) {
+    return existing;
+  }
+
+  try {
+    return await new Promise<ServiceWorkerRegistration | null>((resolve) => {
+      const timer = setTimeout(() => resolve(null), timeoutMs);
+      navigator.serviceWorker.ready.then(
+        (registration) => {
+          clearTimeout(timer);
+          resolve(registration);
+        },
+        () => {
+          clearTimeout(timer);
+          resolve(null);
+        }
+      );
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Checks if the current browser has an active push subscription
  * @returns Promise<boolean> indicating if subscription exists and is active
  */
 export async function checkPushSubscription(): Promise<boolean> {
-  if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
     return false;
   }
 
   try {
-    const swRegistration = await navigator.serviceWorker.ready;
-    if (!swRegistration.pushManager) {
+    const swRegistration = await getActiveServiceWorker();
+    if (!swRegistration?.pushManager) {
       return false;
     }
 
@@ -53,14 +90,14 @@ export async function checkPushSubscription(): Promise<boolean> {
  * @returns Promise<boolean> indicating success
  */
 export async function unregisterPushSubscription(): Promise<boolean> {
-  if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
     return false;
   }
 
   try {
-    const swRegistration = await navigator.serviceWorker.ready;
-    if (!swRegistration.pushManager) {
-      return false;
+    const swRegistration = await getActiveServiceWorker();
+    if (!swRegistration?.pushManager) {
+      return true; // Already unsubscribed
     }
 
     const subscription = await swRegistration.pushManager.getSubscription();
@@ -100,7 +137,7 @@ export async function unregisterPushSubscription(): Promise<boolean> {
  */
 export async function togglePushSubscription(): Promise<PushStatus | null> {
   const isSubscribed = await checkPushSubscription();
-  
+
   if (isSubscribed) {
     const success = await unregisterPushSubscription();
     return success ? "idle" : "error";
@@ -110,34 +147,39 @@ export async function togglePushSubscription(): Promise<PushStatus | null> {
 }
 
 export async function registerPushSubscription(): Promise<PushStatus | null> {
-  if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("Notification" in window)) {
+  if (
+    typeof window === "undefined" ||
+    !("serviceWorker" in navigator) ||
+    !("Notification" in window)
+  ) {
     return "unsupported-browser";
-  }
-
-  // Check if running as PWA - notifications work better in PWA mode
-  if (!isRunningAsPWA()) {
-    return "not-pwa";
   }
 
   if (!process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY) {
     return "missing-vapid";
   }
 
+  if (Notification.permission === "denied") {
+    return "permission-denied";
+  }
+
   try {
-    // Wait for service worker to be ready (Serwist handles registration)
-    const swRegistration = await navigator.serviceWorker.ready;
-    
-    if (!swRegistration.pushManager) {
+    // Make sure a service worker is active first (handles first visit / dev / stale SW)
+    let swRegistration = await getActiveServiceWorker();
+    if (!swRegistration) {
+      try {
+        await navigator.serviceWorker.register("/sw.js");
+        swRegistration = await getActiveServiceWorker();
+      } catch {
+        swRegistration = null;
+      }
+    }
+
+    if (!swRegistration?.pushManager) {
       console.error("PushManager not available");
-      return "unsupported-browser";
+      return "error";
     }
 
-    const existingPermission = Notification.permission;
-    if (existingPermission === "denied") {
-      return "permission-denied";
-    }
-
-    // Request permission first
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
       return "permission-denied";
