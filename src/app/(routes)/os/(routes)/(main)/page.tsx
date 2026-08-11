@@ -413,18 +413,15 @@ const Page = () => {
 
   const handleTogglePinPost = (post: PostWithReactions) => {
     const currentlyPinned = post.pinnedAt != null;
-    // Optimistically toggle
-    updatePost(
-      { ...post, pinnedAt: currentlyPinned ? null : new Date() },
-      { toTop: !currentlyPinned }
-    );
+    // Optimistically toggle without reordering the post
+    updatePost({ ...post, pinnedAt: currentlyPinned ? null : new Date() });
     setShowPinnedBar(true);
     void togglePinPost(post.id, !currentlyPinned).catch(() => {
       // Rollback on failure
-      updatePost(
-        { ...post, pinnedAt: currentlyPinned ? new Date() : null },
-        { toTop: currentlyPinned }
-      );
+      updatePost({
+        ...post,
+        pinnedAt: currentlyPinned ? new Date() : null,
+      });
     });
   };
 
@@ -477,9 +474,13 @@ const Page = () => {
               <XIcon
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowPinnedBar(false);
+                  const currentPost =
+                    pinnedPosts[
+                      Math.min(activePinnedIndex, pinnedPosts.length - 1)
+                    ] ?? pinnedPosts[0];
+                  if (currentPost) handleTogglePinPost(currentPost);
                 }}
-                className="size-3 stroke-[1.5px]"
+                className="size-3 stroke-[1.5px] cursor-pointer"
               />
             </div>
           </div>
