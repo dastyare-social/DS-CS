@@ -49,6 +49,14 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: app_url,
     },
+    ...(process.env.NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE === 'true' &&
+    process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+      ? {
+          verification: {
+            google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+          },
+        }
+      : {}),
   };
 }
 

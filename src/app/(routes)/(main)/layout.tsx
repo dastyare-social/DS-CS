@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import { app_config, app_url } from '@/config/app';
 import { Locale } from '@/config/locale';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { PersonSchema, CollectionPageSchema } from '@/components/seo';
+import { PersonSchema, CollectionPageSchema, WebSiteSchema } from '@/components/seo';
 import MainLayoutWrapper from '@/components/main-layout-wrapper';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -54,6 +54,11 @@ export default async function Layout({
 
   return (
     <>
+      <WebSiteSchema
+        name={app_config[locale].name}
+        url={app_url}
+        description={app_config[locale].desc}
+      />
       <PersonSchema
         name={app_config[locale].name}
         url={app_url}

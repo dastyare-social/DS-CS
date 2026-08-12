@@ -14,7 +14,7 @@ NEXT_PUBLIC_APP_URL="https://yourdomain.example"
 NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION="your-google-token-here"
 ```
 
-- Redeploy the app. The site root will include `<meta name="google-site-verification" content="..." />` via `src/app/head.tsx`.
+- Redeploy the app. The site root will include `<meta name="google-site-verification" content="..." />` via the `verification` field in `src/app/(routes)/layout.tsx` (Next.js metadata API).
 
 2) HTML file (alternative; useful for domain/URL-prefix verification if you prefer file upload)
 
@@ -72,6 +72,7 @@ npx lighthouse https://yourdomain.example --only-categories=performance,accessib
 
 7) Notes for AI agents
 
-- `src/app/head.tsx` injects the meta tag only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` is set.
+- The `verification.google` field in `src/app/(routes)/layout.tsx` injects the meta tag only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` is set.
 - `src/app/[file]/route.ts` serves a verification file only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE` or `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` is set.
 - `src/app/sitemap.ts` and `src/app/robots.ts` already use `app_url` from `src/config/app.ts` — ensure `NEXT_PUBLIC_APP_URL` is correct in production.
+- `src/app/sitemap.ts` and `src/app/robots.ts` honor `NEXT_PUBLIC_ALLOW_INDEXING`: when set to anything other than `true`, the sitemap returns empty and robots.txt disallows all crawling. `next.config.ts` also emits `X-Robots-Tag: noindex` on sensitive routes (`/os/*`, `/api/*`, `/agents.md`, `/docs/*`) — note these stay crawlable by robots for LLM agents but are excluded from search results.

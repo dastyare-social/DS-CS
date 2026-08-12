@@ -1,5 +1,35 @@
 import React from 'react';
 
+interface WebSiteSchemaProps {
+  name: string;
+  url: string;
+  alternateName?: string;
+  description?: string;
+}
+
+export function WebSiteSchema({
+  name,
+  url,
+  alternateName,
+  description,
+}: WebSiteSchemaProps) {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name,
+    url,
+    ...(alternateName && { alternateName }),
+    ...(description && { description }),
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+}
+
 interface PersonSchemaProps {
   name: string;
   url: string;

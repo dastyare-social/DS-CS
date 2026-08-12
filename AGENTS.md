@@ -205,6 +205,8 @@ Full schemas: `/openapi.json` → `components.schemas`
 See `.env.example`. Critical vars:
 
 - `DATABASE_URL` — PostgreSQL connection
+- `API_KEY` — Shared API key for protected REST + MCP write operations
+- `MCP_API_KEY` — Optional; enables write tools on the stdio MCP server when `API_KEY` is not set
 - `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` — Auth
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD` — Bootstrap admin
 - `S3_*` — Media storage (endpoint, bucket, credentials)
@@ -230,7 +232,7 @@ See `.env.example`. Critical vars:
 	- `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE` — filename for HTML-file verification.
 	- `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE_CONTENT` — optional exact file contents.
 	- `NEXT_PUBLIC_ALLOW_INDEXING=true` — when set in production, allows search engines to index the site; default behavior blocks indexing with `X-Robots-Tag`.
-- `src/app/head.tsx` injects `google-site-verification` only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` is set.
+- The `verification.google` field in `src/app/(routes)/layout.tsx` (Next.js metadata API) injects `google-site-verification` only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` is set.
 - `src/app/[file]/route.ts` serves a verification file only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and matching filename env vars are present.
 - `src/app/sitemap.ts` generates `/sitemap.xml` based on `app_url` and posts; ensure `NEXT_PUBLIC_APP_URL` is correct in production.
  - The app explicitly blocks indexing for sensitive routes (see `next.config.ts` `alwaysNoIndex`). By default these include `/os/*`, `/api/*`, `/agents.md`, and `/docs/*`.
@@ -327,4 +329,74 @@ docker compose -f docker-compose.dev.yml up -d --build
 
 ## MCP integration
 
-The `/docs` Scalar UI exposes MCP for tool-using agents. Point your MCP client at the docs URL to discover available API operations from the OpenAPI spec.
+The app ships a real MCP server exposing posts and stories as tools. Read tools (`list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories`) are public. Write tools (`create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story`) require API-key auth.
+
+Two transports are provided:
+
+### 1. Remote (Streamable HTTP) — served by the app
+
+- Endpoint: `{APP_URL}/api/mcp` (`POST`/`GET`/`DELETE`, JSON responses enabled)
+- Discovery: `{APP_URL}/.well-known/mcp` returns an `mcpServers` manifest
+- The `/docs` Scalar UI shows MCP connection details via its `mcp` config
+
+Connect from a remote MCP client (`.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "dastyare": {
+      "url": "{APP_URL}/api/mcp"
+    }
+  }
+}
+```
+
+For write access, include the API key as a header on the MCP server:
+
+```json
+{
+  "mcpServers": {
+    "dastyare": {
+      "url": "{APP_URL}/api/mcp",
+      "headers": { "Authorization": "Bearer {API_KEY}" }
+    }
+  }
+}
+```
+
+### 2. Local (stdio) — separate process
+
+Run `bun run mcp` (wraps `scripts/mcp-server.ts`) to start a stdio MCP server that connects directly to the database. Write tools are enabled only when `MCP_API_KEY` or `API_KEY` is set. Register it for local agents:
+
+```json
+{
+  "mcpServers": {
+    "dastyare": {
+      "command": "bun",
+      "args": ["run", "mcp"]
+    }
+  }
+}
+```
+
+The repo root already includes this registration in `.mcp.json` (auto-discovered by Claude Code / Cursor).
+
+### Tool reference
+
+| Tool | Auth | Description |
+|------|------|-------------|
+| `list_posts` | public | Paginated posts; `type=count`/`shorts`, `search` |
+| `get_post` | public | Single post by id |
+| `list_stories` | public | Paginated stories; `type` filter |
+| `get_story` | public | Single story by id |
+| `count_stories` | public | Total story count |
+| `create_post` | API key | Create text or media post |
+| `update_post` | API key | Update content / pin status |
+| `delete_post` | API key | Delete post |
+| `create_story` | API key | Create story from media URL |
+| `update_story` | API key | Update story media/views/likes |
+| `delete_story` | API key | Delete story |
+
+Implementation lives in `src/mcp/` (`server.ts`, `tools/`), the HTTP route in `src/app/api/mcp/route.ts`, and the stdio entry in `scripts/mcp-server.ts`.
+
+The `/docs` Scalar UI also exposes MCP discovery derived from the OpenAPI spec.

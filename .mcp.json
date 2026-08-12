@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "dastyare": {
+      "command": "bun",
+      "args": ["run", "mcp"]
+    }
+  }
+}

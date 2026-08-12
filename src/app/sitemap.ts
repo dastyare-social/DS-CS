@@ -7,6 +7,12 @@ import { getPostsWithReactions } from '@/lib/api/posts/queries'
 export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // When indexing is globally disabled, expose an empty sitemap. robots.txt
+  // also stops advertising it in that mode.
+  if (process.env.NEXT_PUBLIC_ALLOW_INDEXING !== 'true') {
+    return []
+  }
+
   // Get all posts
   const allPosts = []
   let page = 1

@@ -51,6 +51,29 @@ Story types: image, video
 - `POST /api/push/send` — Send browser push notifications to active subscribers. Requires `Authorization: Bearer <API_KEY>`.
 - Use this for self-hosted web push delivery to browsers that have enabled notifications.
 
+## MCP (Model Context Protocol)
+
+This app exposes an MCP server so AI agents can call posts/stories as tools instead of raw HTTP.
+
+- Endpoint: `{APP_URL}/api/mcp` (Streamable HTTP, JSON responses)
+- Discovery: `{APP_URL}/.well-known/mcp` — returns an `mcpServers` manifest
+- Tools: `list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories` (public); `create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story` (require `Authorization: Bearer <API_KEY>`)
+
+Connect a remote MCP client:
+
+```json
+{
+  "mcpServers": {
+    "dastyare": {
+      "url": "{APP_URL}/api/mcp",
+      "headers": { "Authorization": "Bearer <API_KEY>" }
+    }
+  }
+}
+```
+
+For a local stdio server against the database, run `bun run mcp` (write tools enabled when `MCP_API_KEY` or `API_KEY` is set).
+
 ## Optional
 
 - tRPC endpoint at `/api/trpc` is for internal frontend use; external agents should use REST
