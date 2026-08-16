@@ -13,7 +13,7 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "types": ["vitest", "@testing-library/jest-dom", "@serwist/next/typings"],
+    "types": ["vitest", "@testing-library/jest-dom"],
     "plugins": [
       {
         "name": "next"

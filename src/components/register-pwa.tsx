@@ -9,17 +9,6 @@ function registerServiceWorker() {
     return;
   }
 
-  // Prefer Serwist's built-in registration when available
-  if (window.serwist?.register instanceof Function) {
-    try {
-      window.serwist.register();
-      return;
-    } catch (error) {
-      console.error("Serwist registration failed, falling back", error);
-    }
-  }
-
-  // Fallback: register the SW manually
   navigator.serviceWorker.register(SW_URL).catch((error) => {
     console.error("Service worker registration failed", error);
   });

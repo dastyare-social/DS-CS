@@ -20,14 +20,14 @@ describe("buildPushNotificationPayload", () => {
 
 describe("getPushStatusMessage", () => {
   it("returns a helpful message for unsupported browsers", () => {
-    expect(getPushStatusMessage("unsupported-browser")).toContain("installing");
+    expect(getPushStatusMessage("unsupported-browser")).toContain("not supported");
   });
 
   it("returns a helpful message for missing VAPID configuration", () => {
     expect(getPushStatusMessage("missing-vapid")).toContain("VAPID");
   });
 
-  it("returns a helpful message when not running as PWA", () => {
-    expect(getPushStatusMessage("not-pwa")).toContain("add this website to your homepage");
+  it("returns a helpful message for the idle state", () => {
+    expect(getPushStatusMessage("idle")).toContain("browser notifications");
   });
 });

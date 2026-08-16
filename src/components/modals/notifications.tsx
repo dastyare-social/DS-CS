@@ -4,17 +4,13 @@ import { useMemo, useState, useEffect } from "react";
 import { checkPushSubscription, togglePushSubscription } from "@/lib/notifications/client";
 import { getPushStatusMessage, type PushStatus } from "@/lib/notifications/status";
 import { Button } from "../button";
-import { getPWAInstallInstructions } from "@/lib/utils/pwa";
 
 const NotifModal = () => {
   const [status, setStatus] = useState<PushStatus>("idle");
-  const [installInstructions, setInstallInstructions] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
     const initializeModal = async () => {
-      setInstallInstructions(getPWAInstallInstructions());
-
       // Check if already subscribed
       const subscribed = await checkPushSubscription();
       setIsSubscribed(subscribed);
@@ -35,8 +31,6 @@ const NotifModal = () => {
         setStatus("permission-denied");
       } else if (result === "missing-vapid") {
         setStatus("missing-vapid");
-      } else if (result === "not-pwa") {
-        setStatus("not-pwa");
       } else if (result === "error") {
         setStatus("error");
       } else if (result === "enabled") {
@@ -59,7 +53,6 @@ const NotifModal = () => {
     if (status === "unsupported-browser") return "Use a supported browser";
     if (status === "permission-denied") return "Allow Notifications";
     if (status === "missing-vapid") return "Setup required";
-    if (status === "not-pwa") return "Install App First";
     if (status === "error") return "Try again";
     return "Enable Notifications";
   };
@@ -73,26 +66,10 @@ const NotifModal = () => {
           Stay Updated with <span className="text-primary">Fresh Posts and Stories</span>
         </div>
         <div className="text-sm opacity-80">
-          {status === "unsupported-browser" || status === "not-pwa"
-            ? "To get notifications, first install this app to your home screen."
-            : "Turn on browser notifications to receive instant alerts when new content goes live."
-          }
+          Turn on browser notifications to receive instant alerts when new content goes live.
         </div>
 
         <div className="text-sm text-foreground/70">{helperText}</div>
-
-        {/* Show installation guide when the browser requires PWA mode */}
-        {(status === "unsupported-browser" || status === "not-pwa") && (
-          <div className="mt-4 p-4 bg-primary/[3%] border border-primary/5">
-            <div className="text-sm mb-2">— How to Install the App</div>
-            <div className="text-sm text-foreground/80 mb-3">
-              {installInstructions}
-            </div>
-            <div className="text-xs text-foreground/60">
-              After installing to your home screen, reopen the app and enable notifications here.
-            </div>
-          </div>
-        )}
       </div>
 
       <Button

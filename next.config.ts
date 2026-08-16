@@ -3,7 +3,6 @@ import crypto from "node:crypto";
 import type { NextConfig } from "next";
 
 import createNextIntlPlugin from "next-intl/plugin";
-import withSerwistInit from "@serwist/next";
 
 // Define RemotePattern type inline since it might not be exported in Next.js 16
 type RemotePattern = {
@@ -19,14 +18,6 @@ const revision =
   spawnSync("git", ["rev-parse", "HEAD"], {
     encoding: "utf-8",
   }).stdout?.trim() ?? crypto.randomUUID();
-
-const withSerwist = withSerwistInit({
-  swSrc: "src/app/sw.ts",
-  swDest: "public/sw.js",
-  register: false,
-  disable: process.env.NODE_ENV !== "production",
-  cacheOnNavigation: true,
-});
 
 // Build a remotePattern entry from an arbitrary URL string (e.g. S3_ENDPOINT).
 // Returns null if the value is empty or not a valid URL.
@@ -146,4 +137,4 @@ const nextConfig: NextConfig = {
   devIndicators: false,
 };
 
-export default withSerwist(withNextIntl(nextConfig));
+export default withNextIntl(nextConfig);
