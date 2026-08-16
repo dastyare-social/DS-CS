@@ -1,9 +1,11 @@
-const CACHE_NAME = "dastyare-social-v1";
+const CACHE_NAME = "dastyare-social-v2";
 const PRECACHE_URLS = [
   "/",
   "/manifest.webmanifest",
   "/web-app-manifest-192x192.png",
   "/web-app-manifest-512x512.png",
+  "/screenshots/wide-1280x720.png",
+  "/screenshots/mobile-750x1334.png",
   "/favicon.ico",
   "/profile-image.png",
 ];
