@@ -129,7 +129,7 @@ const Page = () => {
             <Input
               id="fieldgroup-email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="hey@omidshabab.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={handleKeyDown}

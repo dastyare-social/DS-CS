@@ -16,6 +16,7 @@ import { getStoryById } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
 import { captureServerEvent } from "@/lib/analytics/server";
 import { getMediaDimensionsFromUrl } from "@/lib/utils/media";
+import { assertWritable } from "@/lib/demo-mode";
 
 export function inferStoryTypeFromUrl(url: string): StoryType {
   const lowerUrl = url.toLowerCase();
@@ -171,6 +172,7 @@ export async function createStory({
   likes,
   media,
 }: CreateStoryInput): Promise<StoryItem> {
+  assertWritable();
   const items = media ? (Array.isArray(media) ? media : [media]) : [];
 
   if (items.length === 0) {
@@ -217,7 +219,7 @@ type UpdateStoryInput = {
   patch: z.infer<typeof patchStoriesSchema>;
 };
 
-export async function updateStory({
+async function updateStoryInternal({
   id,
   patch,
 }: UpdateStoryInput): Promise<StoryItem | null> {
@@ -243,7 +245,16 @@ export async function updateStory({
   };
 }
 
+export async function updateStory({
+  id,
+  patch,
+}: UpdateStoryInput): Promise<StoryItem | null> {
+  assertWritable();
+  return updateStoryInternal({ id, patch });
+}
+
 export async function deleteStoryById(id: string): Promise<boolean> {
+  assertWritable();
   const res = await db
     .delete(stories)
     .where(eq(stories.id, id))
@@ -266,7 +277,7 @@ export async function incrementStoryViews(
   const currentViews = Number(existing.views || "0");
   const newViews = String(currentViews + 1);
 
-  const updated = await updateStory({ id, patch: { views: newViews } });
+  const updated = await updateStoryInternal({ id, patch: { views: newViews } });
   if (!updated) return null;
 
   await captureServerEvent("story_viewed", {
@@ -290,7 +301,7 @@ export async function toggleStoryLike(
       ? String(currentLikes + 1)
       : String(Math.max(0, currentLikes - 1));
 
-  const updated = await updateStory({ id, patch: { likes: newLikes } });
+  const updated = await updateStoryInternal({ id, patch: { likes: newLikes } });
   if (!updated) return null;
 
   await captureServerEvent("story_liked", {

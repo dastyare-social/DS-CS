@@ -4,6 +4,7 @@ import { S3_BUCKET, buildPublicFileUrl, getS3Client } from "./s3";
 import { MediaValidationError, classifyMediaType, mediaConfig, validateFile } from "./config";
 import type { MediaKind } from "./config";
 import { getMediaDimensions } from "@/lib/utils/media";
+import { assertWritable } from "@/lib/demo-mode";
 
 export interface UploadedMedia {
   url: string;
@@ -24,6 +25,7 @@ function safeExtension(mimeType: string): string {
 }
 
 export async function uploadFileToS3(file: File): Promise<UploadedMedia> {
+  assertWritable();
   const kind = validateFile(file);
 
   const mimeType = (file.type || "application/octet-stream").toLowerCase();

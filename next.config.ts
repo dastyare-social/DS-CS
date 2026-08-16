@@ -7,7 +7,7 @@ import withSerwistInit from "@serwist/next";
 
 // Define RemotePattern type inline since it might not be exported in Next.js 16
 type RemotePattern = {
-  protocol: 'http' | 'https';
+  protocol: "http" | "https";
   hostname: string;
   port?: string;
   pathname: string;
@@ -16,8 +16,9 @@ type RemotePattern = {
 const withNextIntl = createNextIntlPlugin("./src/i18n.ts");
 
 const revision =
-  spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf-8" })
-    .stdout?.trim() ?? crypto.randomUUID();
+  spawnSync("git", ["rev-parse", "HEAD"], {
+    encoding: "utf-8",
+  }).stdout?.trim() ?? crypto.randomUUID();
 
 const withSerwist = withSerwistInit({
   swSrc: "src/app/sw.ts",
@@ -50,17 +51,19 @@ function patternFromUrl(raw: string | undefined): RemotePattern | null {
 function parseAdditionalDomains(): RemotePattern[] {
   const raw = process.env.NEXT_PUBLIC_ADDITIONAL_IMAGE_DOMAINS;
   if (!raw?.trim()) return [];
-  
+
   return raw
-    .split(',')
-    .map(domain => domain.trim())
-    .filter(domain => domain.length > 0)
-    .map(domain => {
+    .split(",")
+    .map((domain) => domain.trim())
+    .filter((domain) => domain.length > 0)
+    .map((domain) => {
       // If domain doesn't have protocol, assume https
-      const urlStr = domain.includes('://') ? domain : `https://${domain}`;
+      const urlStr = domain.includes("://") ? domain : `https://${domain}`;
       const pattern = patternFromUrl(urlStr);
       if (!pattern) {
-        console.warn(`Invalid image domain in NEXT_PUBLIC_ADDITIONAL_IMAGE_DOMAINS: "${domain}"`);
+        console.warn(
+          `Invalid image domain in NEXT_PUBLIC_ADDITIONAL_IMAGE_DOMAINS: "${domain}"`,
+        );
       }
       return pattern;
     })
@@ -108,19 +111,14 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns,
   },
-  allowedDevOrigins: [
-    "::1",
-    "127.0.0.1",
-    "172.20.10.3",
-    "cs.dastyare.social",
-  ],
+  allowedDevOrigins: ["::1", "127.0.0.1", "cs.dastyare.social"],
   async headers() {
-    const allowIndexing = process.env.NEXT_PUBLIC_ALLOW_INDEXING === 'true'
+    const allowIndexing = process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true";
 
     const robotsHeader = {
       key: "X-Robots-Tag",
       value: "noindex, nofollow, noarchive",
-    }
+    };
 
     // Routes that should NEVER be indexed (admin/internal/API/diagnostic pages)
     const alwaysNoIndex = [
@@ -129,7 +127,7 @@ const nextConfig: NextConfig = {
       "/agents.md", // agent guidance page
       "/docs/(.*)", // interactive docs (optional private)
       "/posts", // posts listing page (doesn't exist, only /[post_id] does)
-    ].map((source) => ({ source, headers: [robotsHeader] }))
+    ].map((source) => ({ source, headers: [robotsHeader] }));
 
     if (!allowIndexing) {
       // Block everything by default, but keep explicit alwaysNoIndex entries for clarity

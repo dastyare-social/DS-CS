@@ -64,6 +64,7 @@ type PostProps = {
   pinned?: boolean;
   // NEW: allow parent to remove from list optimistically
   onDelete?: (id: string) => void;
+  onDeleteError?: (err: unknown) => void;
   // NEW: allow parent to pin/unpin and edit from context menu
   onPin?: (post: PostWithReactions) => void;
   onEdit?: (post: PostWithReactions) => void;
@@ -558,6 +559,7 @@ const Post = memo(({
   can_delete_post = false,
   pinned = false,
   onDelete,
+  onDeleteError,
   onPin,
   onEdit,
 }: PostProps) => {
@@ -824,6 +826,7 @@ const Post = memo(({
       await deletePost(id);
     } catch (err) {
       console.error("Failed to delete message", err);
+      onDeleteError?.(err);
       // NOTE: you could add rollback logic here if needed
     }
   };

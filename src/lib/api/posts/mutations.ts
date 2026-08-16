@@ -18,6 +18,7 @@ import { getPostById, invalidatePostsCache } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
 import { captureServerEvent } from "@/lib/analytics/server";
 import { getMediaDimensionsFromUrl } from "@/lib/utils/media";
+import { assertWritable } from "@/lib/demo-mode";
 
 export function inferPostTypeFromUrl(url: string): PostType {
   const lowerUrl = url.toLowerCase();
@@ -182,6 +183,7 @@ export async function createPost({
   content,
   media: mediaInputs,
 }: CreatePostInput): Promise<CreatePostResult> {
+  assertWritable();
   if (mediaInputs && mediaInputs.length === 1) {
     const { type, media } = await buildMediaForInput(mediaInputs[0]);
     return insertPost({ type, content: content ?? null, media });
@@ -232,7 +234,7 @@ type UpdatePostInput = {
   patch: z.infer<typeof patchPostsSchema>;
 };
 
-export async function updatePost({
+async function updatePostInternal({
   id,
   patch,
 }: UpdatePostInput): Promise<PostWithReactions | null> {
@@ -270,6 +272,14 @@ export async function updatePost({
   };
 }
 
+export async function updatePost({
+  id,
+  patch,
+}: UpdatePostInput): Promise<PostWithReactions | null> {
+  assertWritable();
+  return updatePostInternal({ id, patch });
+}
+
 export async function batchIncrementViews(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
 
@@ -288,6 +298,7 @@ export async function batchIncrementViews(ids: string[]): Promise<void> {
 }
 
 export async function deletePostById(id: string): Promise<boolean> {
+  assertWritable();
   const res = await db
     .delete(posts)
     .where(eq(posts.id, id))
@@ -371,7 +382,7 @@ export async function viewPost(
   const currentViews = Number(post.views || "0");
   const newViews = String(currentViews + 1);
 
-  const updated = await updatePost({ id, patch: { views: newViews } });
+  const updated = await updatePostInternal({ id, patch: { views: newViews } });
   if (!updated) return null;
 
   await captureServerEvent("post_viewed", {

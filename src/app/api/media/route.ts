@@ -5,6 +5,7 @@ import {
   requireMediaAuth,
   uploadFilesToS3,
 } from "@/lib/media";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,13 @@ export const MediaUploadResponse = z.object({
 export async function POST(req: NextRequest) {
   const authError = await requireMediaAuth(req);
   if (authError) return authError;
+
+  if (isDemoMode()) {
+    return NextResponse.json(
+      { error: "Read-only demo mode is active" },
+      { status: 403 }
+    );
+  }
 
   try {
     const contentType = req.headers.get("content-type") || "";

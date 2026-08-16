@@ -10,6 +10,7 @@ import {
 import { requireApiKeyAuth } from "@/lib/auth/api-key";
 import { patchStoriesSchema } from "@/lib/db/schema/stories";
 import { captureServerEvent } from "@/lib/analytics/server";
+import { isDemoMode } from "@/lib/demo-mode";
 
 type RouteParams = {
   params: Promise<{
@@ -70,6 +71,13 @@ export async function PATCH(req: NextRequest, context: RouteParams) {
   const authResponse = requireApiKeyAuth(req);
   if (authResponse) {
     return authResponse;
+  }
+
+  if (isDemoMode()) {
+    return NextResponse.json(
+      { error: "Read-only demo mode is active" },
+      { status: 403 }
+    );
   }
 
   const { story_id } = await context.params;
@@ -157,6 +165,13 @@ export async function DELETE(req: NextRequest, context: RouteParams) {
   const authResponse = requireApiKeyAuth(req);
   if (authResponse) {
     return authResponse;
+  }
+
+  if (isDemoMode()) {
+    return NextResponse.json(
+      { error: "Read-only demo mode is active" },
+      { status: 403 }
+    );
   }
 
   const { story_id } = await context.params;

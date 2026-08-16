@@ -94,6 +94,28 @@ const Page = () => {
   const [inputValue, setInputValue] = useState<string>("");
   const MAX_LINES = 6;
 
+  // Transient error shown when a create/update/delete fails (e.g. demo mode)
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const writeErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showWriteError = (err: unknown) => {
+    const message =
+      err instanceof Error
+        ? err.message
+        : typeof err === "string"
+          ? err
+          : "Operation failed";
+    setWriteError(message);
+    if (writeErrorTimerRef.current) clearTimeout(writeErrorTimerRef.current);
+    writeErrorTimerRef.current = setTimeout(() => setWriteError(null), 5000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (writeErrorTimerRef.current) clearTimeout(writeErrorTimerRef.current);
+    };
+  }, []);
+
   // Reference to the scroll container (root div)
   const pageRef = useRef<HTMLDivElement | null>(null);
 
@@ -277,6 +299,7 @@ const Page = () => {
           await updatePostContent(editingPostId, trimmed);
         } catch (err) {
           console.error("Failed to edit post", err);
+          showWriteError(err);
           updatePost({ ...target, content: trimmed });
         }
       }
@@ -346,6 +369,7 @@ const Page = () => {
       console.error("Error sending message", err);
       // If send failed, remove optimistic post
       removePost(tempId);
+      showWriteError(err);
       // Optionally: show a toast or mark as failed instead.
     }
   };
@@ -416,12 +440,13 @@ const Page = () => {
     // Optimistically toggle without reordering the post
     updatePost({ ...post, pinnedAt: currentlyPinned ? null : new Date() });
     setShowPinnedBar(true);
-    void togglePinPost(post.id, !currentlyPinned).catch(() => {
+    void togglePinPost(post.id, !currentlyPinned).catch((err) => {
       // Rollback on failure
       updatePost({
         ...post,
         pinnedAt: currentlyPinned ? new Date() : null,
       });
+      showWriteError(err);
     });
   };
 
@@ -537,6 +562,10 @@ const Page = () => {
                 post={msg}
                 pinned={msg.pinnedAt != null}
                 onDelete={removePost}
+                onDeleteError={(err) => {
+                  showWriteError(err);
+                  addPost(msg);
+                }}
                 onPin={handleTogglePinPost}
                 onEdit={handleEditPost}
               />
@@ -554,6 +583,15 @@ const Page = () => {
           <div ref={sentinelRef} />
         </div>
       </div>
+
+      {/* Write error toast */}
+      {writeError && (
+        <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] px-4 w-full max-w-2xl pointer-events-none">
+          <div className="w-full rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-md px-4 py-3 text-center text-sm text-red-500">
+            {writeError}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div ref={footerRef} className="fixed bottom-0 max-w-2xl w-full z-50">

@@ -9,6 +9,7 @@ import {
 } from "@/lib/api/posts";
 import { requireApiKeyAuth } from "@/lib/auth/api-key";
 import { captureServerEvent } from "@/lib/analytics/server";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -153,6 +154,13 @@ export async function POST(req: NextRequest) {
   const authResponse = requireApiKeyAuth(req);
   if (authResponse) {
     return authResponse;
+  }
+
+  if (isDemoMode()) {
+    return NextResponse.json(
+      { error: "Read-only demo mode is active" },
+      { status: 403 }
+    );
   }
 
   try {
