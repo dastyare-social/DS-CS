@@ -1,8 +1,14 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { checkPushSubscription, togglePushSubscription } from "@/lib/notifications/client";
-import { getPushStatusMessage, type PushStatus } from "@/lib/notifications/status";
+import {
+  checkPushSubscription,
+  togglePushSubscription,
+} from "@/lib/notifications/client";
+import {
+  getPushStatusMessage,
+  type PushStatus,
+} from "@/lib/notifications/status";
 import { Button } from "../button";
 
 const NotifModal = () => {
@@ -27,6 +33,8 @@ const NotifModal = () => {
 
       if (result === "unsupported-browser") {
         setStatus("unsupported-browser");
+      } else if (result === "ios") {
+        setStatus("ios");
       } else if (result === "permission-denied") {
         setStatus("permission-denied");
       } else if (result === "missing-vapid") {
@@ -48,9 +56,10 @@ const NotifModal = () => {
   const helperText = useMemo(() => getPushStatusMessage(status), [status]);
 
   const getButtonText = () => {
-    if (status === "loading") return isSubscribed ? "Turning Off ..." : "Enabling ...";
+    if (status === "loading") return isSubscribed ? "Turning Off" : "Enabling";
     if (isSubscribed) return "Turn Off Notifications";
     if (status === "unsupported-browser") return "Use a supported browser";
+    if (status === "ios") return "Add to Home Screen";
     if (status === "permission-denied") return "Allow Notifications";
     if (status === "missing-vapid") return "Setup required";
     if (status === "error") return "Try again";
@@ -63,10 +72,12 @@ const NotifModal = () => {
     <div className="flex flex-col justify-center items-center gap-y-2.5 py-6 px-6 w-xs border border-secondary/5 min-h-70 rounded-3xl bg-background/50 backdrop-blur-3xl">
       <div className="flex flex-1 flex-col w-full justify-start gap-y-2">
         <div className="text-lg font-medium">
-          Stay Updated with <span className="text-primary">Fresh Posts and Stories</span>
+          Stay Updated with{" "}
+          <span className="text-primary">Fresh Posts and Stories</span>
         </div>
         <div className="text-sm opacity-80">
-          Turn on browser notifications to receive instant alerts when new content goes live.
+          Turn on browser notifications to receive instant alerts when new
+          content goes live.
         </div>
 
         <div className="text-sm text-foreground/70">{helperText}</div>

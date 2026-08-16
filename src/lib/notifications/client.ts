@@ -3,6 +3,17 @@ import { captureClientEvent } from "@/lib/analytics/client";
 
 const SW_READY_TIMEOUT_MS = 10_000;
 
+// iOS/iPadOS browsers don't expose the Web Push / Notification APIs to
+// regular tabs. Push notifications only become available once the site has
+// been added to the Home Screen (standalone mode), which is why we treat
+// the absence of `Notification` differently here than on other platforms.
+function isIOS() {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  return /iPad|iPhone|iPod/.test(ua) && !/Android.*AppleWebKit/.test(ua);
+}
+
+
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const normalized = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -149,10 +160,16 @@ export async function togglePushSubscription(): Promise<PushStatus | null> {
 export async function registerPushSubscription(): Promise<PushStatus | null> {
   if (
     typeof window === "undefined" ||
-    !("serviceWorker" in navigator) ||
-    !("Notification" in window)
+    !("serviceWorker" in navigator)
   ) {
     return "unsupported-browser";
+  }
+
+  // iOS does not expose Notification/Push to regular browser tabs — only to
+  // web apps launched from the Home Screen. Point users there instead of the
+  // generic "use Chrome/Edge" hint (their mobile browser *is* Chrome).
+  if (!("Notification" in window)) {
+    return isIOS() ? "ios" : "unsupported-browser";
   }
 
   if (!process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY) {

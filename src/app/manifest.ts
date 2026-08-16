@@ -10,7 +10,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
 
   return {
     id: "/",
-    name: appName,
+    name: `${appName}'s Channel`,
     short_name: appName,
     description: appDescription,
     start_url: "/",

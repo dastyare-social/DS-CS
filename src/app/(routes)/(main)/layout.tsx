@@ -15,7 +15,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase: new URL(app_url),
-    title,
+    // `absolute` so the root layout's "%s — <Channel>" template isn't re-applied,
+    // which would otherwise render the title twice ("… — …").
+    title: { absolute: title },
     description,
     openGraph: {
       title,
