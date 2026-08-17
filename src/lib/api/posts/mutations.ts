@@ -16,6 +16,7 @@ import type {
 } from "./queries";
 import { getPostById, invalidatePostsCache } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
+import { shortenSitePath } from "@/lib/shorten";
 import { captureServerEvent } from "@/lib/analytics/server";
 import { getMediaDimensionsFromUrl } from "@/lib/utils/media";
 import { assertWritable } from "@/lib/demo-mode";
@@ -164,7 +165,7 @@ async function insertPost({
       await sendPushNotification({
         title: "New post published",
         body: content ? content.slice(0, 80) : "A new post is now available",
-        url: "/",
+        url: await shortenSitePath("/"),
       });
     }
   }
