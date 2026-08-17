@@ -16,7 +16,7 @@ import type {
 } from "./queries";
 import { getPostById, invalidatePostsCache } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
-import { shortenSitePath } from "@/lib/shorten";
+import { shortenSitePath, shortenContentUrls } from "@/lib/shorten";
 import { captureServerEvent } from "@/lib/analytics/server";
 import { getMediaDimensionsFromUrl } from "@/lib/utils/media";
 import { assertWritable } from "@/lib/demo-mode";
@@ -135,9 +135,11 @@ async function insertPost({
 }): Promise<PostWithReactions> {
   const now = new Date();
 
+  const processedContent = content ? await shortenContentUrls(content) : null;
+
   const parsedBase = insertPostsSchema.parse({
     type,
-    content,
+    content: processedContent,
     views: "0",
     pinnedAt: null,
     media,
@@ -239,7 +241,12 @@ async function updatePostInternal({
   id,
   patch,
 }: UpdatePostInput): Promise<PostWithReactions | null> {
-  const parsed = patchPostsSchema.parse(patch);
+  const processedPatch = { ...patch };
+  if (typeof processedPatch.content === "string") {
+    processedPatch.content = await shortenContentUrls(processedPatch.content);
+  }
+
+  const parsed = patchPostsSchema.parse(processedPatch);
 
   const [updated] = await db
     .update(posts)
