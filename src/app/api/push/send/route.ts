@@ -7,7 +7,6 @@ import type { PushSubscription } from "web-push";
 import webPush from "web-push";
 import { configureWebPush } from "@/lib/notifications/push";
 import { captureServerEvent } from "@/lib/analytics/server";
-import { shortenUrl, shortenSitePath } from "@/lib/shorten";
 import { z } from "zod";
 
 const pushNotificationRequestSchema = z.object({
@@ -42,10 +41,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const title = typeof body?.title === "string" ? body.title : "New update";
     const bodyText = typeof body?.body === "string" ? body.body : "A new update is available";
-    const rawUrl = typeof body?.url === "string" ? body.url : "/";
-    const url = rawUrl.startsWith("http")
-      ? await shortenUrl(rawUrl)
-      : await shortenSitePath(rawUrl);
+    const url = typeof body?.url === "string" ? body.url : "/";
 
     const configured = configureWebPush();
     if (!configured) {

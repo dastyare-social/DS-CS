@@ -14,7 +14,6 @@ import type {
 } from "./queries";
 import { getStoryById } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
-import { shortenSitePath } from "@/lib/shorten";
 import { captureServerEvent } from "@/lib/analytics/server";
 import { getMediaDimensionsFromUrl } from "@/lib/utils/media";
 import { assertWritable } from "@/lib/demo-mode";
@@ -157,7 +156,7 @@ async function insertStory({
       await sendPushNotification({
         title: "New story published",
         body: "A new story is now live",
-        url: await shortenSitePath("/"),
+        url: "/",
       });
     }
   }
