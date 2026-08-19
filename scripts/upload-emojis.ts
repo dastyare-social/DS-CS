@@ -22,7 +22,6 @@ import {
   PutObjectCommand,
   HeadObjectCommand,
 } from "@aws-sdk/client-s3";
-import { Readable } from "node:stream";
 
 const GITHUB_REPO = "omidshabab/Telegram-Animated-Emojis";
 const GITHUB_RAW = `https://raw.githubusercontent.com/${GITHUB_REPO}/main`;
@@ -77,7 +76,7 @@ async function checkEmojiExists(
   }
 }
 
-async function streamToS3(
+async function downloadToS3(
   client: S3Client,
   bucket: string,
   key: string,
@@ -85,13 +84,13 @@ async function streamToS3(
 ): Promise<void> {
   const res = await fetch(sourceUrl);
   if (!res.ok) throw new Error(`Download failed (${res.status}): ${sourceUrl}`);
-  if (!res.body) throw new Error(`Empty response body: ${sourceUrl}`);
+  const buffer = Buffer.from(await res.arrayBuffer());
 
   await client.send(
     new PutObjectCommand({
       Bucket: bucket,
       Key: key,
-      Body: Readable.fromWeb(res.body as any),
+      Body: buffer,
       ContentType: "image/webp",
       CacheControl: "public, max-age=31536000, immutable",
     }),
@@ -139,7 +138,7 @@ async function main() {
         continue;
       }
 
-      await streamToS3(client, bucket, s3Key, githubUrl);
+      await downloadToS3(client, bucket, s3Key, githubUrl);
       uploaded++;
       if (uploaded % 50 === 0 || i === files.length - 1) {
         console.log(
