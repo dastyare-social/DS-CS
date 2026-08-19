@@ -1,7 +1,9 @@
 #!/usr/bin/env tsx
 import "dotenv/config";
 /**
- * Download animated emojis from GitHub repo, compress with sharp, upload to S3.
+ * Download animated emojis from Telegram-Animated-Emojis GitHub repo and
+ * upload them directly to S3. No compression — original animated .webp files
+ * are preserved as-is.
  *
  * Usage:
  *   bun run upload:emojis          # upload all emojis
@@ -11,24 +13,21 @@ import "dotenv/config";
  *   S3_ENDPOINT, S3_REGION, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY,
  *   S3_BUCKET_NAME, S3_FORCE_PATH_STYLE, S3_PUBLIC_BASE_URL (optional)
  *
- * The emojis are fetched from https://github.com/dastyare-social/animated-emojis
- * compressed to ~12KB each with sharp, and uploaded under the key prefix
- * "animated-emojies/" on S3.
+ * The emojis are fetched from https://github.com/omidshabab/Telegram-Animated-Emojis
+ * and uploaded under the key prefix "animated-emojies/" on S3.
  */
 
-import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
-import sharp from "sharp";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { pipeline } from "node:stream/promises";
-import { createWriteStream } from "node:fs";
+import {
+  S3Client,
+  PutObjectCommand,
+  HeadObjectCommand,
+} from "@aws-sdk/client-s3";
 import { Readable } from "node:stream";
 
-const GITHUB_REPO = "dastyare-social/animated-emojis";
+const GITHUB_REPO = "omidshabab/Telegram-Animated-Emojis";
 const GITHUB_RAW = `https://raw.githubusercontent.com/${GITHUB_REPO}/main`;
+const GITHUB_API = `https://api.github.com/repos/${GITHUB_REPO}/git/trees/main?recursive=1`;
 const S3_PREFIX = "animated-emojies";
-const QUALITY = 80;
 
 function getS3Client(): S3Client {
   return new S3Client({
@@ -42,48 +41,61 @@ function getS3Client(): S3Client {
   });
 }
 
-function buildPublicUrl(key: string): string {
-  if (process.env.S3_PUBLIC_BASE_URL) {
-    return `${process.env.S3_PUBLIC_BASE_URL.replace(/\/+$/, "")}/${key}`;
-  }
-  const endpoint = process.env.S3_ENDPOINT || "";
-  const bucket = process.env.S3_BUCKET_NAME || "";
-  return `${endpoint.replace(/\/+$/, "")}/${bucket}/${key}`;
+interface TreeEntry {
+  path: string;
+  type: string;
 }
 
-async function getFileList(): Promise<string[]> {
-  const url = `https://api.github.com/repos/${GITHUB_REPO}/git/trees/main`;
-  const res = await fetch(url);
+async function getWebpFiles(): Promise<TreeEntry[]> {
+  const res = await fetch(GITHUB_API);
   if (!res.ok) throw new Error(`Failed to fetch repo tree: ${res.status}`);
-  const data = (await res.json()) as { tree: { path: string }[] };
-  return data.tree
-    .map((f) => f.path)
-    .filter((p) => p.endsWith(".webp") && !p.includes("/"));
-}
-
-async function downloadFile(filename: string, dest: string): Promise<void> {
-  const url = `${GITHUB_RAW}/${encodeURIComponent(filename)}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to download ${filename}: ${res.status}`);
-  const body = Readable.fromWeb(res.body as any);
-  await pipeline(body, createWriteStream(dest));
-}
-
-async function compressWebp(inputPath: string): Promise<Buffer> {
-  const buf = fs.readFileSync(inputPath);
-  return sharp(buf).webp({ quality: QUALITY }).toBuffer();
+  const data = (await res.json()) as { tree: TreeEntry[]; truncated: boolean };
+  if (data.truncated) {
+    console.warn(
+      "WARNING: GitHub tree response was truncated — some emojis may be missing",
+    );
+  }
+  return data.tree.filter(
+    (entry) => entry.type === "blob" && entry.path.endsWith(".webp"),
+  );
 }
 
 async function checkEmojiExists(
   client: S3Client,
-  key: string
+  key: string,
 ): Promise<boolean> {
   try {
-    await client.send(new HeadObjectCommand({ Bucket: process.env.S3_BUCKET_NAME, Key: key }));
+    await client.send(
+      new HeadObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: key,
+      }),
+    );
     return true;
   } catch {
     return false;
   }
+}
+
+async function streamToS3(
+  client: S3Client,
+  bucket: string,
+  key: string,
+  sourceUrl: string,
+): Promise<void> {
+  const res = await fetch(sourceUrl);
+  if (!res.ok) throw new Error(`Download failed (${res.status}): ${sourceUrl}`);
+  if (!res.body) throw new Error(`Empty response body: ${sourceUrl}`);
+
+  await client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: Readable.fromWeb(res.body as any),
+      ContentType: "image/webp",
+      CacheControl: "public, max-age=31536000, immutable",
+    }),
+  );
 }
 
 async function main() {
@@ -98,71 +110,56 @@ async function main() {
   const bucket = process.env.S3_BUCKET_NAME!;
 
   console.log("Fetching emoji list from GitHub...");
-  const files = await getFileList();
+  const files = await getWebpFiles();
   console.log(`Found ${files.length} emojis`);
 
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "emojis-"));
   let uploaded = 0;
   let skipped = 0;
   let failed = 0;
 
   for (let i = 0; i < files.length; i++) {
-    const filename = files[i];
-    const key = `${S3_PREFIX}/${filename}`;
-    const pct = ((i + 1) / files.length * 100).toFixed(0);
+    const entry = files[i];
+    const s3Key = `${S3_PREFIX}/${entry.path}`;
+    const pct = (((i + 1) / files.length) * 100).toFixed(0);
+    const githubUrl = `${GITHUB_RAW}/${entry.path.split("/").map(encodeURIComponent).join("/")}`;
 
     if (checkOnly) {
-      const exists = await checkEmojiExists(client, key);
+      const exists = await checkEmojiExists(client, s3Key);
       if (!exists) {
-        console.log(`  [${pct}%] MISSING: ${filename}`);
+        console.log(`  [${pct}%] MISSING: ${entry.path}`);
         failed++;
       }
       continue;
     }
 
     try {
-      const exists = await checkEmojiExists(client, key);
+      const exists = await checkEmojiExists(client, s3Key);
       if (exists) {
         skipped++;
         continue;
       }
 
-      const tmpPath = path.join(tmpDir, filename);
-      await downloadFile(filename, tmpPath);
-      const compressed = await compressWebp(tmpPath);
-
-      await client.send(
-        new PutObjectCommand({
-          Bucket: bucket,
-          Key: key,
-          Body: compressed,
-          ContentType: "image/webp",
-          CacheControl: "public, max-age=31536000, immutable",
-        })
-      );
-
+      await streamToS3(client, bucket, s3Key, githubUrl);
       uploaded++;
-      if (uploaded % 50 === 0 || uploaded === files.length) {
-        console.log(`  [${pct}%] Uploaded ${uploaded}/${files.length}`);
+      if (uploaded % 50 === 0 || i === files.length - 1) {
+        console.log(
+          `  [${pct}%] Uploaded ${uploaded}, Skipped ${skipped}, Failed ${failed}`,
+        );
       }
     } catch (err: any) {
-      console.error(`  FAILED: ${filename} - ${err.message}`);
+      console.error(`  FAILED: ${entry.path} - ${err.message}`);
       failed++;
     }
   }
-
-  // Cleanup tmp
-  fs.rmSync(tmpDir, { recursive: true, force: true });
 
   if (checkOnly) {
     console.log(`\nCheck complete: ${failed} missing out of ${files.length}`);
     if (failed > 0) process.exit(1);
     console.log("All emojis present on S3.");
   } else {
-    console.log(`\nDone! Uploaded: ${uploaded}, Skipped (existing): ${skipped}, Failed: ${failed}`);
-    if (uploaded > 0) {
-      console.log(`\nPublic base URL: ${buildPublicUrl(S3_PREFIX + "/")}`);
-    }
+    console.log(
+      `\nDone! Uploaded: ${uploaded}, Skipped (existing): ${skipped}, Failed: ${failed}`,
+    );
   }
 }
 
