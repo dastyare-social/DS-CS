@@ -48,7 +48,7 @@ interface TreeEntry {
   type: string;
 }
 
-async function getWebpFiles(): Promise<string[]> {
+async function getWebpFiles(): Promise<{ sourcePath: string; name: string }[]> {
   const res = await fetch(GITHUB_API);
   if (!res.ok) throw new Error(`Failed to fetch repo tree: ${res.status}`);
   const data = (await res.json()) as { tree: TreeEntry[]; truncated: boolean };
@@ -57,7 +57,7 @@ async function getWebpFiles(): Promise<string[]> {
   }
   return data.tree
     .filter((e) => e.type === "blob" && e.path.endsWith(".webp"))
-    .map((e) => path.basename(e.path));
+    .map((e) => ({ sourcePath: e.path, name: path.basename(e.path) }));
 }
 
 async function clearS3Prefix(client: S3Client, bucket: string): Promise<number> {
@@ -136,19 +136,19 @@ async function main() {
   const bucket = process.env.S3_BUCKET_NAME!;
 
   console.log("Fetching emoji list from GitHub...");
-  const filenames = await getWebpFiles();
-  console.log(`Found ${filenames.length} emojis`);
+  const files = await getWebpFiles();
+  console.log(`Found ${files.length} emojis`);
 
   if (checkOnly) {
     let missing = 0;
-    for (const name of filenames) {
-      const exists = await checkEmojiExists(client, `${S3_PREFIX}/${name}`);
+    for (const file of files) {
+      const exists = await checkEmojiExists(client, `${S3_PREFIX}/${file.name}`);
       if (!exists) {
-        console.log(`  MISSING: ${name}`);
+        console.log(`  MISSING: ${file.name}`);
         missing++;
       }
     }
-    console.log(`\nCheck complete: ${missing} missing out of ${filenames.length}`);
+    console.log(`\nCheck complete: ${missing} missing out of ${files.length}`);
     if (missing > 0) process.exit(1);
     console.log("All emojis present on S3.");
     return;
@@ -163,21 +163,21 @@ async function main() {
   let uploaded = 0;
   let failed = 0;
 
-  for (let i = 0; i < filenames.length; i++) {
-    const name = filenames[i];
-    const s3Key = `${S3_PREFIX}/${name}`;
-    const pct = (((i + 1) / filenames.length) * 100).toFixed(0);
-    const githubUrl = `${GITHUB_RAW}/${encodeURIComponent(name)}`;
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const s3Key = `${S3_PREFIX}/${file.name}`;
+    const pct = (((i + 1) / files.length) * 100).toFixed(0);
+    const githubUrl = `${GITHUB_RAW}/${file.sourcePath.split("/").map(encodeURIComponent).join("/")}`;
 
     try {
       await downloadToS3(client, bucket, s3Key, githubUrl);
       uploaded++;
     } catch (err: any) {
-      console.error(`  FAILED: ${name} - ${err.message}`);
+      console.error(`  FAILED: ${file.name} - ${err.message}`);
       failed++;
     }
 
-    if ((i + 1) % 50 === 0 || i === filenames.length - 1) {
+    if ((i + 1) % 50 === 0 || i === files.length - 1) {
       console.log(`  [${pct}%] Uploaded ${uploaded}, Failed ${failed}`);
     }
   }

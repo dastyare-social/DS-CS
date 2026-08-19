@@ -14,9 +14,10 @@ import { emojiToAnimatedPath } from "@/config/emoji-to-animated-path";
 // - Links: http(s)://..., www...., or bare domains like example.com/foo
 //
 // PB Style Guide enforcement (applied via preprocessContent):
-// - Colons → em dash
-// - Standard bullets "- " → "— "
+// - Colons → em dash with space
+// - Standard bullets "- " or "• " → "— "
 // - Standard numbering "1. " → "1 — "
+// - Quotes → highlighted text
 // - Emojis stripped
 const HIGHLIGHT_CLASS = "text-primary bg-primary/5 py-0.5 outline-none";
 
@@ -30,14 +31,19 @@ const preprocessContent = (raw: string): string => {
     "",
   );
 
-  // Replace colons with em dash (but not inside code or URLs)
-  text = text.replace(/:/g, "—");
+  // Replace quotes with highlighted text: "word" → ==word==  'word' → ==word==
+  text = text.replace(/"([^"]+)"/g, "== $1 ==");
+  text = text.replace(/'([^']+)'/g, "== $1 ==");
+
+  // Replace colons with em dash + space (only where followed by a space or end of line)
+  text = text.replace(/:\s/g, " — ");
+  text = text.replace(/:$/gm, " —");
 
   // Process line by line for bullets and numbering
   const lines = text.split("\n");
   const processed = lines.map((line) => {
-    // Standard bullets: "- item" → "— item"
-    const bulletMatch = line.match(/^(\s*)-\s+(.*)/);
+    // Standard bullets: "- item" or "• item" → "— item"
+    const bulletMatch = line.match(/^(\s*)[-•]\s+(.*)/);
     if (bulletMatch) {
       return `${bulletMatch[1]}— ${bulletMatch[2]}`;
     }
