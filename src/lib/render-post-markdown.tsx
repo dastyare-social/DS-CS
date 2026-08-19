@@ -31,9 +31,8 @@ const preprocessContent = (raw: string): string => {
     "",
   );
 
-  // Replace quotes with highlighted text: "word" → ==word==  'word' → ==word==
+  // Replace double quotes with highlighted text: "word" → ==word==
   text = text.replace(/"([^"]+)"/g, "== $1 ==");
-  text = text.replace(/'([^']+)'/g, "== $1 ==");
 
   // Replace colons with em dash + space (only where followed by a space or end of line)
   text = text.replace(/:\s/g, " — ");
