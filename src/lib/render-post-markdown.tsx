@@ -26,15 +26,14 @@ const displayUrl = (raw: string): string => {
 };
 
 // Build animated emoji URL safely (no "undefined" base)
+const ANIMATED_EMOJIES_ENABLED =
+  process.env.NEXT_PUBLIC_ANIMATED_EMOJIES === "true";
+
 const getAnimatedEmojiSrc = (mappedFilename: string): string => {
-  // Next.js exposes only NEXT_PUBLIC_* vars to the browser
   const rawBase = process.env.NEXT_PUBLIC_ANIMATED_EMOJIES_ENDPOINT ?? "";
-
-  // Allow either "http://host:port" or "" (relative)
-  const base = rawBase.replace(/\/+$/, ""); // trim trailing slashes
-  const path = `/animated-emojies/${mappedFilename}`;
-
-  return base ? `${base}${path}` : path;
+  const base = rawBase.replace(/\/+$/, "");
+  const key = `animated-emojies/${mappedFilename}`;
+  return base ? `${base}/${key}` : `/${key}`;
 };
 
 export const renderSimpleMarkdown = (
@@ -187,22 +186,38 @@ const renderLinks = (text: string): React.ReactNode => {
     if (emojiRegex.test(chunk)) {
       emojiRegex.lastIndex = 0;
 
-      const mapped = emojiToAnimatedPath[chunk];
+      const mapped = ANIMATED_EMOJIES_ENABLED && emojiToAnimatedPath[chunk];
       if (mapped) {
         const src = getAnimatedEmojiSrc(mapped);
 
         return (
-          <Image
+          <span
             key={`ae-${idx}`}
-            src={src}
-            unoptimized
-            alt={chunk}
-            width={20}
-            height={20}
-            loading="lazy"
-            className="inline-flex justify-center items-center w-5 h-5"
-            draggable={false}
-          />
+            className="relative inline-flex justify-center items-center w-5 h-5 align-middle"
+          >
+            <span className="invisible w-5 h-5 text-base leading-none select-none">
+              {chunk}
+            </span>
+            <Image
+              src={src}
+              unoptimized
+              alt={chunk}
+              width={20}
+              height={20}
+              loading="lazy"
+              className="absolute inset-0 w-5 h-5"
+              draggable={false}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = "none";
+                const parent = target.parentElement;
+                if (parent) {
+                  const span = parent.querySelector("span");
+                  if (span) span.classList.remove("invisible");
+                }
+              }}
+            />
+          </span>
         );
       }
 
