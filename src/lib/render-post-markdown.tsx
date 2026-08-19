@@ -25,16 +25,13 @@ const displayUrl = (raw: string): string => {
   return raw.replace(/^https?:\/\//i, "");
 };
 
-// Build animated emoji URL safely (no "undefined" base)
+// Animated emoji rendering: text emoji always visible, animated .webp overlaid on top.
+// Falls back to text-only on image load error.
 const ANIMATED_EMOJIES_ENABLED =
   process.env.NEXT_PUBLIC_ANIMATED_EMOJIES === "true";
 
-const getAnimatedEmojiSrc = (mappedFilename: string): string => {
-  const rawBase = process.env.NEXT_PUBLIC_ANIMATED_EMOJIES_ENDPOINT ?? "";
-  const base = rawBase.replace(/\/+$/, "");
-  const key = `animated-emojies/${mappedFilename}`;
-  return base ? `${base}/${key}` : `/${key}`;
-};
+const getAnimatedEmojiSrc = (mappedFilename: string): string =>
+  `/animated-emojies/${mappedFilename}`;
 
 export const renderSimpleMarkdown = (
   content: string | null | undefined
