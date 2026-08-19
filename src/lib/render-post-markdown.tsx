@@ -12,7 +12,47 @@ import { emojiToAnimatedPath } from "@/config/emoji-to-animated-path";
 // - Highlight: ==text==
 // - Inline code: `text` (no highlight, monospace)
 // - Links: http(s)://..., www...., or bare domains like example.com/foo
+//
+// PB Style Guide enforcement (applied via preprocessContent):
+// - Colons → em dash
+// - Standard bullets "- " → "— "
+// - Standard numbering "1. " → "1 — "
+// - Emojis stripped
 const HIGHLIGHT_CLASS = "text-primary bg-primary/5 py-0.5 outline-none";
+
+// PB Style Guide: preprocess content before rendering
+const preprocessContent = (raw: string): string => {
+  let text = raw;
+
+  // Remove emojis
+  text = text.replace(
+    /(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)/gu,
+    "",
+  );
+
+  // Replace colons with em dash (but not inside code or URLs)
+  text = text.replace(/:/g, "—");
+
+  // Process line by line for bullets and numbering
+  const lines = text.split("\n");
+  const processed = lines.map((line) => {
+    // Standard bullets: "- item" → "— item"
+    const bulletMatch = line.match(/^(\s*)-\s+(.*)/);
+    if (bulletMatch) {
+      return `${bulletMatch[1]}— ${bulletMatch[2]}`;
+    }
+
+    // Standard numbering: "1. item" → "1 — item"
+    const numberMatch = line.match(/^(\s*)(\d+)\.\s+(.*)/);
+    if (numberMatch) {
+      return `${numberMatch[1]}${numberMatch[2]} — ${numberMatch[3]}`;
+    }
+
+    return line;
+  });
+
+  return processed.join("\n");
+};
 
 const makeUrl = (raw: string): string => {
   const trimmed = raw.trim();
@@ -34,12 +74,15 @@ const getAnimatedEmojiSrc = (mappedFilename: string): string =>
   `/animated-emojies/${mappedFilename}`;
 
 export const renderSimpleMarkdown = (
-  content: string | null | undefined
+  content: null | string | undefined
 ): React.ReactNode => {
   if (!content) return "— no content —";
 
+  // Apply PB Style Guide rules before rendering
+  const preprocessed = preprocessContent(content);
+
   // We split on single "\n" but keep empty lines as <br/> to support multiple \n\n
-  const lines = content.split("\n");
+  const lines = preprocessed.split("\n");
 
   return (
     <div className="whitespace-pre-wrap break-words">

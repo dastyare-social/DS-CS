@@ -5,23 +5,26 @@ import "dotenv/config";
  * upload them directly to S3. No compression — original animated .webp files
  * are preserved as-is.
  *
+ * On every run, the animated-emojies/ prefix on S3 is cleared first,
+ * then all emojis are uploaded fresh.
+ *
  * Usage:
- *   bun run upload:emojis          # upload all emojis
+ *   bun run upload:emojis          # clear + upload all emojis
  *   bun run upload:emojis --check  # check if emojis exist on S3 (no upload)
  *
  * Env vars required:
  *   S3_ENDPOINT, S3_REGION, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY,
  *   S3_BUCKET_NAME, S3_FORCE_PATH_STYLE, S3_PUBLIC_BASE_URL (optional)
- *
- * The emojis are fetched from https://github.com/omidshabab/Telegram-Animated-Emojis
- * and uploaded under the key prefix "animated-emojies/" on S3.
  */
 
 import {
   S3Client,
   PutObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
+import path from "node:path";
 
 const GITHUB_REPO = "omidshabab/Telegram-Animated-Emojis";
 const GITHUB_RAW = `https://raw.githubusercontent.com/${GITHUB_REPO}/main`;
@@ -45,30 +48,54 @@ interface TreeEntry {
   type: string;
 }
 
-async function getWebpFiles(): Promise<TreeEntry[]> {
+async function getWebpFiles(): Promise<string[]> {
   const res = await fetch(GITHUB_API);
   if (!res.ok) throw new Error(`Failed to fetch repo tree: ${res.status}`);
   const data = (await res.json()) as { tree: TreeEntry[]; truncated: boolean };
   if (data.truncated) {
-    console.warn(
-      "WARNING: GitHub tree response was truncated — some emojis may be missing",
-    );
+    console.warn("WARNING: GitHub tree response was truncated — some emojis may be missing");
   }
-  return data.tree.filter(
-    (entry) => entry.type === "blob" && entry.path.endsWith(".webp"),
-  );
+  return data.tree
+    .filter((e) => e.type === "blob" && e.path.endsWith(".webp"))
+    .map((e) => path.basename(e.path));
 }
 
-async function checkEmojiExists(
-  client: S3Client,
-  key: string,
-): Promise<boolean> {
+async function clearS3Prefix(client: S3Client, bucket: string): Promise<number> {
+  let deleted = 0;
+  let continuationToken: string | undefined;
+
+  do {
+    const list = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: `${S3_PREFIX}/`,
+        ContinuationToken: continuationToken,
+      }),
+    );
+
+    const objects = list.Contents;
+    if (!objects || objects.length === 0) break;
+
+    await client.send(
+      new DeleteObjectsCommand({
+        Bucket: bucket,
+        Delete: {
+          Objects: objects.map((o) => ({ Key: o.Key! })),
+        },
+      }),
+    );
+
+    deleted += objects.length;
+    continuationToken = list.NextContinuationToken;
+  } while (continuationToken);
+
+  return deleted;
+}
+
+async function checkEmojiExists(client: S3Client, key: string): Promise<boolean> {
   try {
     await client.send(
-      new HeadObjectCommand({
-        Bucket: process.env.S3_BUCKET_NAME,
-        Key: key,
-      }),
+      new HeadObjectCommand({ Bucket: process.env.S3_BUCKET_NAME, Key: key }),
     );
     return true;
   } catch {
@@ -109,57 +136,53 @@ async function main() {
   const bucket = process.env.S3_BUCKET_NAME!;
 
   console.log("Fetching emoji list from GitHub...");
-  const files = await getWebpFiles();
-  console.log(`Found ${files.length} emojis`);
-
-  let uploaded = 0;
-  let skipped = 0;
-  let failed = 0;
-
-  for (let i = 0; i < files.length; i++) {
-    const entry = files[i];
-    const s3Key = `${S3_PREFIX}/${entry.path}`;
-    const pct = (((i + 1) / files.length) * 100).toFixed(0);
-    const githubUrl = `${GITHUB_RAW}/${entry.path.split("/").map(encodeURIComponent).join("/")}`;
-
-    if (checkOnly) {
-      const exists = await checkEmojiExists(client, s3Key);
-      if (!exists) {
-        console.log(`  [${pct}%] MISSING: ${entry.path}`);
-        failed++;
-      }
-      continue;
-    }
-
-    try {
-      const exists = await checkEmojiExists(client, s3Key);
-      if (exists) {
-        skipped++;
-        continue;
-      }
-
-      await downloadToS3(client, bucket, s3Key, githubUrl);
-      uploaded++;
-      if (uploaded % 50 === 0 || i === files.length - 1) {
-        console.log(
-          `  [${pct}%] Uploaded ${uploaded}, Skipped ${skipped}, Failed ${failed}`,
-        );
-      }
-    } catch (err: any) {
-      console.error(`  FAILED: ${entry.path} - ${err.message}`);
-      failed++;
-    }
-  }
+  const filenames = await getWebpFiles();
+  console.log(`Found ${filenames.length} emojis`);
 
   if (checkOnly) {
-    console.log(`\nCheck complete: ${failed} missing out of ${files.length}`);
-    if (failed > 0) process.exit(1);
+    let missing = 0;
+    for (const name of filenames) {
+      const exists = await checkEmojiExists(client, `${S3_PREFIX}/${name}`);
+      if (!exists) {
+        console.log(`  MISSING: ${name}`);
+        missing++;
+      }
+    }
+    console.log(`\nCheck complete: ${missing} missing out of ${filenames.length}`);
+    if (missing > 0) process.exit(1);
     console.log("All emojis present on S3.");
-  } else {
-    console.log(
-      `\nDone! Uploaded: ${uploaded}, Skipped (existing): ${skipped}, Failed: ${failed}`,
-    );
+    return;
   }
+
+  // Clear existing emojis on S3
+  console.log("Clearing animated-emojies/ on S3...");
+  const deleted = await clearS3Prefix(client, bucket);
+  console.log(`Deleted ${deleted} old emojis`);
+
+  // Upload all emojis fresh
+  let uploaded = 0;
+  let failed = 0;
+
+  for (let i = 0; i < filenames.length; i++) {
+    const name = filenames[i];
+    const s3Key = `${S3_PREFIX}/${name}`;
+    const pct = (((i + 1) / filenames.length) * 100).toFixed(0);
+    const githubUrl = `${GITHUB_RAW}/${encodeURIComponent(name)}`;
+
+    try {
+      await downloadToS3(client, bucket, s3Key, githubUrl);
+      uploaded++;
+    } catch (err: any) {
+      console.error(`  FAILED: ${name} - ${err.message}`);
+      failed++;
+    }
+
+    if ((i + 1) % 50 === 0 || i === filenames.length - 1) {
+      console.log(`  [${pct}%] Uploaded ${uploaded}, Failed ${failed}`);
+    }
+  }
+
+  console.log(`\nDone! Uploaded: ${uploaded}, Failed: ${failed}`);
 }
 
 main().catch((err) => {
