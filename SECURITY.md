@@ -6,7 +6,7 @@ Please do **not** open a public issue for security vulnerabilities. Instead,
 report them privately.
 
 - **Email:** Create a private report on GitHub:
-  https://github.com/omidshabab/dastyare_social_cs/security/advisories
+  https://github.com/dastyare-social/DS-CS/security/advisories
 
 When reporting, include as much of the following as possible:
 

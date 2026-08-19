@@ -178,7 +178,7 @@ bun run start
 Use the install script to bootstrap the repository on a fresh server or VPS.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/omidshabab/dastyare_social_cs/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/scripts/install.sh | bash
 ```
 
 The script will:

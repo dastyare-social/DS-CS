@@ -1,9 +1,9 @@
 # Dastyare Social — CS
 
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![Deploy](https://img.shields.io/badge/deploy-Docker%20%7C%20Bun-lightgrey)](https://github.com/omidshabab/dastyare_social_cs)
-[![Stars](https://img.shields.io/github/stars/omidshabab/dastyare_social_cs)](https://github.com/omidshabab/dastyare_social_cs/stargazers)
-[![Forks](https://img.shields.io/github/forks/omidshabab/dastyare_social_cs)](https://github.com/omidshabab/dastyare_social_cs/network/members)
+[![Deploy](https://img.shields.io/badge/deploy-Docker%20%7C%20Bun-lightgrey)](https://github.com/dastyare-social/DS-CS)
+[![Stars](https://img.shields.io/github/stars/dastyare-social/DS-CS)](https://github.com/dastyare-social/DS-CS/stargazers)
+[![Forks](https://img.shields.io/github/forks/dastyare-social/DS-CS)](https://github.com/dastyare-social/DS-CS/network/members)
 
 ## Why this project
 
@@ -34,7 +34,7 @@ bun run dev          # http://localhost:8729
 
 Use the install script to bootstrap the repository on a fresh server or VPS.
 ```bash
-curl -fsSL https://raw.githubusercontent.com/omidshabab/dastyare_social_cs/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/scripts/install.sh | bash
 ```
 > The script creates a default `.env`, builds Docker Compose services, and starts the app.
 

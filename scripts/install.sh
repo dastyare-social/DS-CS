@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL=${1:-"https://github.com/omidshabab/dastyare_social_cs.git"}
+REPO_URL=${1:-"https://github.com/dastyare-social/DS-CS.git"}
 APP_DIR=${2:-"dastyare_social_cs"}
 ENV_FILE=".env"
 DOCKER_COMPOSE_FILE="docker-compose.yml"

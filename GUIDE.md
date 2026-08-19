@@ -108,7 +108,7 @@ npx web-push generate-vapid-keys                           # for push (§8)
 Or bootstrap a fresh server with one command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/omidshabab/dastyare_social_cs/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/scripts/install.sh | bash
 ```
 
 ---
