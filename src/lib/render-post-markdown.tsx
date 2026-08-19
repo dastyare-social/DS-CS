@@ -25,14 +25,8 @@ const HIGHLIGHT_CLASS = "text-primary bg-primary/5 py-0.5 outline-none";
 const preprocessContent = (raw: string): string => {
   let text = raw;
 
-  // Remove emojis
-  text = text.replace(
-    /(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)/gu,
-    "",
-  );
-
-  // Replace double quotes with highlighted text: "word" → ==word==
-  text = text.replace(/"([^"]+)"/g, "== $1 ==");
+  // Replace double quotes with single quotes
+  text = text.replace(/"/g, "'");
 
   // Replace colons with em dash + space (only where followed by a space or end of line)
   text = text.replace(/:\s/g, " — ");
