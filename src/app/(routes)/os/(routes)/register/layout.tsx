@@ -7,7 +7,6 @@ import React from "react";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
-
   return {
     title: t("general.login_to_panel"),
   };

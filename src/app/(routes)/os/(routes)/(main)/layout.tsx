@@ -1,16 +1,15 @@
-import { capitalize } from '@/lib/utils';
-import { Metadata } from 'next';
-import { getTranslations } from 'next-intl/server';
+import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { checkAuth } from "@/lib/auth/utils";
-import React from 'react'
+import React from "react";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
-
+  const title = t("general.panel");
   return {
     title: {
-      default: capitalize(t("general.panel")),
-      template: "%s — " + capitalize(t("general.panel")),
+      default: title,
+      template: `%s — ${title}`,
     },
   };
 }

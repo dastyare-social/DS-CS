@@ -1,68 +1,38 @@
-import { capitalize } from "@/lib/utils";
 import { Metadata } from "next";
-import { getTranslations, getLocale } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 import React from "react";
 import { app_config, app_url } from "@/config/app";
 import { Locale } from "@/config/locale";
 import { getPostById } from "@/lib/api/posts/queries";
 import { ArticleSchema } from "@/components/seo";
+import { postMetadata } from "../../../../../config/metadata";
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ post_id: string }>;
 }): Promise<Metadata> {
-  const t = await getTranslations();
   const locale = (await getLocale()) as Locale;
   const { post_id } = await params;
 
+  let pageTitle = "Message";
   let description = app_config[locale].desc;
-  let pageTitle = capitalize(t("general.message"));
 
   try {
     const post = await getPostById(post_id);
     if (post?.content) {
-      description = post.content.length > 200 
-        ? post.content.substring(0, 200) + "..." 
+      description = post.content.length > 200
+        ? post.content.substring(0, 200) + "..."
         : post.content;
-      pageTitle = post.content.length > 60 
-        ? post.content.substring(0, 60) + "..." 
+      pageTitle = post.content.length > 60
+        ? post.content.substring(0, 60) + "..."
         : post.content;
     }
   } catch (e) {
     console.error("Error fetching post for metadata:", e);
   }
 
-  return {
-    metadataBase: new URL(app_url),
-    title: pageTitle,
-    description,
-    openGraph: {
-      title: pageTitle,
-      description,
-      url: `${app_url}/posts/${post_id}`,
-      siteName: t("general.app_name", { owner_name: app_config[locale].name }),
-      locale,
-      type: "article",
-      images: [
-        {
-          url: `${app_url}/api/og/posts/${post_id}`,
-          width: 1200,
-          height: 630,
-          alt: pageTitle,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: pageTitle,
-      description,
-      images: [`${app_url}/api/og/posts/${post_id}`],
-    },
-    alternates: {
-      canonical: `${app_url}/posts/${post_id}`,
-    },
-  };
+  return postMetadata(locale, { post_id, pageTitle, description });
 }
 
 export default async function Layout({

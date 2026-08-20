@@ -2,9 +2,21 @@ import { ImageResponse } from "takumi-js/response";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import client_config from "../../../../../../config/app.config.json";
-import { getPostById } from "@/lib/api/posts/queries";
+import { getPostById, countPosts } from "@/lib/api/posts/queries";
 
 export const dynamic = "force-dynamic";
+
+function formatPostDate(date: Date | null): string {
+  if (!date) return "";
+  const d = new Date(date);
+  const day = d.getDate();
+  const month = d.toLocaleString("en-US", { month: "long" });
+  const year = d.getFullYear();
+  const hours = d.getHours();
+  const ampm = hours >= 12 ? "PM" : "AM";
+  const h = hours % 12 || 12;
+  return `${day} ${month} ${year} — ${h} ${ampm}`;
+}
 
 /** @ignore OG image generation — not part of public REST API */
 export async function GET(
@@ -12,19 +24,17 @@ export async function GET(
   { params }: { params: Promise<{ postId: string }> },
 ) {
   const { postId } = await params;
-  // Load the Pally font
+
   const fontPath = join(
     process.cwd(),
     "src/assets/fonts/en/Pally/Pally-Regular.ttf",
   );
   const fontData = await readFile(fontPath);
 
-  // Load profile image
   const profileImagePath = join(process.cwd(), "public/profile-image.png");
   const profileImageData = await readFile(profileImagePath);
   const profileImageBase64 = `data:image/png;base64,${profileImageData.toString("base64")}`;
 
-  // Load background image
   const bgImagePath = join(process.cwd(), "public/bg-image.png");
   const bgImageData = await readFile(bgImagePath);
   const bgImageBase64 = `data:image/png;base64,${bgImageData.toString("base64")}`;
@@ -32,19 +42,33 @@ export async function GET(
   const appName = client_config.en.name;
 
   let postContent = "";
+  let postDate = "";
+  let postViews = "0";
+  let totalPosts = 0;
   let mediaTypeLabel = "";
+
   try {
-    const post = await getPostById(postId);
-    if (post?.content) {
-      postContent = post.content;
-      if (postContent.length > 200) {
-        postContent = postContent.substring(0, 200) + "...";
+    const [post, count] = await Promise.all([
+      getPostById(postId),
+      countPosts(),
+    ]);
+    totalPosts = count;
+
+    if (post) {
+      if (post.content) {
+        postContent = post.content;
+        if (postContent.length > 200) {
+          postContent = postContent.substring(0, 200) + "...";
+        }
       }
-    }
-    if (post?.media) {
-      if (post.type === "image") mediaTypeLabel = "📷 Image";
-      else if (post.type === "video") mediaTypeLabel = "🎬 Video";
-      else if (post.type === "voice") mediaTypeLabel = "🎤 Voice";
+      postDate = formatPostDate(post.createdAt);
+      postViews = post.views || "0";
+
+      if (post.media) {
+        if (post.type === "image") mediaTypeLabel = "Image";
+        else if (post.type === "video") mediaTypeLabel = "Video";
+        else if (post.type === "voice") mediaTypeLabel = "Voice";
+      }
     }
   } catch (e) {
     console.error("Error fetching post for OG:", e);
@@ -135,23 +159,25 @@ export async function GET(
                       letterSpacing: "-2.5px",
                     }}
                   >
-                    — 27 Posts Published
+                    — {totalPosts} Posts Published
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    fontSize: "55px",
-                    fontWeight: 400,
-                    color: "oklch(0.24 0 0)",
-                    margin: 0,
-                    opacity: 0.8,
-                    fontFamily: "Pally",
-                    letterSpacing: "-2.5px",
-                  }}
-                >
-                  — Posted 27 May 2026 — 6 AM
-                </div>
+                {postDate && (
+                  <div
+                    style={{
+                      fontSize: "55px",
+                      fontWeight: 400,
+                      color: "oklch(0.24 0 0)",
+                      margin: 0,
+                      opacity: 0.8,
+                      fontFamily: "Pally",
+                      letterSpacing: "-2.5px",
+                    }}
+                  >
+                    — Posted {postDate}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -172,6 +198,9 @@ export async function GET(
 
             <div
               style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "24px",
                 fontSize: "55px",
                 fontWeight: 400,
                 color: "oklch(0.24 0 0)",
@@ -181,7 +210,8 @@ export async function GET(
                 letterSpacing: "-2.5px",
               }}
             >
-              28 views
+              <span>{postViews} views</span>
+              {mediaTypeLabel && <span>— {mediaTypeLabel}</span>}
             </div>
           </div>
         </div>
