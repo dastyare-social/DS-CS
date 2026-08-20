@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { app_config, app_url } from "@/config/app";
 import { Locale } from "@/config/locale";
 import Analytics from "@/components/analytics";
+import PwaInstall from "@/components/pwa-install";
+import OfflineIndicator from "@/components/offline-indicator";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
@@ -87,6 +89,8 @@ export default async function RootLayout({
             shadow="none"
           />
           <Analytics />
+          <PwaInstall />
+          <OfflineIndicator />
           {children}
         </NextIntlClientProvider>
       </body>

@@ -10,7 +10,7 @@ export async function GET() {
   // Load the Pally font
   const fontPath = join(
     process.cwd(),
-    "src/assets/fonts/en/Pally/Pally-Regular.ttf"
+    "src/assets/fonts/en/Pally/Pally-Regular.ttf",
   );
   const fontData = await readFile(fontPath);
 
@@ -23,78 +23,87 @@ export async function GET() {
   const appName = client_config.en.name;
 
   return new ImageResponse(
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: "oklch(0.99 0 0)",
-        backgroundImage: "url(bg-image)",
-        backgroundRepeat: "repeat",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        padding: "60px",
-        position: "relative",
-      }}
-    >
+    (
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          padding: "60px",
-          backgroundColor: "rgba(255, 255, 255, 0.7)",
-          backdropFilter: "blur(20px)",
-          borderRadius: "32px",
-          border: "1px solid rgba(234, 88, 12, 0.15)",
-          maxWidth: "1000px",
           width: "100%",
           height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          backgroundColor: "oklch(0.99 0 0)",
+          backgroundImage: "url(bg-image)",
+          backgroundRepeat: "repeat",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          padding: "60px",
+          position: "relative",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "24px", marginBottom: "32px" }}>
-          <img
-            src="profile-image"
-            alt="Profile"
-            style={{
-              width: "80px",
-              height: "80px",
-              borderRadius: "50%",
-              objectFit: "cover",
-              border: "3px solid rgba(234, 88, 12, 0.3)",
-            }}
-          />
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <h1
-              style={{
-                fontSize: "48px",
-                fontWeight: 700,
-                color: "oklch(0.24 0 0)",
-                margin: 0,
-                fontFamily: "Pally",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {appName}'s Channel
-            </h1>
-          </div>
-        </div>
-
-        <p
+        <div
           style={{
-            fontSize: "32px",
-            color: "oklch(0.44 0.01 286)",
-            lineHeight: 1.6,
-            fontFamily: "Pally",
-            letterSpacing: "-0.01em",
-            flex: 1,
-            margin: 0,
+            display: "flex",
+            flexDirection: "column",
+            padding: "60px",
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
+            backdropFilter: "blur(20px)",
+            borderRadius: "32px",
+            border: "1px solid rgba(234, 88, 12, 0.15)",
+            maxWidth: "1000px",
+            width: "100%",
+            height: "100%",
           }}
         >
-          {client_config.en.desc}
-        </p>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "24px",
+              marginBottom: "32px",
+            }}
+          >
+            <img
+              src="profile-image"
+              alt="Profile"
+              style={{
+                width: "80px",
+                height: "80px",
+                borderRadius: "50%",
+                objectFit: "cover",
+                border: "3px solid rgba(234, 88, 12, 0.3)",
+              }}
+            />
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <h1
+                style={{
+                  fontSize: "48px",
+                  fontWeight: 700,
+                  color: "oklch(0.24 0 0)",
+                  margin: 0,
+                  fontFamily: "Pally",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {appName}'s Channel
+              </h1>
+            </div>
+          </div>
+
+          <p
+            style={{
+              fontSize: "32px",
+              color: "oklch(0.44 0.01 286)",
+              lineHeight: 1.6,
+              fontFamily: "Pally",
+              letterSpacing: "-0.01em",
+              flex: 1,
+              margin: 0,
+            }}
+          >
+            {client_config.en.desc}
+          </p>
+        </div>
       </div>
-    </div>,
+    ),
     {
       width: 1200,
       height: 630,
@@ -116,6 +125,6 @@ export async function GET() {
           data: () => Promise.resolve(bgImageData),
         },
       ],
-    }
+    },
   );
 }

@@ -9,13 +9,13 @@ export const dynamic = "force-dynamic";
 /** @ignore OG image generation — not part of public REST API */
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ postId: string }> }
+  { params }: { params: Promise<{ postId: string }> },
 ) {
   const { postId } = await params;
   // Load the Pally font
   const fontPath = join(
     process.cwd(),
-    "src/assets/fonts/en/Pally/Pally-Regular.ttf"
+    "src/assets/fonts/en/Pally/Pally-Regular.ttf",
   );
   const fontData = await readFile(fontPath);
 
@@ -51,107 +51,145 @@ export async function GET(
   }
 
   return new ImageResponse(
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: "oklch(0.99 0 0)",
-        backgroundImage: `url(${bgImageBase64})`,
-        backgroundRepeat: "repeat",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        padding: "60px",
-        position: "relative",
-      }}
-    >
+    (
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          padding: "60px",
-          backgroundColor: "rgba(255, 255, 255, 0.7)",
-          backdropFilter: "blur(20px)",
-          borderRadius: "32px",
-          border: "1px solid rgba(234, 88, 12, 0.15)",
-          maxWidth: "1000px",
           width: "100%",
           height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          backgroundColor: "oklch(0.99 0 0)",
+          backgroundImage: `url(${bgImageBase64})`,
+          backgroundRepeat: "repeat",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          padding: "60px",
+          position: "relative",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "24px", marginBottom: "32px" }}>
-          <img
-            src={profileImageBase64}
-            alt="Profile"
-            style={{
-              width: "80px",
-              height: "80px",
-              borderRadius: "50%",
-              objectFit: "cover",
-              border: "3px solid rgba(234, 88, 12, 0.3)",
-            }}
-          />
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <h1
-              style={{
-                fontSize: "48px",
-                fontWeight: 700,
-                color: "oklch(0.24 0 0)",
-                margin: 0,
-                fontFamily: "Pally",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {appName}'s Channel
-            </h1>
-          </div>
-        </div>
-
-        <p
+        <div
           style={{
-            fontSize: "32px",
-            color: "oklch(0.44 0.01 286)",
-            lineHeight: 1.6,
-            fontFamily: "Pally",
-            letterSpacing: "-0.01em",
-            flex: 1,
-            margin: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "60px",
+            backgroundColor: "rgba(255, 255, 255, 0.5)",
+            backdropFilter: "blur(2px)",
+            border: "2px solid rgba(234, 88, 12, 0.1)",
+            maxWidth: "100%",
+            width: "100%",
+            height: "100%",
           }}
         >
-          {postContent || "A post from " + appName}
-        </p>
-
-        {mediaTypeLabel && (
           <div
             style={{
-              marginTop: "24px",
-              padding: "16px 24px",
-              backgroundColor: "rgba(234, 88, 12, 0.1)",
-              borderRadius: "9999px",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
+              display: "flex",
+              flexDirection: "column",
+              maxWidth: "1800px",
             }}
           >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "35px",
+                marginBottom: "32px",
+              }}
+            >
+              <img
+                src={profileImageBase64}
+                alt="Profile"
+                style={{
+                  width: "250px",
+                  height: "250px",
+                  borderRadius: "50%",
+                  padding: "10px",
+                  objectFit: "cover",
+                  border: "5px solid rgba(234, 88, 12, 0.15)",
+                }}
+              />
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <h1
+                    style={{
+                      fontSize: "85px",
+                      fontWeight: 400,
+                      color: "oklch(0.24 0 0)",
+                      margin: 0,
+                      fontFamily: "Pally",
+                      letterSpacing: "-2.5px",
+                    }}
+                  >
+                    {appName}'s Channel
+                  </h1>
+
+                  <div
+                    style={{
+                      fontSize: "55px",
+                      fontWeight: 400,
+                      color: "oklch(0.24 0 0)",
+                      margin: 0,
+                      opacity: 0.8,
+                      fontFamily: "Pally",
+                      letterSpacing: "-2.5px",
+                    }}
+                  >
+                    — 27 Posts Published
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "55px",
+                    fontWeight: 400,
+                    color: "oklch(0.24 0 0)",
+                    margin: 0,
+                    opacity: 0.8,
+                    fontFamily: "Pally",
+                    letterSpacing: "-2.5px",
+                  }}
+                >
+                  — Posted 27 May 2026 — 6 AM
+                </div>
+              </div>
+            </div>
+
             <p
               style={{
-                fontSize: "20px",
-                color: "oklch(0.44 0.01 286)",
+                fontSize: "65px",
+                color: "oklch(0.24 0 0)",
+                lineHeight: 1.5,
                 fontFamily: "Pally",
-                letterSpacing: "-0.01em",
+                opacity: 0.8,
+                letterSpacing: "-2px",
+                flex: 1,
                 margin: 0,
               }}
             >
-              {mediaTypeLabel}
+              {postContent || "A post from " + appName}
             </p>
+
+            <div
+              style={{
+                fontSize: "55px",
+                fontWeight: 400,
+                color: "oklch(0.24 0 0)",
+                margin: 0,
+                opacity: 0.8,
+                fontFamily: "Pally",
+                letterSpacing: "-2.5px",
+              }}
+            >
+              28 views
+            </div>
           </div>
-        )}
+        </div>
       </div>
-    </div>,
+    ),
     {
-      width: 1200,
-      height: 630,
+      width: 2400,
+      height: 1260,
       fonts: [
         {
           name: "Pally",
@@ -160,6 +198,6 @@ export async function GET(
           weight: 400,
         },
       ],
-    }
+    },
   );
 }

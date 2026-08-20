@@ -18,6 +18,7 @@ import {
   PinIcon,
   PlayIcon,
   SendHorizonalIcon,
+  WifiOffIcon,
   XIcon,
 } from "lucide-react";
 import { filterString } from "@/lib/filters";
@@ -90,6 +91,20 @@ const Page = () => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = useState<string>("");
   const MAX_LINES = 16;
+
+  // Offline detection
+  const [isOffline, setIsOffline] = useState(false);
+  useEffect(() => {
+    setIsOffline(!navigator.onLine);
+    const handleOffline = () => setIsOffline(true);
+    const handleOnline = () => setIsOffline(false);
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+    return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
 
   // Transient error shown when a create/update/delete fails (e.g. demo mode)
   const [writeError, setWriteError] = useState<string | null>(null);
@@ -832,6 +847,7 @@ const Page = () => {
                 <textarea
                   value={filterString(inputValue)}
                   onChange={(e) => {
+                    if (isOffline) return;
                     const newValue = e.target.value;
                     const lines = newValue.split("\n");
                     if (lines.length > MAX_LINES) {
@@ -841,6 +857,7 @@ const Page = () => {
                     setInputValue(newValue);
                   }}
                   onPaste={(e) => {
+                    if (isOffline) return;
                     const pasted = e.clipboardData.getData("text");
                     if (!pasted) return;
                     const currentLines = inputValue.split("\n");
@@ -853,13 +870,17 @@ const Page = () => {
                     setInputValue(inputValue + truncated);
                   }}
                   ref={inputRef}
-                  placeholder={t("general.message_input_placeholder")}
+                  placeholder={isOffline ? "You are offline" : t("general.message_input_placeholder")}
                   autoComplete="off"
                   autoCorrect="off"
                   autoFocus={false}
                   rows={1}
                   maxLength={4096}
-                  className="text-start resize-none w-full flex py-2 pt-3 lg:pt-6 none-scroll-bar focus:outline-none active:outline-none overflow-y-hidden"
+                  disabled={isOffline}
+                  className={cn(
+                    "text-start resize-none w-full flex py-2 pt-3 lg:pt-6 none-scroll-bar focus:outline-none active:outline-none overflow-y-hidden",
+                    isOffline && "opacity-50 cursor-not-allowed",
+                  )}
                 />
               </div>
 
@@ -871,10 +892,10 @@ const Page = () => {
                   accept="image/*,video/*,audio/*,application/*"
                   className="hidden"
                   onChange={handleFileChange}
-                  disabled={isUploading}
+                  disabled={isOffline || isUploading}
                 />
                 <GalleryVerticalEndIcon
-                  className={`stroke-[1px] flex justify-center items-center opacity-80 w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full cursor-pointer ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`stroke-[1px] flex justify-center items-center opacity-80 w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full cursor-pointer ${isOffline || isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
                 />
               </label>
 
@@ -882,13 +903,15 @@ const Page = () => {
                 type="button"
                 onClick={handleSendMessage}
                 disabled={
+                  isOffline ||
                   (!inputValue.trim() && completedMedia.length === 0) ||
                   isUploading ||
                   hasError
                 }
                 className={cn(
                   "flex justify-center items-center w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full",
-                  ((!inputValue.trim() && completedMedia.length === 0) ||
+                  (isOffline ||
+                    (!inputValue.trim() && completedMedia.length === 0) ||
                     isUploading ||
                     hasError) &&
                     "opacity-60",
@@ -902,7 +925,14 @@ const Page = () => {
               </button>
             </div>
             <div className="line-clamp-2 md:line-clamp-1 text-sm tracking-tighter opacity-60">
-              {t("general.lorem_ipsum")}
+              {isOffline ? (
+                <span className="flex items-center gap-1.5 text-amber-500">
+                  <WifiOffIcon className="size-3.5" />
+                  You are offline. Viewing cached content.
+                </span>
+              ) : (
+                t("general.lorem_ipsum")
+              )}
             </div>
           </div>
         </div>
