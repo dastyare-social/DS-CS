@@ -232,7 +232,7 @@ const renderLinks = (text: string): React.ReactNode => {
         return (
           <span
             key={`ae-${idx}`}
-            className="relative inline-flex justify-center items-center w-5 h-5 align-middle"
+            className="relative inline-flex justify-center items-center w-5 h-5 -mb-0.5"
           >
             <span className="invisible w-5 h-5 text-base leading-none select-none">
               {chunk}
@@ -244,7 +244,7 @@ const renderLinks = (text: string): React.ReactNode => {
               width={20}
               height={20}
               loading="lazy"
-              className="absolute inset-0 w-5 h-5"
+              className="absolute inset-0 w-5 h-5 object-contain"
               draggable={false}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
