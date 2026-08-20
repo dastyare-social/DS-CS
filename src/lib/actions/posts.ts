@@ -9,6 +9,7 @@ export type GetPostsParams = {
   limit?: number;
   search?: string;
   type?: "list" | "shorts";
+  bypassCache?: boolean;
 };
 
 export async function getPosts(params?: GetPostsParams | null) {
@@ -17,6 +18,7 @@ export async function getPosts(params?: GetPostsParams | null) {
     limit: Math.max(1, params?.limit ?? 8),
     search: params?.search ?? undefined,
     type: params?.type ?? "list",
+    bypassCache: params?.bypassCache ?? false,
   };
   return trpc.posts.list.query(safe);
 }
@@ -99,4 +101,8 @@ export async function togglePinPost(id: string, pinned: boolean) {
     post_id: id,
   });
   return result;
+}
+
+export async function getPinnedPosts(): Promise<PostWithReactions[]> {
+  return trpc.posts.pinned.query();
 }

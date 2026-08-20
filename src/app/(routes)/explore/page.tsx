@@ -807,15 +807,17 @@ export default function Page() {
         )}
       >
         <div ref={footerRef} className="fixed bottom-0 w-full max-w-xl z-50">
-          <div className="flex justify-end w-full px-5 pb-5 pointer-events-auto">
-            <AsteriskIcon
-              onClick={() => {
-              pauseAllVideos();
-              setExploreState("shorts");
-            }}
-              className="flex sm:hidden opacity-80 size-12 stroke-1 hover:opacity-100 bg-primary/5 border border-primary/10 rounded-full p-1 text-primary backdrop-blur-3xl"
-            />
-          </div>
+          {shorts.length > 0 && (
+            <div className="flex justify-end w-full px-5 pb-5 pointer-events-auto">
+              <AsteriskIcon
+                onClick={() => {
+                pauseAllVideos();
+                setExploreState("shorts");
+              }}
+                className="flex sm:hidden opacity-80 size-12 stroke-1 hover:opacity-100 bg-primary/5 border border-primary/10 rounded-full p-1 text-primary backdrop-blur-3xl"
+              />
+            </div>
+          )}
         </div>
 
         <Threads

@@ -61,3 +61,20 @@ export async function toggleStoryLike(id: string, direction: "inc" | "dec") {
   });
   return result;
 }
+
+export async function createStoryAction(media: {
+  url: string;
+  width?: number;
+  height?: number;
+  duration?: number;
+}) {
+  const type = media.url.toLowerCase().match(/\.(mp4|webm|mov|avi|mkv|m4v)$/)
+    ? "video"
+    : "image";
+  const result = await trpc.stories.create.mutate({ type, media });
+  void captureClientEvent("story_created", {
+    story_id: result.id,
+    type,
+  });
+  return result;
+}

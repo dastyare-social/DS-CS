@@ -154,7 +154,7 @@ async function insertStory({
 
     if (push) {
       await sendPushNotification({
-        title: "New story published",
+        title: "New Story — Omid Shabab's Channel",
         body: "A new story is now live",
         url: "/",
       });

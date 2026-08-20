@@ -1,4 +1,4 @@
-import { desc, eq, ilike, inArray, sql } from "drizzle-orm";
+import { desc, eq, ilike, inArray, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { posts } from "@/lib/db/schema/posts";
 import { reactions } from "@/lib/db/schema/reactions";
@@ -67,6 +67,7 @@ export type GetPostsParams = {
   page?: number;
   limit?: number;
   search?: string;
+  bypassCache?: boolean;
 };
 
 type PostsCacheEntry = {
@@ -101,6 +102,7 @@ export async function getPostsWithReactions({
   page = 1,
   limit = 20,
   search,
+  bypassCache = false,
 }: GetPostsParams): Promise<{
   items: PostWithReactions[];
   page: number;
@@ -118,7 +120,7 @@ export async function getPostsWithReactions({
   // @ts-ignore
   const cache = (global as any)._postsWithReactionsCache as Record<string, PostsCacheEntry>;
   const now = Date.now();
-  if (cache[cacheKey] && now - cache[cacheKey].ts < TTL) {
+  if (!bypassCache && cache[cacheKey] && now - cache[cacheKey].ts < TTL) {
     return cache[cacheKey].value;
   }
 
@@ -215,4 +217,35 @@ export async function getPostById(
     ...post,
     reactions: reactionsRows,
   };
+}
+
+export async function getPinnedPosts(): Promise<PostWithReactions[]> {
+  const rows = await db
+    .select()
+    .from(posts)
+    .where(isNotNull(posts.pinnedAt))
+    .orderBy(desc(posts.createdAt));
+
+  if (rows.length === 0) return [];
+
+  const ids = rows.map((m) => m.id);
+  const reactionsRows = await db
+    .select({
+      postId: reactions.postId,
+      emoji: reactions.emoji,
+      count: reactions.count,
+    })
+    .from(reactions)
+    .where(inArray(reactions.postId, ids));
+
+  const grouped: Record<string, { emoji: string; count: number }[]> = {};
+  for (const row of reactionsRows) {
+    if (!grouped[row.postId]) grouped[row.postId] = [];
+    grouped[row.postId].push({ emoji: row.emoji, count: row.count });
+  }
+
+  return rows.map((m) => ({
+    ...m,
+    reactions: grouped[m.id] ?? [],
+  }));
 }

@@ -3,7 +3,7 @@
 import Message from "@/components/post";
 import Loader from "@/components/loader";
 import { usePosts } from "@/lib/hooks/use-posts";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import {
@@ -11,6 +11,7 @@ import {
   togglePinPost,
   updatePostContent,
   viewPost,
+  getPinnedPosts,
 } from "@/lib/actions/posts";
 import {
   GalleryVerticalEndIcon,
@@ -38,7 +39,6 @@ const Page = () => {
   const headerRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
   const pinnedBarRef = useRef<HTMLDivElement | null>(null);
-  const [showPinnedBar, setShowPinnedBar] = useState(true);
   const [pageHeight, setPageHeight] = useState<number | null>(null);
 
   // Selected media state (upload + progress handled by the hook)
@@ -57,21 +57,18 @@ const Page = () => {
     requestAnimationFrame(() => {
       const headerHeight = headerRef.current?.offsetHeight ?? 0;
       const footerHeight = footerRef.current?.offsetHeight ?? 0;
-      const pinnedBarHeight =
-        showPinnedBar && pinnedBarRef.current
-          ? pinnedBarRef.current.offsetHeight
-          : 0;
+      const pinnedBarHeight = pinnedBarRef.current?.offsetHeight ?? 0;
       document.documentElement.style.setProperty(
         "--chat-header-height",
-        `${headerHeight + 20}px`
+        `${headerHeight + 20}px`,
       );
       document.documentElement.style.setProperty(
         "--chat-footer-height",
-        `${footerHeight + 20}px`
+        `${footerHeight + 20}px`,
       );
       document.documentElement.style.setProperty(
         "--pinned-bar-height",
-        `${pinnedBarHeight}px`
+        `${pinnedBarHeight}px`,
       );
     });
   };
@@ -92,7 +89,7 @@ const Page = () => {
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = useState<string>("");
-  const MAX_LINES = 14;
+  const MAX_LINES = 16;
 
   // Transient error shown when a create/update/delete fails (e.g. demo mode)
   const [writeError, setWriteError] = useState<string | null>(null);
@@ -141,14 +138,6 @@ const Page = () => {
 
     // keep header/footer offsets in sync
     updateHeaderFooterOffsets();
-
-    // On mobile, ensure bottom of page remains visible while typing
-    const pageEl = pageRef.current;
-    if (pageEl) {
-      requestAnimationFrame(() => {
-        pageEl.scrollTop = pageEl.scrollHeight;
-      });
-    }
   }, [inputValue]);
 
   const {
@@ -167,22 +156,38 @@ const Page = () => {
 
   // Pinned posts + editing state
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
-  const [activePinnedIndex, setActivePinnedIndex] = useState(0);
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(
-    null
+    null,
   );
+  const [dbPinnedPosts, setDbPinnedPosts] = useState<PostWithReactions[]>([]);
+  const [activePinnedIndex, setActivePinnedIndex] = useState(0);
 
-  const pinnedPosts = useMemo(
-    () => posts.filter((post) => post.pinnedAt != null),
-    [posts]
-  );
+  // Fetch pinned posts from DB
+  const refreshPinnedPosts = useCallback(async () => {
+    const pinned = await getPinnedPosts();
+    setDbPinnedPosts(pinned);
+  }, []);
+
+  useEffect(() => {
+    refreshPinnedPosts().catch((err) => showWriteError(err));
+  }, [refreshPinnedPosts]);
+
+  // Re-fetch pinned posts when a post is pinned/unpinned
+  const pinnedPosts = dbPinnedPosts;
+
+  // Clamp activePinnedIndex when pinned list shrinks
+  useEffect(() => {
+    setActivePinnedIndex((prev) =>
+      prev >= pinnedPosts.length ? Math.max(0, pinnedPosts.length - 1) : prev,
+    );
+  }, [pinnedPosts.length]);
 
   const activeEditPost = useMemo(
     () =>
       editingPostId
         ? posts.find((post) => post.id === editingPostId)
         : undefined,
-    [editingPostId, posts]
+    [editingPostId, posts],
   );
 
   useEffect(() => {
@@ -192,6 +197,33 @@ const Page = () => {
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const viewedIdsRef = useRef<Set<string>>(new Set());
+
+  // Track which pinned posts have been scrolled past and update the bar
+  // Container uses flex-col-reverse: posts exit bottom as user scrolls UP
+  useEffect(() => {
+    if (pinnedPosts.length === 0) return;
+    const container = pageRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const containerRect = container.getBoundingClientRect();
+      let nextIndex = 0;
+      for (let i = 0; i < pinnedPosts.length; i++) {
+        const el = document.getElementById(`message-${pinnedPosts[i].id}`);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        // flex-col-reverse: posts exit bottom as user scrolls up
+        if (rect.top > containerRect.bottom) {
+          nextIndex = Math.min(i + 1, pinnedPosts.length - 1);
+        }
+      }
+      setActivePinnedIndex(nextIndex);
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [pinnedPosts]);
 
   useEffect(() => {
     const target = sentinelRef.current;
@@ -209,23 +241,12 @@ const Page = () => {
         root: null,
         rootMargin: "200px",
         threshold: 0.1,
-      }
+      },
     );
 
     observer.observe(target);
     return () => observer.disconnect();
   }, [hasMore, isLoading, isLoadingMore, loadMore]);
-
-  // Refetch posts when tab becomes visible (e.g. after push notification)
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        refetch();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [refetch]);
 
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -254,7 +275,7 @@ const Page = () => {
       {
         root: container,
         threshold: 0.4,
-      }
+      },
     );
 
     const items =
@@ -340,7 +361,7 @@ const Page = () => {
       content: trimmed || null,
       views: "0",
       pinnedAt: null,
-      media: validUrls.length > 0 ? { url: validUrls[0] } as any : null,
+      media: validUrls.length > 0 ? ({ url: validUrls[0] } as any) : null,
       createdAt: new Date(),
       updatedAt: null,
       reactions: [],
@@ -369,13 +390,18 @@ const Page = () => {
     }
 
     try {
-      const createdPost = await createPost(trimmed || null, mediaInputs.length > 0 ? mediaInputs : undefined);
+      const createdPost = await createPost(
+        trimmed || null,
+        mediaInputs.length > 0 ? mediaInputs : undefined,
+      );
 
       // 4) Atomically replace the optimistic post with the real one
       if ((createdPost as any)._multiple) {
         const multipleResult = createdPost as any;
         removePost(tempId);
-        multipleResult.posts.forEach((post: PostWithReactions) => addPost(post));
+        multipleResult.posts.forEach((post: PostWithReactions) =>
+          addPost(post),
+        );
       } else {
         replacePost(tempId, createdPost);
       }
@@ -400,7 +426,9 @@ const Page = () => {
     try {
       const createdPost = await createPost(
         post._pendingContent || null,
-        post._pendingMedia && post._pendingMedia.length > 0 ? post._pendingMedia : undefined,
+        post._pendingMedia && post._pendingMedia.length > 0
+          ? post._pendingMedia
+          : undefined,
       );
 
       // Remove the failed post and add the real one
@@ -445,28 +473,23 @@ const Page = () => {
     return `${post.type.charAt(0).toUpperCase()}${post.type.slice(1)} Post`;
   };
 
-  const scrollToPost = (targetId: string) => {
-    const el = document.getElementById(`message-${targetId}`);
+  const scrollToPost = async (targetId: string) => {
+    // If the post isn't loaded yet, keep loading more pages until we find it or run out
+    let el = document.getElementById(`message-${targetId}`);
+    while (!el && hasMore && !isLoading && !isLoadingMore) {
+      await loadMore();
+      // Give React a tick to render
+      await new Promise((r) => setTimeout(r, 50));
+      el = document.getElementById(`message-${targetId}`);
+    }
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     setHighlightedPostId(targetId);
     setTimeout(() => {
       setHighlightedPostId((current) =>
-        current === targetId ? null : current
+        current === targetId ? null : current,
       );
     }, 3000);
-  };
-
-  const handlePinnedBarClick = () => {
-    if (pinnedPosts.length === 0) return;
-    const safeIndex =
-      activePinnedIndex >= pinnedPosts.length ? 0 : activePinnedIndex;
-    const target = pinnedPosts[safeIndex];
-    if (!target) return;
-    scrollToPost(target.id);
-    const nextIndex =
-      safeIndex + 1 >= pinnedPosts.length ? 0 : safeIndex + 1;
-    setActivePinnedIndex(nextIndex);
   };
 
   const handleEditPost = (post: PostWithReactions) => {
@@ -480,27 +503,86 @@ const Page = () => {
     setInputValue("");
   };
 
-  const handleTogglePinPost = (post: PostWithReactions) => {
+  const handleTogglePinPost = async (post: PostWithReactions) => {
     const currentlyPinned = post.pinnedAt != null;
-    // Optimistically toggle without reordering the post
+    // Optimistically toggle in the post list
     updatePost({ ...post, pinnedAt: currentlyPinned ? null : new Date() });
-    setShowPinnedBar(true);
-    void togglePinPost(post.id, !currentlyPinned).catch((err) => {
+    // Optimistically update pinned bar
+    if (currentlyPinned) {
+      setDbPinnedPosts((prev) => prev.filter((p) => p.id !== post.id));
+    } else {
+      setDbPinnedPosts((prev) =>
+        [...prev, { ...post, pinnedAt: new Date() }].sort(
+          (a, b) => (new Date(b.createdAt ?? 0).getTime()) - (new Date(a.createdAt ?? 0).getTime()),
+        ),
+      );
+    }
+    try {
+      await togglePinPost(post.id, !currentlyPinned);
+      // Confirm with server data
+      await refreshPinnedPosts();
+      refetch();
+    } catch (err) {
       // Rollback on failure
       updatePost({
         ...post,
         pinnedAt: currentlyPinned ? new Date() : null,
       });
+      await refreshPinnedPosts().catch(() => {});
+      refetch();
       showWriteError(err);
-    });
+    }
   };
 
-  // When selectedFiles/editing changes, the footer height changes, so update offsets
+  // When selectedFiles/editing/pinned changes, the height changes, so update offsets
   useEffect(() => {
     updateHeaderFooterOffsets();
-  }, [selectedFiles.length, editingPostId, showPinnedBar]);
+  }, [selectedFiles.length, editingPostId, pinnedPosts.length]);
 
   return (
+    <>
+      {/* Pinned posts — outside scroll container, fixed at top */}
+      {pinnedPosts.length > 0 && (
+        <div
+          ref={pinnedBarRef}
+          className="fixed top-[var(--chat-header-height)] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4"
+        >
+          <div
+            onClick={() => {
+              const target = pinnedPosts[activePinnedIndex];
+              if (target) scrollToPost(target.id);
+            }}
+            className="w-full backdrop-blur-md border border-secondary/5 cursor-pointer px-3 py-2 rounded-2xl bg-background/50"
+          >
+            <div className="flex items-center gap-x-2.5">
+              <PinIcon className="size-5 stroke-[1.5px] rotate-45 shrink-0" />
+              <div className="flex flex-col flex-1 text-xs min-w-0">
+                <span>
+                  {t("general.pinned_post")}
+                  {pinnedPosts.length > 1
+                    ? ` — ${Math.min(activePinnedIndex + 1, pinnedPosts.length)}/${pinnedPosts.length}`
+                    : ""}
+                </span>
+                <span className="line-clamp-1 whitespace-pre-wrap wrap-break-word opacity-60">
+                  {resolvePostPreview(
+                    pinnedPosts[Math.min(activePinnedIndex, pinnedPosts.length - 1)] ?? pinnedPosts[0],
+                  )}
+                </span>
+              </div>
+              <XIcon
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const currentPost =
+                    pinnedPosts[Math.min(activePinnedIndex, pinnedPosts.length - 1)] ?? pinnedPosts[0];
+                  if (currentPost) handleTogglePinPost(currentPost);
+                }}
+                className="size-3 stroke-[1.5px] cursor-pointer shrink-0"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
     <div
       ref={pageRef}
       style={{ height: `${pageHeight}px` }}
@@ -512,50 +594,6 @@ const Page = () => {
         headerRef={headerRef}
         container_className="max-w-2xl"
       />
-
-      {/* Pinned posts bar */}
-      {showPinnedBar && pinnedPosts.length > 0 && (
-        <div className="fixed top-[var(--chat-header-height)] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4">
-          <div
-            ref={pinnedBarRef}
-            onClick={handlePinnedBarClick}
-            className="w-full backdrop-blur-md border border-secondary/5 cursor-pointer px-3 py-2 rounded-2xl bg-background/50"
-          >
-            <div className="flex items-center gap-x-2.5">
-              <PinIcon className="size-5 stroke-[1.5px] rotate-45" />
-              <div className="flex flex-col flex-1 text-xs">
-                <span>
-                  {t("general.pinned_post")}
-                  {pinnedPosts.length > 1
-                    ? ` — ${Math.min(
-                        activePinnedIndex + 1,
-                        pinnedPosts.length
-                      )}/${pinnedPosts.length}`
-                    : ""}
-                </span>
-                <span className="line-clamp-1 whitespace-pre-wrap wrap-break-word opacity-60">
-                  {resolvePostPreview(
-                    pinnedPosts[
-                      Math.min(activePinnedIndex, pinnedPosts.length - 1)
-                    ] ?? pinnedPosts[0]
-                  )}
-                </span>
-              </div>
-              <XIcon
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const currentPost =
-                    pinnedPosts[
-                      Math.min(activePinnedIndex, pinnedPosts.length - 1)
-                    ] ?? pinnedPosts[0];
-                  if (currentPost) handleTogglePinPost(currentPost);
-                }}
-                className="size-3 stroke-[1.5px] cursor-pointer"
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* —— List —— */}
       <div className="flex-1 px-2.5 w-full">
@@ -597,13 +635,14 @@ const Page = () => {
               className={cn(
                 "rounded-2xl",
                 highlightedPostId === msg.id &&
-                  "bg-primary/5 ring-2 ring-primary/40"
+                  "bg-primary/5 ring-2 ring-primary/40",
               )}
             >
               <Message
                 can_pin_post
                 can_edit_post
                 can_delete_post
+                can_copy_text
                 post={msg}
                 pinned={msg.pinnedAt != null}
                 onDelete={removePost}
@@ -663,7 +702,9 @@ const Page = () => {
                     <div
                       key={`${file.name}-${index}`}
                       className={`relative cursor-pointer flex items-center gap-2 rounded-xl border bg-primary/1 px-1 py-1 mt-2 text-xs text-primary ${
-                        hasError ? 'border-red-500/50 bg-red-500/5' : 'border-primary/5'
+                        hasError
+                          ? "border-red-500/50 bg-red-500/5"
+                          : "border-primary/5"
                       }`}
                     >
                       {/* Thumbnail / icon */}
@@ -713,10 +754,10 @@ const Page = () => {
                         {isUploadingFile && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                             <div className="w-8 h-8 rounded-full border-2 border-white/30 flex items-center justify-center">
-                              <div 
+                              <div
                                 className="w-6 h-6 rounded-full bg-white/80"
                                 style={{
-                                  clipPath: `polygon(0 0, ${progress}% 0, ${progress}% 100%, 0 100%)`
+                                  clipPath: `polygon(0 0, ${progress}% 0, ${progress}% 100%, 0 100%)`,
                                 }}
                               />
                               <span className="absolute text-[8px] font-bold text-white">
@@ -746,7 +787,9 @@ const Page = () => {
                         <span className="truncate text-[11px] font-medium">
                           {file.name}
                         </span>
-                        <span className={`text-[10px] ${hasError ? 'text-red-500' : 'opacity-60'}`}>
+                        <span
+                          className={`text-[10px] ${hasError ? "text-red-500" : "opacity-60"}`}
+                        >
                           {hasError ? error : `${sizeKB} KB`}
                         </span>
                       </div>
@@ -790,8 +833,24 @@ const Page = () => {
                   value={filterString(inputValue)}
                   onChange={(e) => {
                     const newValue = e.target.value;
-                    if (newValue.split("\n").length > MAX_LINES) return;
+                    const lines = newValue.split("\n");
+                    if (lines.length > MAX_LINES) {
+                      setInputValue(lines.slice(0, MAX_LINES).join("\n"));
+                      return;
+                    }
                     setInputValue(newValue);
+                  }}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData("text");
+                    if (!pasted) return;
+                    const currentLines = inputValue.split("\n");
+                    const pastedLines = pasted.split("\n");
+                    if (currentLines.length + pastedLines.length <= MAX_LINES) return;
+                    e.preventDefault();
+                    const remaining = MAX_LINES - currentLines.length;
+                    if (remaining <= 0) return;
+                    const truncated = pastedLines.slice(0, remaining).join("\n");
+                    setInputValue(inputValue + truncated);
                   }}
                   ref={inputRef}
                   placeholder={t("general.message_input_placeholder")}
@@ -814,16 +873,25 @@ const Page = () => {
                   onChange={handleFileChange}
                   disabled={isUploading}
                 />
-                <GalleryVerticalEndIcon className={`stroke-[1px] flex justify-center items-center opacity-80 w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full cursor-pointer ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`} />
+                <GalleryVerticalEndIcon
+                  className={`stroke-[1px] flex justify-center items-center opacity-80 w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full cursor-pointer ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+                />
               </label>
 
               <button
                 type="button"
                 onClick={handleSendMessage}
-                disabled={(!inputValue.trim() && completedMedia.length === 0) || isUploading || hasError}
+                disabled={
+                  (!inputValue.trim() && completedMedia.length === 0) ||
+                  isUploading ||
+                  hasError
+                }
                 className={cn(
                   "flex justify-center items-center w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full",
-                  ((!inputValue.trim() && completedMedia.length === 0) || isUploading || hasError) && "opacity-60"
+                  ((!inputValue.trim() && completedMedia.length === 0) ||
+                    isUploading ||
+                    hasError) &&
+                    "opacity-60",
                 )}
               >
                 {isUploading ? (
@@ -840,6 +908,7 @@ const Page = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

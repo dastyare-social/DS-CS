@@ -165,7 +165,7 @@ async function insertPost({
 
     if (push) {
       await sendPushNotification({
-        title: "New post published",
+        title: "New Post — Omid Shabab's Channel",
         body: content ? content.slice(0, 80) : "A new post is now available",
         url: "/",
       });

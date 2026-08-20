@@ -8,15 +8,18 @@ import {
   deletePostById,
   getPostById,
   getPostsWithReactions,
+  getPinnedPosts,
   updatePost,
   viewPost,
 } from "@/lib/api/posts";
 import {
+  getStories,
   countStories,
   getStoryById,
-  getStories,
   incrementStoryViews,
   toggleStoryLike,
+  createStory,
+  StoryMediaInput,
 } from "@/lib/api/stories";
 
 const postListInput = z.object({
@@ -24,6 +27,7 @@ const postListInput = z.object({
   limit: z.number().int().positive().max(100).optional(),
   search: z.string().optional(),
   type: z.enum(["list", "shorts"]).optional(),
+  bypassCache: z.boolean().optional(),
 });
 
 const mediaInput = z.object({
@@ -124,6 +128,7 @@ export const postsRouter = router({
       page: input.page,
       limit: input.limit,
       search: input.search,
+      bypassCache: input.bypassCache,
     });
 
     if (input.type === "shorts") {
@@ -149,6 +154,10 @@ export const postsRouter = router({
   }),
 
   count: publicProcedure.query(async () => ({ total: await countPosts() })),
+
+  pinned: publicProcedure.query(async () => {
+    return getPinnedPosts();
+  }),
 
   getById: publicProcedure.input(postIdInput).query(async ({ input }) => {
     const post = await getPostById(input.id);
@@ -254,6 +263,38 @@ export const storiesRouter = router({
     }
     return result;
   }),
+
+  create: publicProcedure
+    .input(
+      z.object({
+        type: z.enum(["image", "video"]).nullable().optional(),
+        media: z
+          .union([
+            z.object({
+              url: z.string(),
+              width: z.number().optional(),
+              height: z.number().optional(),
+              duration: z.number().optional(),
+            }),
+            z.array(
+              z.object({
+                url: z.string(),
+                width: z.number().optional(),
+                height: z.number().optional(),
+                duration: z.number().optional(),
+              })
+            ),
+          ])
+          .optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const story = await createStory({
+        type: input.type ?? undefined,
+        media: (input.media as StoryMediaInput | StoryMediaInput[]) ?? null,
+      });
+      return story;
+    }),
 });
 
 export const appRouter = router({

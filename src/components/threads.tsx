@@ -131,7 +131,7 @@ export default function Threads({
           ))}
           {isLoadingMoreThreads && threads.length > 0 && (
             <div className="grid place-items-center py-4">
-              <Loader className="size-8" />
+              <Loader />
             </div>
           )}
           <div ref={threadsSentinelRef} />

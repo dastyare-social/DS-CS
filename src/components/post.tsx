@@ -21,6 +21,7 @@ import {
   BoxIcon,
   EraserIcon,
   PinIcon,
+  CopyIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -61,6 +62,7 @@ type PostProps = {
   can_pin_post?: boolean;
   can_edit_post?: boolean;
   can_delete_post?: boolean;
+  can_copy_text?: boolean;
   pinned?: boolean;
   // allow parent to remove from list optimistically
   onDelete?: (id: string) => void;
@@ -559,6 +561,7 @@ const Post = memo(({
   can_pin_post = false,
   can_edit_post = false,
   can_delete_post = false,
+  can_copy_text = false,
   pinned = false,
   onDelete,
   onDeleteError,
@@ -917,6 +920,31 @@ const Post = memo(({
           <div className="flex-1">{t("general.copy_post_link")} —</div>
           <BoxIcon className="stroke-[1.5px] size-4" />
         </ContextMenuItem>
+
+        {can_copy_text && content && (
+          <ContextMenuItem
+            className="flex gap-x-2 py-1.5"
+            onClick={() => {
+              if (!content) return;
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(content).catch(() => {});
+              } else {
+                const textarea = document.createElement("textarea");
+                textarea.value = content;
+                textarea.style.position = "fixed";
+                textarea.style.left = "-9999px";
+                document.body.appendChild(textarea);
+                textarea.select();
+                try { document.execCommand("copy"); } catch {} finally {
+                  document.body.removeChild(textarea);
+                }
+              }
+            }}
+          >
+            <div className="flex-1">{t("general.copy_text")} —</div>
+            <CopyIcon className="stroke-[1.5px] size-4" />
+          </ContextMenuItem>
+        )}
 
         {can_pin_post && (
           <ContextMenuItem

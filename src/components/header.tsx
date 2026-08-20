@@ -2,12 +2,13 @@
 
 import { usePosts } from "@/lib/hooks/use-posts";
 import ProfileModal from "@/components/modals/profile";
+import StoryPreviewModal from "@/components/modals/story-preview";
 import Stories from "@/components/stories";
 import { capitalize, cn, formatTimeAgo } from "@/lib/utils";
 import { CircleDashedIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
-import { RefObject } from "react";
+import { RefObject, useState } from "react";
 import { Button } from "./button";
 import Link from "next/link";
 import { routes } from "@/config/routes";
@@ -56,6 +57,8 @@ const Header = ({
     latestPost && latestPost.createdAt
       ? formatTimeAgo(new Date(latestPost.createdAt))
       : null;
+
+  const [storyModalOpen, setStoryModalOpen] = useState(false);
 
   return (
     <div
@@ -133,12 +136,18 @@ const Header = ({
         {new_story && (
           <Button
             variant="primary"
+            onClick={() => setStoryModalOpen(true)}
             className="text-sm md:text-sm px-2.5 py-0.5 backdrop-blur-3xl text-nowrap"
           >
             {t("general.new_story")}
           </Button>
         )}
       </div>
+
+      <StoryPreviewModal
+        open={storyModalOpen}
+        onOpenChange={setStoryModalOpen}
+      />
     </div>
   );
 };
