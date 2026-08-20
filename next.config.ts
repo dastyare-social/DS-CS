@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import type { NextConfig } from "next";
 
 import createNextIntlPlugin from "next-intl/plugin";
+import withSerwistInit from "@serwist/next";
 
 // Define RemotePattern type inline since it might not be exported in Next.js 16
 type RemotePattern = {
@@ -13,6 +14,14 @@ type RemotePattern = {
 };
 
 const withNextIntl = createNextIntlPlugin("./src/i18n.ts");
+
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  cacheOnNavigation: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+});
 
 const revision =
   spawnSync("git", ["rev-parse", "HEAD"], {
@@ -149,6 +158,20 @@ const nextConfig: NextConfig = {
       "/posts", // posts listing page (doesn't exist, only /[post_id] does)
     ].map((source) => ({ source, headers: [robotsHeader] }));
 
+    const swHeaders = {
+      source: "/sw.js",
+      headers: [
+        {
+          key: "Cache-Control",
+          value: "no-cache, no-store, must-revalidate",
+        },
+        {
+          key: "Content-Security-Policy",
+          value: "default-src 'self'; script-src 'self'",
+        },
+      ],
+    };
+
     if (!allowIndexing) {
       // Block everything by default, but keep explicit alwaysNoIndex entries for clarity
       return [
@@ -157,13 +180,14 @@ const nextConfig: NextConfig = {
           source: "/(.*)",
           headers: [robotsHeader],
         },
+        swHeaders,
       ];
     }
 
     // Indexing allowed globally, but still ensure sensitive routes remain blocked.
-    return [...alwaysNoIndex];
+    return [...alwaysNoIndex, swHeaders];
   },
   devIndicators: false,
 };
 
-export default withNextIntl(nextConfig);
+export default withSerwist(withNextIntl(nextConfig));

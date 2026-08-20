@@ -8,7 +8,6 @@ import NextTopLoader from "nextjs-toploader";
 import { cn } from "@/lib/utils";
 import { app_config, app_url } from "@/config/app";
 import { Locale } from "@/config/locale";
-import RegisterPWA from "@/components/register-pwa";
 import Analytics from "@/components/analytics";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -87,7 +86,6 @@ export default async function RootLayout({
             showSpinner={false}
             shadow="none"
           />
-          <RegisterPWA />
           <Analytics />
           {children}
         </NextIntlClientProvider>
