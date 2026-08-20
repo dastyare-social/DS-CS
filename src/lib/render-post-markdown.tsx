@@ -234,15 +234,15 @@ const renderLinks = (text: string): React.ReactNode => {
             key={`ae-${idx}`}
             className="relative inline-block align-baseline"
           >
-            <span className="invisible text-[1em] leading-none select-none">
+            <span className="invisible text-[1.25em] leading-none select-none">
               {chunk}
             </span>
             <Image
               src={src}
               unoptimized
               alt={chunk}
-              width={16}
-              height={16}
+              width={20}
+              height={20}
               loading="lazy"
               className="absolute inset-0 w-full h-full object-contain"
               draggable={false}
@@ -260,7 +260,7 @@ const renderLinks = (text: string): React.ReactNode => {
         );
       }
 
-      return <React.Fragment key={`e-${idx}`}>{chunk}</React.Fragment>;
+      return <span key={`e-${idx}`} className="px-0.5">{chunk}</span>;
     }
 
     // Simple URL matcher:

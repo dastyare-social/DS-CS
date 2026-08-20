@@ -62,12 +62,14 @@ type PostProps = {
   can_edit_post?: boolean;
   can_delete_post?: boolean;
   pinned?: boolean;
-  // NEW: allow parent to remove from list optimistically
+  // allow parent to remove from list optimistically
   onDelete?: (id: string) => void;
   onDeleteError?: (err: unknown) => void;
-  // NEW: allow parent to pin/unpin and edit from context menu
+  // allow parent to pin/unpin and edit from context menu
   onPin?: (post: PostWithReactions) => void;
   onEdit?: (post: PostWithReactions) => void;
+  // retry sending a failed post
+  onRetry?: (post: PostWithReactions) => void;
 };
 
 /* -------------------- VOICE PLAYER COMPONENT -------------------- */
@@ -562,10 +564,12 @@ const Post = memo(({
   onDeleteError,
   onPin,
   onEdit,
+  onRetry,
 }: PostProps) => {
   const t = useTranslations();
 
   const { id, content, createdAt, views, reactions, type, media } = post;
+  const postStatus = (post as any)._status as "sending" | "error" | undefined;
 
   const hasMedia = media != null && type !== "text";
 
@@ -837,7 +841,10 @@ const Post = memo(({
         <div className="flex gap-x-2 items-end cursor-pointer mt-5">
           <Stories size={35} />
 
-          <div className="flex flex-col gap-y-2.5">
+          <div className={cn(
+            "flex flex-col gap-y-2.5",
+            postStatus === "sending" && "animate-pulse opacity-60"
+          )}>
             {pinned && (
               <div className="flex items-center gap-x-1.5 text-[11px] opacity-60 pl-1">
                 <PinIcon className="size-3.5 stroke-[1.5px] rotate-45" />
@@ -869,6 +876,12 @@ const Post = memo(({
                   {formatTime(createdAt)}
                 </div>
               </div>
+
+              {postStatus === "sending" && (
+                <div className="text-[11px] text-primary/60 mt-1 animate-pulse">
+                  {t("general.sending")}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -934,6 +947,16 @@ const Post = memo(({
           >
             <div className="flex-1">{t("general.delete_post")} —</div>
             <EraserIcon className="stroke-[1.5px] size-4" />
+          </ContextMenuItem>
+        )}
+
+        {postStatus === "error" && onRetry && (
+          <ContextMenuItem
+            className="flex gap-x-2 py-1.5"
+            onClick={() => onRetry(post)}
+          >
+            <div className="flex-1">{t("general.try_again")} —</div>
+            <BoxIcon className="stroke-[1.5px] size-4" />
           </ContextMenuItem>
         )}
       </ContextMenuContent>

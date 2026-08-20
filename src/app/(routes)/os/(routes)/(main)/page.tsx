@@ -92,7 +92,7 @@ const Page = () => {
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = useState<string>("");
-  const MAX_LINES = 6;
+  const MAX_LINES = 14;
 
   // Transient error shown when a create/update/delete fails (e.g. demo mode)
   const [writeError, setWriteError] = useState<string | null>(null);
@@ -158,9 +158,11 @@ const Page = () => {
     error,
     hasMore,
     loadMore,
+    refetch,
     addPost,
     removePost,
     updatePost,
+    replacePost,
   } = usePosts(8);
 
   // Pinned posts + editing state
@@ -213,6 +215,17 @@ const Page = () => {
     observer.observe(target);
     return () => observer.disconnect();
   }, [hasMore, isLoading, isLoadingMore, loadMore]);
+
+  // Refetch posts when tab becomes visible (e.g. after push notification)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        refetch();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [refetch]);
 
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -331,6 +344,9 @@ const Page = () => {
       createdAt: new Date(),
       updatedAt: null,
       reactions: [],
+      _status: "sending",
+      _pendingContent: trimmed || null,
+      _pendingMedia: mediaInputs.length > 0 ? mediaInputs : undefined,
     };
 
     // 1) Optimistically add post
@@ -355,22 +371,51 @@ const Page = () => {
     try {
       const createdPost = await createPost(trimmed || null, mediaInputs.length > 0 ? mediaInputs : undefined);
 
-      // 4) Remove the optimistic post and then add the real one
-      removePost(tempId);
-      
-      // Handle multiple posts created (for mixed media types)
+      // 4) Atomically replace the optimistic post with the real one
       if ((createdPost as any)._multiple) {
         const multipleResult = createdPost as any;
+        removePost(tempId);
         multipleResult.posts.forEach((post: PostWithReactions) => addPost(post));
+      } else {
+        replacePost(tempId, createdPost);
+      }
+    } catch (err) {
+      console.error("Error sending message", err);
+      // Mark optimistic post as error instead of removing it
+      const failedPost = posts.find((p) => p.id === tempId);
+      if (failedPost) {
+        updatePost({ ...failedPost, _status: "error" });
+      }
+      showWriteError(err);
+    }
+  };
+
+  // Retry sending a failed post
+  const handleRetryPost = async (post: PostWithReactions) => {
+    if (!post._pendingContent && !post._pendingMedia) return;
+
+    // Mark as sending again
+    updatePost({ ...post, _status: "sending" });
+
+    try {
+      const createdPost = await createPost(
+        post._pendingContent || null,
+        post._pendingMedia && post._pendingMedia.length > 0 ? post._pendingMedia : undefined,
+      );
+
+      // Remove the failed post and add the real one
+      removePost(post.id);
+
+      if ((createdPost as any)._multiple) {
+        const multipleResult = createdPost as any;
+        multipleResult.posts.forEach((p: PostWithReactions) => addPost(p));
       } else {
         addPost(createdPost);
       }
     } catch (err) {
-      console.error("Error sending message", err);
-      // If send failed, remove optimistic post
-      removePost(tempId);
+      console.error("Retry failed", err);
+      updatePost({ ...post, _status: "error" });
       showWriteError(err);
-      // Optionally: show a toast or mark as failed instead.
     }
   };
 
@@ -568,6 +613,7 @@ const Page = () => {
                 }}
                 onPin={handleTogglePinPost}
                 onEdit={handleEditPost}
+                onRetry={handleRetryPost}
               />
             </div>
           ))}
@@ -753,7 +799,7 @@ const Page = () => {
                   autoCorrect="off"
                   autoFocus={false}
                   rows={1}
-                  maxLength={500}
+                  maxLength={4096}
                   className="text-start resize-none w-full flex py-2 pt-3 lg:pt-6 none-scroll-bar focus:outline-none active:outline-none overflow-y-hidden"
                 />
               </div>

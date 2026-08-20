@@ -1,7 +1,7 @@
 export class DemoModeError extends Error {
   constructor() {
     super(
-      "Demo mode is enabled: create, update and delete operations are disabled."
+      "demo mode is enabled — create, update and delete operations are disabled",
     );
     this.name = "DemoModeError";
   }

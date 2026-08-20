@@ -35,7 +35,9 @@
     "login_panel_title": "Panel — Dastyare Social — CS",
     "login_panel_title_span": "To Manage Your Personal Brand",
     "login_error": "Login Error",
-    "logout": "Logout Your Account"
+    "logout": "Logout Your Account",
+    "sending": "Sending...",
+    "try_again": "Try Again"
   },
   "last_time": {
     "just_now": "Just now",

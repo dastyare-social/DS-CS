@@ -55,6 +55,12 @@ export type PostWithReactions = {
     emoji: string;
     count: number;
   }[];
+  /** Client-only status for optimistic posts (not persisted to DB) */
+  _status?: "sending" | "error";
+  /** Preserve content for retry after error */
+  _pendingContent?: string | null;
+  /** Preserve media inputs for retry after error */
+  _pendingMedia?: any[];
 };
 
 export type GetPostsParams = {

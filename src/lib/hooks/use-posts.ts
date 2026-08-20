@@ -12,11 +12,13 @@ type UsePostsState = {
   error: string | null;
   hasMore: boolean;
   loadMore: () => void;
+  refetch: () => void;
 
-  // NEW: helpers for Page
+  // helpers for Page
   addPost: (msg: PostWithReactions) => void;
   removePost: (id: string) => void;
   updatePost: (updated: PostWithReactions) => void;
+  replacePost: (oldId: string, replacement: PostWithReactions) => void;
 };
 
 export function usePosts(initialLimit = 8): UsePostsState {
@@ -98,6 +100,17 @@ export function usePosts(initialLimit = 8): UsePostsState {
     );
   }, []);
 
+  const replacePost = useCallback((oldId: string, replacement: PostWithReactions) => {
+    setPosts((prev) =>
+      prev.map((m) => (m.id === oldId ? replacement : m))
+    );
+  }, []);
+
+  const refetch = useCallback(() => {
+    fetchTotal();
+    fetchPage(1, false);
+  }, [fetchTotal, fetchPage]);
+
   return {
     posts,
     total,
@@ -106,8 +119,10 @@ export function usePosts(initialLimit = 8): UsePostsState {
     error,
     hasMore,
     loadMore,
+    refetch,
     addPost,
     removePost,
     updatePost,
+    replacePost,
   };
 }
