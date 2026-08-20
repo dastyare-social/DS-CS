@@ -73,7 +73,7 @@ const getAnimatedEmojiSrc = (mappedFilename: string): string =>
   `/animated-emojies/${mappedFilename}`;
 
 export const renderSimpleMarkdown = (
-  content: null | string | undefined
+  content: null | string | undefined,
 ): React.ReactNode => {
   if (!content) return "— no content —";
 
@@ -232,19 +232,19 @@ const renderLinks = (text: string): React.ReactNode => {
         return (
           <span
             key={`ae-${idx}`}
-            className="relative inline-flex justify-center items-center w-5 h-5 -mb-0.5"
+            className="relative inline-block align-baseline"
           >
-            <span className="invisible w-5 h-5 text-base leading-none select-none">
+            <span className="invisible text-[1em] leading-none select-none">
               {chunk}
             </span>
             <Image
               src={src}
               unoptimized
               alt={chunk}
-              width={20}
-              height={20}
+              width={16}
+              height={16}
               loading="lazy"
-              className="absolute inset-0 w-5 h-5 object-contain"
+              className="absolute inset-0 w-full h-full object-contain"
               draggable={false}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
