@@ -7,7 +7,7 @@ import type { PostWithReactions } from "@/lib/api/posts";
 interface PinnedBarProps {
   pinnedPosts: PostWithReactions[];
   activeIndex: number;
-  onScrollToPost: (id: string) => void;
+  onCycle: () => void;
   onUnpin: (post: PostWithReactions) => void;
 }
 
@@ -20,7 +20,7 @@ function resolvePostPreview(post?: PostWithReactions) {
 export default function PinnedBar({
   pinnedPosts,
   activeIndex,
-  onScrollToPost,
+  onCycle,
   onUnpin,
 }: PinnedBarProps) {
   const t = useTranslations();
@@ -33,9 +33,7 @@ export default function PinnedBar({
   return (
     <div className="fixed top-[var(--chat-header-height)] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4">
       <div
-        onClick={() => {
-          if (current) onScrollToPost(current.id);
-        }}
+        onClick={onCycle}
         className="w-full backdrop-blur-md border border-secondary/5 cursor-pointer px-3 py-2 rounded-2xl bg-background/50"
       >
         <div className="flex items-center gap-x-2.5">

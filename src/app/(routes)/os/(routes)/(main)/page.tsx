@@ -168,8 +168,9 @@ const Page = () => {
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(
     null,
   );
-  const [dbPinnedPosts, setDbPinnedPosts] = useState<PostWithReactions[]>([]);
   const [activePinnedIndex, setActivePinnedIndex] = useState(0);
+  const [dbPinnedPosts, setDbPinnedPosts] = useState<PostWithReactions[]>([]);
+  const programmaticScrollRef = useRef(false);
 
   // Fetch pinned posts from DB
   const refreshPinnedPosts = useCallback(async () => {
@@ -206,42 +207,6 @@ const Page = () => {
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const viewedIdsRef = useRef<Set<string>>(new Set());
-
-  // Track which pinned posts have been scrolled past and update the bar
-  // Container uses flex-col-reverse: posts exit bottom as user scrolls UP
-  useEffect(() => {
-    if (pinnedPosts.length === 0) return;
-    const container = pageRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      const containerRect = container.getBoundingClientRect();
-      // Find the pinned post that is most visible in the viewport
-      let bestIndex = 0;
-      let bestVisibility = -Infinity;
-
-      for (let i = 0; i < pinnedPosts.length; i++) {
-        const el = document.getElementById(`message-${pinnedPosts[i].id}`);
-        if (!el) continue;
-        const rect = el.getBoundingClientRect();
-        // Calculate how much of the post is visible within the container
-        const visibleTop = Math.max(rect.top, containerRect.top);
-        const visibleBottom = Math.min(rect.bottom, containerRect.bottom);
-        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-        // Prefer the post that is most visible, break ties by position (lower = more recent)
-        if (visibleHeight > bestVisibility) {
-          bestVisibility = visibleHeight;
-          bestIndex = i;
-        }
-      }
-
-      setActivePinnedIndex(bestIndex);
-    };
-
-    container.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => container.removeEventListener("scroll", handleScroll);
-  }, [pinnedPosts]);
 
   useEffect(() => {
     const target = sentinelRef.current;
@@ -499,20 +464,36 @@ const Page = () => {
       if (!isLoading && !isLoadingMore) {
         loadMore();
       }
-      // Wait for load to complete
       await new Promise((r) => setTimeout(r, 200));
       el = document.getElementById(`message-${targetId}`);
       attempts++;
     }
     if (!el) return;
+    programmaticScrollRef.current = true;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     setHighlightedPostId(targetId);
-    setTimeout(() => {
+
+    const releaseLock = () => {
+      programmaticScrollRef.current = false;
       setHighlightedPostId((current) =>
         current === targetId ? null : current,
       );
-    }, 3000);
+    };
+
+    if ("onscrollend" in el) {
+      el.addEventListener("scrollend", releaseLock, { once: true });
+      setTimeout(releaseLock, 3000);
+    } else {
+      setTimeout(releaseLock, 1500);
+    }
   };
+
+  const handleCyclePinned = useCallback(() => {
+    if (pinnedPosts.length === 0) return;
+    const next = (activePinnedIndex + 1) % pinnedPosts.length;
+    setActivePinnedIndex(next);
+    scrollToPost(pinnedPosts[next].id);
+  }, [pinnedPosts, activePinnedIndex]);
 
   const handleEditPost = (post: PostWithReactions) => {
     if (!post.content) return;
@@ -567,7 +548,7 @@ const Page = () => {
       <PinnedBar
         pinnedPosts={pinnedPosts}
         activeIndex={activePinnedIndex}
-        onScrollToPost={scrollToPost}
+        onCycle={handleCyclePinned}
         onUnpin={handleTogglePinPost}
       />
 
