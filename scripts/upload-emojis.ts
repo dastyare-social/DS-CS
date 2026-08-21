@@ -1,5 +1,12 @@
 #!/usr/bin/env tsx
 import "dotenv/config";
+
+// Skip on local builds — only run on CI/server where CI env var is set.
+if (!process.env.CI) {
+  console.log("Skipping upload:emojis (not on CI)");
+  process.exit(0);
+}
+
 /**
  * Download animated emojis from Telegram-Animated-Emojis GitHub repo and
  * upload them directly to S3. No compression — original animated .webp files

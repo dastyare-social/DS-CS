@@ -156,7 +156,7 @@ async function insertStory({
 
     if (push) {
       await sendPushNotification({
-        title: `New Story — ${app_config.en.name}'s Channel`,
+        title: "New Story",
         body: "A new story is now live",
         url: "/",
       });
