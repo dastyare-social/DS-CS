@@ -221,6 +221,8 @@ const Page = () => {
     if (!container) return;
 
     const handleScroll = () => {
+      // Skip scroll-based tracking for 600ms after a pinned post click
+      if (Date.now() - lastPinnedClickRef.current < 600) return;
       const containerRect = container.getBoundingClientRect();
       let nextIndex = 0;
       for (let i = 0; i < pinnedPosts.length; i++) {
@@ -264,6 +266,7 @@ const Page = () => {
   }, [hasMore, isLoading, isLoadingMore, loadMore]);
 
   const listRef = useRef<HTMLDivElement | null>(null);
+  const lastPinnedClickRef = useRef<number>(0);
 
   useEffect(() => {
     const container = listRef.current;
@@ -491,11 +494,15 @@ const Page = () => {
   const scrollToPost = async (targetId: string) => {
     // If the post isn't loaded yet, keep loading more pages until we find it or run out
     let el = document.getElementById(`message-${targetId}`);
-    while (!el && hasMore && !isLoading && !isLoadingMore) {
-      await loadMore();
-      // Give React a tick to render
-      await new Promise((r) => setTimeout(r, 50));
+    let attempts = 0;
+    while (!el && hasMore && attempts < 20) {
+      if (!isLoading && !isLoadingMore) {
+        loadMore();
+      }
+      // Wait for load to complete
+      await new Promise((r) => setTimeout(r, 200));
       el = document.getElementById(`message-${targetId}`);
+      attempts++;
     }
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -565,7 +572,14 @@ const Page = () => {
           <div
             onClick={() => {
               const target = pinnedPosts[activePinnedIndex];
-              if (target) scrollToPost(target.id);
+              if (target) {
+                lastPinnedClickRef.current = Date.now();
+                scrollToPost(target.id);
+                // Advance to next pinned post, cycle back to 0 when at end
+                setActivePinnedIndex((prev) =>
+                  prev + 1 >= pinnedPosts.length ? 0 : prev + 1,
+                );
+              }
             }}
             className="w-full backdrop-blur-md border border-secondary/5 cursor-pointer px-3 py-2 rounded-2xl bg-background/50"
           >

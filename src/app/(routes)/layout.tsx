@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "@/styles/globals.css";
 
 import { NextIntlClientProvider } from "next-intl";
@@ -10,6 +10,12 @@ import { Locale } from "@/config/locale";
 import { rootMetadata } from "../../../config/metadata";
 import Analytics from "@/components/analytics";
 import OfflineIndicator from "@/components/offline-indicator";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#ea580c",
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = (await getLocale()) as Locale;

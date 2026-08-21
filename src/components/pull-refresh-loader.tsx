@@ -1,5 +1,3 @@
-"use client";
-
 import Loader from "@/components/loader";
 
 interface PullRefreshLoaderProps {

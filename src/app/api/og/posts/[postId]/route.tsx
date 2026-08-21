@@ -75,7 +75,7 @@ export async function GET(
     console.error("Error fetching post for OG:", e);
   }
 
-  return new ImageResponse(
+  const imageResponse = new ImageResponse(
     (
       <div
         style={{
@@ -234,4 +234,16 @@ export async function GET(
       ],
     },
   );
+
+  // Cache OG images for 1 hour (social crawlers won't re-fetch frequently)
+  const response = new Response(imageResponse.body, {
+    status: imageResponse.status,
+    statusText: imageResponse.statusText,
+    headers: {
+      ...Object.fromEntries(imageResponse.headers.entries()),
+      "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+    },
+  });
+
+  return response;
 }

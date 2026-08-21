@@ -1,5 +1,3 @@
-"use client";
-
 import Short from "@/components/short";
 import type { PostWithReactions } from "@/lib/api/posts";
 import type { MouseEvent } from "react";

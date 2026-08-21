@@ -9,7 +9,6 @@ Dastyare Social CS lets creators publish threads, shorts (vertical video), media
 - [Interactive API docs (Scalar + MCP)](/docs): Full OpenAPI reference with try-it-out and MCP tool discovery
 - [OpenAPI spec (JSON)](/openapi.json): Machine-readable API contract for tool use and code generation
 - [AGENTS.md](/agents.md): Detailed agent guide with endpoint examples and auth flow
-- [README.md](/readme.md): Setup, architecture, and scripts
 
 ## API overview
 
@@ -57,6 +56,7 @@ This app exposes an MCP server so AI agents can call posts/stories as tools inst
 
 - Endpoint: `{APP_URL}/api/mcp` (Streamable HTTP, JSON responses)
 - Discovery: `{APP_URL}/.well-known/mcp` — returns an `mcpServers` manifest
+- Guide: `{APP_URL}/docs` includes MCP tool documentation
 - Tools: `list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories` (public); `create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story` (require `Authorization: Bearer <API_KEY>`)
 
 Connect a remote MCP client:

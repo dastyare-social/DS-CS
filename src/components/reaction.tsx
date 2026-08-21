@@ -1,5 +1,3 @@
-"use client";
-
 type ReactionProps = {
   emoji: string;
   count: number;
