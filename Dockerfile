@@ -20,10 +20,10 @@ RUN if [ -f package.json ]; then bun install --production=false || bun install; 
 # Copy the rest of the source
 COPY . .
 
-# Generate config (script expects `generate:config`), then build Next
-# Skip running DB migrations at image build time
-RUN bun run generate:config || true
-RUN bunx next build
+# Generate config + icons, then build Next in production mode
+# Skip DB migrations, emoji uploads, and admin bootstrap (need runtime DB access)
+ENV NODE_ENV=production
+RUN bun run generate:config && bun run generate:icons && bunx next build
 
 ## Production image
 FROM node:20-slim
