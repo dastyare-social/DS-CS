@@ -172,7 +172,8 @@ const Page = () => {
   const [dbPinnedPosts, setDbPinnedPosts] = useState<PostWithReactions[]>([]);
   const programmaticScrollRef = useRef(false);
   // Ref tracks the user's cycle position — only changes on tap, never by scroll
-  const cycleIndexRef = useRef(0);
+  // Starts at -1 so first click goes to index 0 (the first pinned post)
+  const cycleIndexRef = useRef(-1);
 
   // Fetch pinned posts from DB
   const refreshPinnedPosts = useCallback(async () => {
@@ -511,7 +512,7 @@ const Page = () => {
     const handleScroll = () => {
       if (programmaticScrollRef.current) return;
       const containerRect = container.getBoundingClientRect();
-      let bestIndex = 0;
+      let bestIndex = -1;
       let bestVisibility = -Infinity;
 
       for (let i = 0; i < pinnedPosts.length; i++) {
@@ -527,7 +528,10 @@ const Page = () => {
         }
       }
 
-      setDisplayIndex(bestIndex);
+      // Only update if a pinned post is actually visible (at least 10px)
+      if (bestIndex >= 0 && bestVisibility >= 10) {
+        setDisplayIndex(bestIndex);
+      }
     };
 
     container.addEventListener("scroll", handleScroll, { passive: true });
