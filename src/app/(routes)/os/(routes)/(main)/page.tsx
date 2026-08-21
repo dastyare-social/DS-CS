@@ -658,7 +658,11 @@ const Page = () => {
                 can_copy_text
                 post={msg}
                 pinned={msg.pinnedAt != null}
-                onDelete={removePost}
+                onDelete={(id) => {
+                  const wasPinned = msg.pinnedAt != null;
+                  removePost(id);
+                  if (wasPinned) refreshPinnedPosts();
+                }}
                 onDeleteError={(err) => {
                   showWriteError(err);
                   addPost(msg);
