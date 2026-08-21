@@ -3,17 +3,19 @@
 import { Button } from "@/components/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
 import Post from "@/components/post";
+import PinnedBar from "@/components/pinned-bar";
 import NewsletterModal from "@/components/modals/notifications";
 import Loader from "@/components/loader";
 import { usePosts } from "@/lib/hooks/use-posts";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Header from "@/components/header";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { setUserLocale } from "@/services/locale";
 import { app_config } from "@/config/app";
 import { Locale } from "@/config/locale";
-import { batchIncrementViews } from "@/lib/actions/posts";
+import { batchIncrementViews, getPinnedPosts } from "@/lib/actions/posts";
+import type { PostWithReactions } from "@/lib/api/posts";
 
 const Page = () => {
   const t = useTranslations();
@@ -70,6 +72,79 @@ const Page = () => {
     usePosts(8);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Pinned posts
+  const [dbPinnedPosts, setDbPinnedPosts] = useState<PostWithReactions[]>([]);
+  const [activePinnedIndex, setActivePinnedIndex] = useState(0);
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
+
+  const refreshPinnedPosts = useCallback(async () => {
+    const pinned = await getPinnedPosts();
+    setDbPinnedPosts(pinned);
+  }, []);
+
+  useEffect(() => {
+    refreshPinnedPosts().catch(() => {});
+  }, [refreshPinnedPosts]);
+
+  const pinnedPosts = dbPinnedPosts;
+
+  // Clamp index when pinned list shrinks
+  useEffect(() => {
+    setActivePinnedIndex((prev) =>
+      prev >= pinnedPosts.length ? Math.max(0, pinnedPosts.length - 1) : prev,
+    );
+  }, [pinnedPosts.length]);
+
+  const scrollToPost = (targetId: string) => {
+    const el = document.getElementById(`message-${targetId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedPostId(targetId);
+    setTimeout(() => {
+      setHighlightedPostId((current) =>
+        current === targetId ? null : current,
+      );
+    }, 3000);
+  };
+
+  const handleUnpin = async (post: PostWithReactions) => {
+    const { togglePinPost } = await import("@/lib/actions/posts");
+    await togglePinPost(post.id, false);
+    await refreshPinnedPosts();
+  };
+
+  // Track which pinned post is most visible in viewport
+  useEffect(() => {
+    if (pinnedPosts.length === 0) return;
+    const container = pageRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const containerRect = container.getBoundingClientRect();
+      let bestIndex = 0;
+      let bestVisibility = -Infinity;
+
+      for (let i = 0; i < pinnedPosts.length; i++) {
+        const el = document.getElementById(`message-${pinnedPosts[i].id}`);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        const visibleTop = Math.max(rect.top, containerRect.top);
+        const visibleBottom = Math.min(rect.bottom, containerRect.bottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+        if (visibleHeight > bestVisibility) {
+          bestVisibility = visibleHeight;
+          bestIndex = i;
+        }
+      }
+
+      setActivePinnedIndex(bestIndex);
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [pinnedPosts]);
 
   // Track which posts we've already sent a "view" for
   const viewedIdsRef = useRef<Set<string>>(new Set());
@@ -199,6 +274,14 @@ const Page = () => {
   }, [posts.length]);
 
   return (
+    <>
+      <PinnedBar
+        pinnedPosts={pinnedPosts}
+        activeIndex={activePinnedIndex}
+        onScrollToPost={scrollToPost}
+        onUnpin={handleUnpin}
+      />
+
     <div
       ref={pageRef}
       style={{ height: `${pageHeight}px` }}
@@ -251,8 +334,9 @@ const Page = () => {
           {posts.map((msg, index) => (
             <div
               key={msg.id ?? index}
+              id={`message-${msg.id}`}
               data-message-id={msg.id}
-              className="message-wrapper"
+              className={`message-wrapper rounded-2xl${highlightedPostId === msg.id ? " bg-primary/5 ring-2 ring-primary/40" : ""}`}
             >
               <Post post={msg} />
             </div>
@@ -287,6 +371,7 @@ const Page = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

@@ -15,7 +15,6 @@ import {
 } from "@/lib/actions/posts";
 import {
   GalleryVerticalEndIcon,
-  PinIcon,
   PlayIcon,
   SendHorizonalIcon,
   WifiOffIcon,
@@ -23,6 +22,7 @@ import {
 } from "lucide-react";
 import { filterString } from "@/lib/filters";
 import Header from "@/components/header";
+import PinnedBar from "@/components/pinned-bar";
 import type { PostWithReactions } from "@/lib/api/posts";
 import { app_config } from "@/config/app";
 import { Locale } from "@/config/locale";
@@ -39,7 +39,6 @@ const Page = () => {
 
   const headerRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
-  const pinnedBarRef = useRef<HTMLDivElement | null>(null);
   const [pageHeight, setPageHeight] = useState<number | null>(null);
 
   // Selected media state (upload + progress handled by the hook)
@@ -58,7 +57,6 @@ const Page = () => {
     requestAnimationFrame(() => {
       const headerHeight = headerRef.current?.offsetHeight ?? 0;
       const footerHeight = footerRef.current?.offsetHeight ?? 0;
-      const pinnedBarHeight = pinnedBarRef.current?.offsetHeight ?? 0;
       document.documentElement.style.setProperty(
         "--chat-header-height",
         `${headerHeight + 20}px`,
@@ -66,10 +64,6 @@ const Page = () => {
       document.documentElement.style.setProperty(
         "--chat-footer-height",
         `${footerHeight + 20}px`,
-      );
-      document.documentElement.style.setProperty(
-        "--pinned-bar-height",
-        `${pinnedBarHeight}px`,
       );
     });
   };
@@ -221,20 +215,27 @@ const Page = () => {
     if (!container) return;
 
     const handleScroll = () => {
-      // Skip scroll-based tracking for 600ms after a pinned post click
-      if (Date.now() - lastPinnedClickRef.current < 600) return;
       const containerRect = container.getBoundingClientRect();
-      let nextIndex = 0;
+      // Find the pinned post that is most visible in the viewport
+      let bestIndex = 0;
+      let bestVisibility = -Infinity;
+
       for (let i = 0; i < pinnedPosts.length; i++) {
         const el = document.getElementById(`message-${pinnedPosts[i].id}`);
         if (!el) continue;
         const rect = el.getBoundingClientRect();
-        // flex-col-reverse: posts exit bottom as user scrolls up
-        if (rect.top > containerRect.bottom) {
-          nextIndex = Math.min(i + 1, pinnedPosts.length - 1);
+        // Calculate how much of the post is visible within the container
+        const visibleTop = Math.max(rect.top, containerRect.top);
+        const visibleBottom = Math.min(rect.bottom, containerRect.bottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+        // Prefer the post that is most visible, break ties by position (lower = more recent)
+        if (visibleHeight > bestVisibility) {
+          bestVisibility = visibleHeight;
+          bestIndex = i;
         }
       }
-      setActivePinnedIndex(nextIndex);
+
+      setActivePinnedIndex(bestIndex);
     };
 
     container.addEventListener("scroll", handleScroll, { passive: true });
@@ -266,7 +267,6 @@ const Page = () => {
   }, [hasMore, isLoading, isLoadingMore, loadMore]);
 
   const listRef = useRef<HTMLDivElement | null>(null);
-  const lastPinnedClickRef = useRef<number>(0);
 
   useEffect(() => {
     const container = listRef.current;
@@ -564,53 +564,12 @@ const Page = () => {
   return (
     <>
       {/* Pinned posts — outside scroll container, fixed at top */}
-      {pinnedPosts.length > 0 && (
-        <div
-          ref={pinnedBarRef}
-          className="fixed top-[var(--chat-header-height)] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4"
-        >
-          <div
-            onClick={() => {
-              const target = pinnedPosts[activePinnedIndex];
-              if (target) {
-                lastPinnedClickRef.current = Date.now();
-                scrollToPost(target.id);
-                // Advance to next pinned post, cycle back to 0 when at end
-                setActivePinnedIndex((prev) =>
-                  prev + 1 >= pinnedPosts.length ? 0 : prev + 1,
-                );
-              }
-            }}
-            className="w-full backdrop-blur-md border border-secondary/5 cursor-pointer px-3 py-2 rounded-2xl bg-background/50"
-          >
-            <div className="flex items-center gap-x-2.5">
-              <PinIcon className="size-5 stroke-[1.5px] rotate-45 shrink-0" />
-              <div className="flex flex-col flex-1 text-xs min-w-0">
-                <span>
-                  {t("general.pinned_post")}
-                  {pinnedPosts.length > 1
-                    ? ` — ${Math.min(activePinnedIndex + 1, pinnedPosts.length)}/${pinnedPosts.length}`
-                    : ""}
-                </span>
-                <span className="line-clamp-1 whitespace-pre-wrap wrap-break-word opacity-60">
-                  {resolvePostPreview(
-                    pinnedPosts[Math.min(activePinnedIndex, pinnedPosts.length - 1)] ?? pinnedPosts[0],
-                  )}
-                </span>
-              </div>
-              <XIcon
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const currentPost =
-                    pinnedPosts[Math.min(activePinnedIndex, pinnedPosts.length - 1)] ?? pinnedPosts[0];
-                  if (currentPost) handleTogglePinPost(currentPost);
-                }}
-                className="size-3 stroke-[1.5px] cursor-pointer shrink-0"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <PinnedBar
+        pinnedPosts={pinnedPosts}
+        activeIndex={activePinnedIndex}
+        onScrollToPost={scrollToPost}
+        onUnpin={handleTogglePinPost}
+      />
 
     <div
       ref={pageRef}
