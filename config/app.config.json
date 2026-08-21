@@ -5,6 +5,6 @@
   },
   "en": {
     "name": "Omid Shabab",
-    "desc": "Dastyare Social CS is a production-ready creator studio: a REST API with OpenAPI docs, self-hosted S3-compatible media uploads, and Better Auth for sessions, API keys, and admin bootstrap."
+    "desc": "Publish text, image, video, voice, or file posts on your own server. Open-source, self-hosted, no license required, built for both humans and AI agents."
   }
 }

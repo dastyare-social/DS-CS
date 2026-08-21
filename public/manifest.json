@@ -1,11 +1,11 @@
 {
-  "name": "Dastyare Social CS",
+  "name": "Dastyare Social — CS",
   "short_name": "Dastyare",
-  "description": "Creator Studio — Share content with your audience.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fafafa",
   "theme_color": "#ea580c",
+  "screenshots": [],
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",

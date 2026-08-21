@@ -33,7 +33,6 @@
     "@aws-sdk/client-s3": "^3.1024.0",
     "@aws-sdk/s3-request-presigner": "^3.1024.0",
     "@better-auth/api-key": "^1.6.23",
-    "@khmyznikov/pwa-install": "^0.6.4",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@radix-ui/react-context-menu": "^2.2.16",
     "@radix-ui/react-slot": "^1.2.4",

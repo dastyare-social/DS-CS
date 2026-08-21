@@ -1,6 +1,6 @@
 # Dastyare Social — CS
 
-> Personal creator studio and social profile platform. REST API for posts and stories, with Better Auth authentication. Built with Next.js 16, PostgreSQL, and S3 media storage.
+> Self-hosted, open-source creator studio. Publish text, image, video, voice, or file posts on your own server. No license required, built for both humans and AI agents.
 
 Dastyare Social CS lets creators publish threads, shorts (vertical video), media posts, and ephemeral stories. External AI agents and LLMs should use the REST API documented below.
 

@@ -39,11 +39,52 @@ async function getActiveServiceWorker(
     return null;
   }
 
+  // If there's already an active SW with pushManager, return immediately
   const existing = await navigator.serviceWorker.getRegistration();
-  if (existing?.active) {
+  if (existing?.active && existing.pushManager) {
     return existing;
   }
 
+  // If a registration exists but the SW isn't active yet, wait for it
+  if (existing) {
+    try {
+      return await new Promise<ServiceWorkerRegistration | null>((resolve) => {
+        const timer = setTimeout(() => resolve(existing), timeoutMs);
+        // If the worker is installing/waiting, let it activate
+        if (existing.installing) {
+          existing.installing.addEventListener("statechange", (e) => {
+            if ((e.target as ServiceWorker).state === "activated") {
+              clearTimeout(timer);
+              resolve(existing);
+            }
+          });
+        } else if (existing.waiting) {
+          existing.waiting.addEventListener("statechange", (e) => {
+            if ((e.target as ServiceWorker).state === "activated") {
+              clearTimeout(timer);
+              resolve(existing);
+            }
+          });
+        } else {
+          // No installing/waiting worker, just wait for ready
+          navigator.serviceWorker.ready.then(
+            (registration) => {
+              clearTimeout(timer);
+              resolve(registration);
+            },
+            () => {
+              clearTimeout(timer);
+              resolve(existing);
+            }
+          );
+        }
+      });
+    } catch {
+      return existing;
+    }
+  }
+
+  // No registration at all — wait for one
   try {
     return await new Promise<ServiceWorkerRegistration | null>((resolve) => {
       const timer = setTimeout(() => resolve(null), timeoutMs);
@@ -183,17 +224,39 @@ export async function registerPushSubscription(): Promise<PushStatus | null> {
   try {
     // Make sure a service worker is active first (handles first visit / dev / stale SW)
     let swRegistration = await getActiveServiceWorker();
-    if (!swRegistration) {
+    if (!swRegistration || !swRegistration.pushManager) {
       try {
-        await navigator.serviceWorker.register("/sw.js");
-        swRegistration = await getActiveServiceWorker();
-      } catch {
+        const reg = await navigator.serviceWorker.register("/sw.js");
+        // Wait for the SW to activate
+        await new Promise<void>((resolve) => {
+          if (reg.active) {
+            resolve();
+            return;
+          }
+          const worker = reg.installing || reg.waiting;
+          if (worker) {
+            worker.addEventListener("statechange", (e) => {
+              if ((e.target as ServiceWorker).state === "activated") {
+                resolve();
+              }
+            });
+          } else {
+            resolve();
+          }
+        });
+        swRegistration = (await navigator.serviceWorker.getRegistration()) ?? null;
+      } catch (err) {
+        console.error("SW registration failed:", err);
         swRegistration = null;
       }
     }
 
     if (!swRegistration?.pushManager) {
-      console.error("PushManager not available");
+      console.error("PushManager not available — SW may not be active", {
+        active: swRegistration?.active?.state,
+        installing: swRegistration?.installing?.state,
+        waiting: swRegistration?.waiting?.state,
+      });
       return "error";
     }
 

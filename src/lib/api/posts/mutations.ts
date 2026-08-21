@@ -8,7 +8,9 @@ import {
 } from "@/lib/db/schema/posts";
 import { insertReactionsSchema } from "@/lib/db/schema/reactions";
 import { z } from "zod";
+import { captureServerEvent, flushServerEvents } from "@/lib/analytics/server";
 import { randomUUID } from "crypto";
+import { app_config } from "@/config/app";
 import type {
   MediaPayload,
   PostType,
@@ -17,7 +19,6 @@ import type {
 import { getPostById, invalidatePostsCache } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
 import { shortenContentUrls } from "@/lib/shorten";
-import { captureServerEvent } from "@/lib/analytics/server";
 import { getMediaDimensionsFromUrl } from "@/lib/utils/media";
 import { assertWritable } from "@/lib/demo-mode";
 
@@ -162,10 +163,11 @@ async function insertPost({
       has_media: Boolean(media),
       content_length: content?.length ?? 0,
     });
+    await flushServerEvents();
 
     if (push) {
       await sendPushNotification({
-        title: "New Post — Omid Shabab's Channel",
+        title: `New Post — ${app_config.en.name}'s Channel`,
         body: content ? content.slice(0, 80) : "A new post is now available",
         url: "/",
       });
@@ -303,6 +305,7 @@ export async function batchIncrementViews(ids: string[]): Promise<void> {
     post_ids: ids,
     count: ids.length,
   });
+  await flushServerEvents();
 }
 
 export async function deletePostById(id: string): Promise<boolean> {
@@ -317,6 +320,7 @@ export async function deletePostById(id: string): Promise<boolean> {
     await captureServerEvent("post_deleted", {
       post_id: id,
     });
+    await flushServerEvents();
   }
   return success;
 }
@@ -373,6 +377,7 @@ export async function addReaction({
     emoji,
     reaction_count: row.count,
   });
+  await flushServerEvents();
 
   return {
     postId: row.postId,
@@ -397,6 +402,7 @@ export async function viewPost(
     post_id: id,
     views: newViews,
   });
+  await flushServerEvents();
 
   return {
     messageId: id,

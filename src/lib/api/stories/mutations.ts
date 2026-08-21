@@ -13,8 +13,9 @@ import type {
   StoryType,
 } from "./queries";
 import { getStoryById } from "./queries";
+import { app_config } from "@/config/app";
 import { sendPushNotification } from "@/lib/notifications/push";
-import { captureServerEvent } from "@/lib/analytics/server";
+import { captureServerEvent, flushServerEvents } from "@/lib/analytics/server";
 import { getMediaDimensionsFromUrl } from "@/lib/utils/media";
 import { assertWritable } from "@/lib/demo-mode";
 
@@ -151,10 +152,11 @@ async function insertStory({
       views: inserted.views,
       likes: inserted.likes,
     });
+    await flushServerEvents();
 
     if (push) {
       await sendPushNotification({
-        title: "New Story — Omid Shabab's Channel",
+        title: `New Story — ${app_config.en.name}'s Channel`,
         body: "A new story is now live",
         url: "/",
       });
@@ -240,6 +242,7 @@ async function updateStoryInternal({
     updated_fields: Object.keys(parsed),
     story_type: updated.type,
   });
+  await flushServerEvents();
   return {
     ...updated,
   };
@@ -264,6 +267,7 @@ export async function deleteStoryById(id: string): Promise<boolean> {
     await captureServerEvent("story_deleted", {
       story_id: id,
     });
+    await flushServerEvents();
   }
   return success;
 }
@@ -284,6 +288,7 @@ export async function incrementStoryViews(
     story_id: id,
     views: newViews,
   });
+  await flushServerEvents();
 
   return { storyId: id, views: newViews };
 }
@@ -309,6 +314,7 @@ export async function toggleStoryLike(
     direction,
     likes: newLikes,
   });
+  await flushServerEvents();
 
   return { storyId: id, likes: newLikes };
 }

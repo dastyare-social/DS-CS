@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createMcpServer } from "@/mcp/server";
 import { getApiKeyConfig } from "@/lib/auth/api-key";
+import { captureServerEvent, flushServerEvents } from "@/lib/analytics/server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -112,6 +113,9 @@ async function handle(req: NextRequest): Promise<Response> {
     session = sessions.get(sessionId)!;
   } else if (isInitialize) {
     session = createSession();
+    captureServerEvent("mcp_session_created", {
+      authenticated: session.authenticated,
+    });
   } else {
     return new Response(
       sessionId
@@ -124,6 +128,19 @@ async function handle(req: NextRequest): Promise<Response> {
   session.lastUsed = Date.now();
   session.authenticated = isAuthenticated(req);
   await session.connected;
+
+  // Track MCP tool calls
+  if (isInitialize) {
+    // already tracked above
+  } else if (parsedBody && typeof parsedBody === "object") {
+    const method = (parsedBody as { method?: string }).method;
+    if (method) {
+      captureServerEvent("mcp_tool_called", {
+        method,
+        authenticated: session.authenticated,
+      });
+    }
+  }
 
   let request: Request;
   if (bodyText != null) {
@@ -145,6 +162,9 @@ async function handle(req: NextRequest): Promise<Response> {
   if (req.method === "DELETE" && sessionId) {
     sessions.delete(sessionId);
   }
+
+  // Flush analytics events before response (important in serverless)
+  await flushServerEvents();
 
   return withCors(response);
 }

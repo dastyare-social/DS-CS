@@ -1,311 +1,220 @@
-# Dastyare Social — CS
+<h1 align="center">Dastyare Social — CS</h1>
 
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![Deploy](https://img.shields.io/badge/deploy-Docker%20%7C%20Bun-lightgrey)](https://github.com/dastyare-social/DS-CS)
-[![Stars](https://img.shields.io/github/stars/dastyare-social/DS-CS)](https://github.com/dastyare-social/DS-CS/stargazers)
-[![Forks](https://img.shields.io/github/forks/dastyare-social/DS-CS)](https://github.com/dastyare-social/DS-CS/network/members)
+<p align="center">
+  Get free of the algorithm. Focus on getting leads and making money.
+</p>
 
-## Why this project
+<p align="center">
+  <a href="https://github.com/dastyare-social/DS-CS/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
+  <a href="https://github.com/dastyare-social/DS-CS/stargazers"><img src="https://img.shields.io/github/stars/dastyare-social/DS-CS?style=social" alt="Stars"></a>
+  <a href="https://github.com/dastyare-social/DS-CS/actions"><img src="https://img.shields.io/github/actions/workflow/status/dastyare-social/DS-CS/ci.yml" alt="CI"></a>
+</p>
 
-Dastyare Social CS is a production-ready creator studio built around:
-- modern REST API with OpenAPI docs and MCP-ready agent support
-- self-hosted media upload via S3-compatible storage
-- Better Auth integration for sessions, API keys, and admin bootstrap
+<p align="center">
+  <a href="#getting-started">Get Started</a> · <a href="https://github.com/dastyare-social/DS-CS">View on GitHub</a> · <a href="./docs/posthog-dashboard-guide.md">Analytics</a>
+</p>
 
-## Popularity & growth
+---
 
-- clear deployment and self-hosting documentation
-- a fast developer workflow with Bun and Drizzle migrations
-- a growing open-source mindset for maintainability and QA
+Every post you publish should work for you — not pad someone else's engagement numbers. DS-CS puts your content where real buyers and search engines actually find it, answering to you, not a feed algorithm.
 
-## Quick start
+- Get found by the people actually looking for what you do — not buried by an algorithm's mood swings
+- Nothing you post can be taken down, demonetized, or buried by a policy change overnight
+- Every post keeps working for you long after it's published — indexed, searchable, and referenceable, not gone in a day
 
-**Requirements:** Bun, Node.js 20+, PostgreSQL, an S3-compatible storage provider, and FFmpeg/FFprobe (for video dimension detection).
+---
 
-### Local quick start
+## The Problem
 
-```bash
-cp .env.example .env
-bun install
-bun run dev          # http://localhost:8729
-```
+Post on a platform you don't own, and the reach you build isn't really yours — one algorithm update, policy change, or suspension away from zero, no matter how good the content was.
 
-### One-command server install
+DS-CS keeps that reach working for you instead: your content stays discoverable, stays yours, and keeps bringing people to your business on its own terms — not whenever a feed decides to show it.
 
-Use the install script to bootstrap the repository on a fresh server or VPS.
-```bash
-curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/scripts/install.sh | bash
-```
-> The script creates a default `.env`, builds Docker Compose services, and starts the app.
+---
 
-On first build, migrations run automatically and an admin user is bootstrapped from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
-## Environment variables
+## What You Get
 
-Copy `.env.example` to `.env` and fill the values before running the app. Do not commit `.env` to source control.
+### Publish in whatever form actually fits what you're saying
 
-### Core environment variables
+Text, image, video, voice, or file — each one published in the format that reads best, not squeezed into one mixed-up post trying to do everything at once.
 
-- `DATABASE_URL`
-  - PostgreSQL connection string.
-  - Example: `postgresql://dastyare_user:strong-password@127.0.0.1:5432/dastyare_social_cs`
-  - For hosted providers, use the URL supplied by the provider.
-- `ADMIN_EMAIL`
-  - Administrator email used by bootstrap and admin sign-in.
-- `ADMIN_PASSWORD`
-  - Bootstrap admin password. Use a strong password or secret passphrase.
-- `API_KEY`
-  - Shared API key for protected REST routes.
-  - Generate with `openssl rand -hex 32` or a secure secret generator.
-- `API_KEY_RATE_LIMIT_MAX_REQUESTS`
-  - Max requests allowed per window for API key clients.
-- `API_KEY_RATE_LIMIT_WINDOW_MS`
-  - Window size in milliseconds for API key rate limiting.
-- `BETTER_AUTH_URL`
-  - Public base URL where the app is served.
-  - Example: `https://app.example.com`
-- `BETTER_AUTH_SECRET`
-  - Long random secret for Better Auth session signing.
-  - Generate with `openssl rand -base64 32`.
+### Ready for how people actually look things up now
 
-- `S3_ENDPOINT`
-  - S3-compatible object storage endpoint.
-  - Example: `https://s3.us-east-1.amazonaws.com`, `https://<bucket>.<region>.digitaloceanspaces.com`, or `http://localhost:9000` for MinIO.
-- `S3_REGION`
-  - Storage region for your provider.
-- `S3_ACCESS_KEY_ID`
-  - Storage access key.
-- `S3_SECRET_ACCESS_KEY`
-  - Storage secret key.
-- `S3_BUCKET_NAME`
-  - Bucket name used for uploads.
-- `S3_FORCE_PATH_STYLE`
-  - Set `true` for MinIO and path-style endpoints, `false` for AWS standard endpoints.
+More people are asking AI for recommendations instead of scrolling a feed. DS-CS makes sure your content is ready for that shift already — indexed for search engines and structured so AI agents can find and reference it, not just human eyes scrolling past.
 
-### Frontend and web push variables
+### No policy change can touch what you've built
 
-- `NEXT_PUBLIC_APP_URL`
-  - Public app URL used for metadata and client-side links.
-  - Example: `https://app.example.com`
-- `NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY`
-- `WEBPUSH_PRIVATE_KEY`
-- `WEBPUSH_SUBJECT`
-  - Valid contact URI such as `mailto:you@example.com`.
-  - Generate VAPID keys with `npx web-push generate-vapid-keys`.
-- `NEXT_PUBLIC_ANIMATED_EMOJIES`
-  - Optional boolean toggle for animated emoji support.
-- `DS_SH_URL` / `DS_SH_API_KEY`
-  - Optional values used for third-party streaming or webhook features when configured.
+No surprise suspension, no algorithm update, no policy change can reach it — it runs on your own server, under your control, on standard tooling you actually own.
 
-### How to fill these values
+---
 
-- Use your provider dashboard for `DATABASE_URL`, `S3_*`, and `BETTER_AUTH_URL`.
-- Generate strong secrets with `openssl rand -hex 32`, `openssl rand -base64 32`, or a secure password manager.
-- For `NEXT_PUBLIC_APP_URL`, use the site URL that will be available in production.
-- For web push VAPID keys, run `npx web-push generate-vapid-keys` and copy both keys into your `.env`.
-- AI can help draft example configs and shell commands, but never store or commit actual secret values.
+## Nothing Hidden
 
-### PostHog analytics configuration
+DS-CS is genuinely open-source — no license fee, no paid tier hiding the functionality you actually need. Inspect the code, self-host it, modify it, and never wonder if the free version is secretly the limited one. It's the one piece of the Dastyare Social suite built fully open, on purpose.
 
-- `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` (required for client-side): Public project token/key used by `posthog-js` in the browser. Find it in PostHog under Project Settings → Setup → JavaScript snippet. This value is safe to expose to browsers but avoid committing it in public repos if you don't want to disclose analytics to third parties.
-- `POSTHOG_API_KEY` (required for server-side): Secret key used by `posthog-node` for server capture and optional local evaluation. Use a Project Secret or Personal API Key from PostHog and keep it private (never commit to source control).
-- `NEXT_PUBLIC_POSTHOG_HOST` (optional): PostHog host URL. Defaults to `https://app.posthog.com` for PostHog Cloud. If you self-host PostHog, use your host URL such as `https://us.i.posthog.com` or `https://analytics.example.com`.
+---
 
-How to set keys:
+## Getting Started
 
-1. Create or sign in to your PostHog account and open the target Project.
-2. For client events, copy the **Project API key / token** (JavaScript snippet) into `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`.
-3. For server events, create a **Personal API key** or use a **Project Secret** (recommended) and set it as `POSTHOG_API_KEY`.
-4. Optionally set `NEXT_PUBLIC_POSTHOG_HOST` (and `POSTHOG_HOST` if preferred) to your PostHog host.
-5. Restart the dev server or rebuild (`bun run dev` / `bun run build`).
+**Step 1 — Deploy**
 
-Security notes:
-
-- Never commit `POSTHOG_API_KEY` to the repo. Use secret managers (GitHub Actions secrets, Docker secrets, Vault) in CI/CD.
-- Rotate keys periodically and restrict the scope of Personal API keys where possible.
-
-Troubleshooting:
-
-- If you see no events in PostHog, ensure `POSTHOG_API_KEY` is present in the runtime environment for server processes and `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` is present for the browser build.
-- Check the network tab for client-side `capture` calls and server logs for PostHog capture failures.
-
-## Pages and project showcase
-
-Dastyare Social CS includes these pages:
-
-- `/` — public feed and home dashboard
-- `/explore` — discover posts, shorts, and stories
-- `/os` — operator/admin dashboard and management tools
-- `/posts` — create, edit, and review posts
-- `/stories` — upload and manage story content
-- `/docs` — interactive API docs and agent reference
-- `/resume` — public profile / creator resume page
-
-### Demo preview
-
-Capture a screenshot of the running app (home feed, explore, admin dashboard, and API docs) and place it at `public/demo-placeholder.png`. The screenshot is rendered here:
-
-![Demo placeholder](./public/demo-placeholder.png)
-
-### Video demo
-
-Record a short product walkthrough and update the link and thumbnail below:
-
-[![Video demo placeholder](./public/video-demo-placeholder.png)](https://example.com)
-
-## Scripts
-
-| Command | Description |
-|---------|-------------|
-| `bun run dev` | Generate config + start dev server (port 8729) |
-| `bun run build` | Config, migrate, bootstrap admin, production build |
-| `bun run start` | Start production server |
-| `bun run lint` | ESLint |
-| `bun run generate:config` | Sync `config/app.config.yml` → `config/app.config.json` |
-| `bun run bootstrap:admin` | Create or update admin user from env |
-| `bun run db:migrate` | Run Drizzle migrations |
-| `bun run db:generate` | Generate migration from schema changes |
-| `bun run db:studio` | Open Drizzle Studio |
-| `bun run openapi:generate` | Regenerate `public/openapi.json` from route JSDoc |
-
-## Docker Compose
-
-### Production
+Docker multi-stage build, standard self-hosting setup.
 
 ```bash
+git clone https://github.com/dastyare-social/DS-CS.git
+cd DS-CS
 docker compose up -d --build
 ```
 
-The default `docker-compose.yml` includes services for:
+**Step 2 — Bootstrap your admin account**
 
-- `app` — the Next.js app
-- `db` — PostgreSQL
-- `minio` — local S3-compatible storage
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`, and your account is ready on first build.
 
-### Development
+**Step 3 — Start publishing**
 
-```bash
-docker compose -f docker-compose.dev.yml up -d --build
-```
+Post through the UI or the REST API directly — built for both from day one.
 
-The `docker-compose.dev.yml` file mounts the repository into the container and runs the dev server.
+Open [http://localhost:8729](http://localhost:8729).
 
-## Architecture
+---
 
-```
-src/
-├── app/
-│   ├── (routes)/          # Pages: home, explore, os (admin), resume
-│   ├── api/               # REST API (OpenAPI-documented)
-│   │   ├── posts/         # Posts CRUD, reactions, views
-│   │   ├── stories/       # Stories CRUD, likes, views
-│   │   ├── auth/          # Better Auth handler
-│   │   └── trpc/          # Internal tRPC (used by frontend)
-│   └── docs/              # Scalar API reference UI
-├── components/            # React UI components
-├── config/                # App config, routes, constants
-├── lib/
-│   ├── api/               # Business logic (posts, stories)
-│   ├── auth/              # Better Auth server + client
-│   ├── db/                # Drizzle schema + migrations
-│   ├── filters/           # Content sanitization (NSFW, HTML)
-│   └── trpc/              # tRPC router (frontend data layer)
-└── services/              # Shared services
-```
+## Self-Hosting
 
-**Stack:** Next.js 16 · React 19 · Bun · PostgreSQL · Drizzle ORM · Better Auth · tRPC · Tailwind CSS 4 · next-intl · AWS S3 (media uploads)
+### Environment Variables
 
-## Production checklist (SEO / Search Console)
+Copy `.env.example` to `.env` and fill in the values:
 
-Follow these before going live:
+<details>
+<summary><strong>Database</strong></summary>
 
-- Set `NEXT_PUBLIC_APP_URL` to your production URL (use `https://`).
-- Add one of these verification methods in your production environment:
- - Set `NEXT_PUBLIC_ALLOW_INDEXING` to `true` in production when you want search engines to index the site. By default indexing is blocked via `X-Robots-Tag`.
- - If you need app-sided Search Console helpers (meta/file), enable them with `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and then choose one verification method:
-  - Meta tag: set `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` to the token Google provides.
-  - File: set `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE` (filename) or `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` (token). Optionally set `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE_CONTENT` to the exact file Google gives you. The app serves the file at `https://<your-host>/<filename>` when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true`.
-- Ensure `robots.txt` and `/sitemap.xml` are reachable (this app generates them via `src/app/robots.ts` and `src/app/sitemap.ts`).
-- Verify HTTPS on your host and make sure `NEXT_PUBLIC_APP_URL` uses `https://`.
-- After deploying, add your site in Google Search Console and verify ownership using the chosen method. Then submit `/sitemap.xml` in the Sitemaps section.
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
 
-For a full verification and Lighthouse guide, see [SEARCH-CONSOLE.md](SEARCH-CONSOLE.md).
+</details>
 
-## API documentation
+<details>
+<summary><strong>Auth & Admin</strong></summary>
 
-| Resource | URL |
-|----------|-----|
-| Interactive docs (Scalar) | `/docs` |
-| OpenAPI spec (JSON) | `/openapi.json` |
-| LLM site map | `/llms.txt` |
-| Auth OpenAPI | `/api/auth/openapi` (Better Auth) |
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `ADMIN_EMAIL` | Admin email for bootstrap and login | Yes |
+| `ADMIN_PASSWORD` | Admin password (strong recommended) | Yes |
+| `BETTER_AUTH_URL` | Public app URL (e.g. `https://app.example.com`) | Yes |
+| `BETTER_AUTH_SECRET` | Random secret for session signing (`openssl rand -base64 32`) | Yes |
+| `API_KEY` | Shared API key for REST endpoints (`openssl rand -hex 32`) | Yes |
 
-Base URL for REST endpoints: `{APP_URL}/api`
+</details>
 
-**Upload-first flow:** `POST /api/media` (multipart `files[]`) validates and stores files, then returns `{ url, key, kind, mimeType, size, width, height, duration }`. Use the returned `url` as `media` when creating posts or stories via `POST /api/posts` / `POST /api/stories`. `POST /api/upload` is a single-file alias. Limits are configurable via `MEDIA_MAX_*_SIZE_MB`, `MEDIA_ALLOWED_MIME_TYPES`, and `MEDIA_KEY_PREFIX`.
+<details>
+<summary><strong>S3 Storage</strong></summary>
 
-See [AGENTS.md](./AGENTS.md) for a complete API reference written for AI agents, and [CONTRIBUTING.md](./CONTRIBUTING.md) for development workflow.
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `S3_ENDPOINT` | S3 endpoint (AWS, DigitalOcean, MinIO) | Yes |
+| `S3_REGION` | Storage region | Yes |
+| `S3_ACCESS_KEY_ID` | Access key | Yes |
+| `S3_SECRET_ACCESS_KEY` | Secret key | Yes |
+| `S3_BUCKET_NAME` | Bucket name | Yes |
+| `S3_FORCE_PATH_STYLE` | `true` for MinIO, `false` for AWS | Yes |
 
-## Configuration
+</details>
 
-- **App profile:** Edit `config/app.config.yml`, then run `bun run generate:config`
-- **Environment:** Copy `.env.example` — never commit secrets
-- **Port:** Default `8729` (set in `package.json` scripts)
+<details>
+<summary><strong>App & Frontend</strong></summary>
 
-## Deployment
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `NEXT_PUBLIC_APP_URL` | Public app URL for metadata and links | Yes |
+| `NEXT_PUBLIC_ANIMATED_EMOJIES` | Enable animated emoji overlays | No |
+| `NEXT_PUBLIC_ALLOW_INDEXING` | Allow search engine indexing | No |
+| `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` | PostHog project token (analytics) | No |
 
-## Releases
+</details>
 
-Push a version tag to publish a GitHub Release with automatically generated
-release notes:
+<details>
+<summary><strong>Push Notifications</strong></summary>
 
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY` | VAPID public key | No |
+| `WEBPUSH_PRIVATE_KEY` | VAPID private key | No |
+| `WEBPUSH_SUBJECT` | Contact URI (e.g. `mailto:you@example.com`) | No |
 
-Use semantic versions: patch releases for fixes (`v0.1.1`), minor releases for
-new features (`v0.2.0`), and major releases for breaking changes (`v1.0.0`).
+Generate VAPID keys: `npx web-push generate-vapid-keys`
 
-Docker multi-stage build included. See `Dockerfile`. Production build skips DB migration at image build time; run migrations at container start or via CI.
+</details>
 
-For a complete self-hosting guide covering environment variables, PostgreSQL, S3-compatible storage, Docker, VPS, Vercel, Railway, Render, and browser push notifications, see [SELF-HOSTING.md](./SELF-HOSTING.md).
+<details>
+<summary><strong>URL Shortener (Optional)</strong></summary>
 
-## Web push notifications (self-hosted)
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DS_SH_URL` | Dastyare Social SH instance URL | No |
+| `DS_SH_API_KEY` | API key for the URL shortener | No |
 
-Browser push notifications are supported for modern browsers on HTTPS. They are optional and only send to users who explicitly enable them from the notification modal.
+</details>
 
-### 1) Generate VAPID keys
+### App Configuration
 
-Run this locally or in your deployment environment:
+Edit `config/app.config.yml` to set your name, description, and email, then regenerate:
 
 ```bash
-npx web-push generate-vapid-keys
+bun run generate:config
 ```
 
-The command prints a public key and a private key.
+---
 
-### 2) Fill in the environment variables
+## SEO & Search Console
 
-In your `.env` or deployment secrets, set:
+Indexing is **disabled by default**. To enable:
 
-```dotenv
-NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY="<public-key>"
-WEBPUSH_PRIVATE_KEY="<private-key>"
-WEBPUSH_SUBJECT="mailto:you@example.com"
-```
+1. Set `NEXT_PUBLIC_ALLOW_INDEXING=true` in production
+2. Verify ownership in Google Search Console using one of:
+   - **Meta tag:** set `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` to your token
+   - **File:** set `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` — the app serves the verification file at `https://<your-host>/<filename>`
+3. Submit `/sitemap.xml` in Search Console
 
-You can set `WEBPUSH_SUBJECT` to any valid contact string, but `mailto:your-email@example.com` is the most common and recommended format.
+Every post is indexed for search engines and includes an `llms.txt` site map for AI agents — built to be found, not just technically accessible.
 
-### 3) Requirements
+---
 
-- The app must run on HTTPS in production.
-- The browser must support Web Push.
-- The browser must allow notifications for your domain.
+## FAQ
 
-### 4) Notes
+**Is this actually free, or is there a paid tier?**
+Open-source, no license required. There's no hidden paid tier — DS-CS itself is complete as-is.
 
-- The feature is browser push only, not email.
-- If VAPID keys are missing, the app will show a setup message instead of failing silently.
-- The push subscription is stored in the database so the server can target active subscribers.
+**Do I need the rest of the Dastyare Social suite to use this?**
+No. DS-CS runs standalone.
 
-See [SELF-HOSTING.md](./SELF-HOSTING.md) for a full production checklist.
+**What if I want the full personal brand build — website, content hub, everything?**
+That's the Launch Package. DS-CS is one piece; the Launch Package bundles it with the rest.
+
+**Does this support MCP for AI agent tool use?**
+Yes. The app exposes an MCP server at `/api/mcp` so AI agents can call posts and stories as tools.
+
+**What database and stack does this run on?**
+Next.js, React, Bun, PostgreSQL, Drizzle ORM — full details in the docs.
+
+**Is my content actually searchable, or just technically public?**
+Every post is indexed for search engines and includes an `llms.txt` site map for AI agents — built to be found, not just technically accessible.
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, coding conventions, and PR guidelines.
+
+---
+
+## Security
+
+Report vulnerabilities via [GitHub Security Advisories](https://github.com/dastyare-social/DS-CS/security/advisories).
+
+See [SECURITY.md](./SECURITY.md) for details.
+
+---
+
+## License
+
+[MIT](LICENSE) — Copyright (c) 2026 Dastyare Social

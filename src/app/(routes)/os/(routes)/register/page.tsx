@@ -20,6 +20,7 @@ const Page = () => {
 
   // Root scroll container ref (optional but useful for future scroll-to-bottom logic)
   const pageRef = useRef<HTMLDivElement | null>(null);
+  const passwordRef = useRef<HTMLInputElement | null>(null);
 
   const [pageHeight, setPageHeight] = useState<number | null>(null);
 
@@ -42,6 +43,13 @@ const Page = () => {
     setError(null);
     set_show_password_input(true);
   };
+
+  // Auto-focus password input when it becomes visible
+  useEffect(() => {
+    if (show_password_input && passwordRef.current) {
+      passwordRef.current.focus();
+    }
+  }, [show_password_input]);
 
   // Handle final sign-in
   const handleSignIn = async () => {
@@ -151,6 +159,7 @@ const Page = () => {
                 password —
               </div>
               <Input
+                ref={passwordRef}
                 id="fieldgroup-password"
                 type="password"
                 placeholder="YOUR-PASSWORD*"
