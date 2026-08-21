@@ -3,6 +3,7 @@ import { readFile } from "fs/promises";
 import { join } from "path";
 import client_config from "../../../../../../config/app.config.json";
 import { getPostById, countPosts } from "@/lib/api/posts/queries";
+import { preprocessContent } from "@/lib/render-post-markdown";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +57,7 @@ export async function GET(
 
     if (post) {
       if (post.content) {
-        postContent = post.content;
+        postContent = preprocessContent(post.content);
         if (postContent.length > 200) {
           postContent = postContent.substring(0, 200) + "...";
         }
@@ -117,7 +118,7 @@ export async function GET(
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "35px",
+                gap: "45px",
                 marginBottom: "32px",
               }}
             >
@@ -125,8 +126,8 @@ export async function GET(
                 src={profileImageBase64}
                 alt="Profile"
                 style={{
-                  width: "250px",
-                  height: "250px",
+                  width: "325px",
+                  height: "325px",
                   borderRadius: "50%",
                   padding: "10px",
                   objectFit: "cover",
@@ -134,10 +135,12 @@ export async function GET(
                 }}
               />
               <div style={{ display: "flex", flexDirection: "column" }}>
-                <div style={{ display: "flex", alignItems: "center" }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "15px" }}
+                >
                   <h1
                     style={{
-                      fontSize: "85px",
+                      fontSize: "95px",
                       fontWeight: 400,
                       color: "oklch(0.24 0 0)",
                       margin: 0,
@@ -201,12 +204,13 @@ export async function GET(
                 display: "flex",
                 alignItems: "center",
                 gap: "24px",
-                fontSize: "55px",
+                fontSize: "45px",
                 fontWeight: 400,
                 color: "oklch(0.24 0 0)",
                 margin: 0,
                 opacity: 0.8,
                 fontFamily: "Pally",
+                marginTop: "35px",
                 letterSpacing: "-2.5px",
               }}
             >

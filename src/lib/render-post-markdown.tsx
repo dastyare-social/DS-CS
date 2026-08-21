@@ -22,7 +22,7 @@ import { emojiToAnimatedPath } from "@/config/emoji-to-animated-path";
 const HIGHLIGHT_CLASS = "text-primary bg-primary/5 py-0.5 outline-none";
 
 // PB Style Guide: preprocess content before rendering
-const preprocessContent = (raw: string): string => {
+export const preprocessContent = (raw: string): string => {
   let text = raw;
 
   // Replace double quotes with single quotes
