@@ -8,7 +8,7 @@ import { capitalize, cn, formatTimeAgo } from "@/lib/utils";
 import { CircleDashedIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
-import { RefObject, useState } from "react";
+import { RefObject, useEffect, useState } from "react";
 import { Button } from "./button";
 import Link from "next/link";
 import { routes } from "@/config/routes";
@@ -58,6 +58,20 @@ const Header = ({
       ? formatTimeAgo(new Date(latestPost.createdAt))
       : null;
 
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    setIsOffline(!navigator.onLine);
+    const handleOffline = () => setIsOffline(true);
+    const handleOnline = () => setIsOffline(false);
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+    return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
+
   const [storyModalOpen, setStoryModalOpen] = useState(false);
 
   return (
@@ -97,11 +111,23 @@ const Header = ({
                 </span>
               </div>
               <div className="text-sm leading-4 opacity-80 hidden sm:flex">
-                {finalPosts.length > 0 && latestTimeLabel && (
-                  <>
-                    — {t("general.posted")}&nbsp;&nbsp;
-                    {t_last_time(latestTimeLabel.key, latestTimeLabel.values)}
-                  </>
+                {isOffline ? (
+                  <span className="text-amber-600">
+                    — you lost internet connection — trying to connect
+                    <span className="inline-flex w-6 text-left">
+                      <span className="dot-1">.</span>
+                      <span className="dot-2">.</span>
+                      <span className="dot-3">.</span>
+                    </span>
+                  </span>
+                ) : (
+                  finalPosts.length > 0 &&
+                  latestTimeLabel && (
+                    <>
+                      — {t("general.posted")}&nbsp;&nbsp;
+                      {t_last_time(latestTimeLabel.key, latestTimeLabel.values)}
+                    </>
+                  )
                 )}
               </div>
             </div>

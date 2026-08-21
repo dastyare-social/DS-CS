@@ -81,3 +81,12 @@ body {
 .none-scroll-bar::-webkit-scrollbar {
   display: none; /* —— for Chrome, Safari, and Opera —— */
 }
+
+@keyframes dot-blink {
+  0%, 20% { opacity: 0.2; }
+  40%, 100% { opacity: 1; }
+}
+
+.dot-1 { animation: dot-blink 1.4s infinite 0s; }
+.dot-2 { animation: dot-blink 1.4s infinite 0.2s; }
+.dot-3 { animation: dot-blink 1.4s infinite 0.4s; }

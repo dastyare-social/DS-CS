@@ -12,7 +12,7 @@ const MEDIA_CACHE = "media-cache-v1";
 // ---------------------------------------------------------------------------
 // IndexedDB helpers (inline — SW can't use ES modules)
 // ---------------------------------------------------------------------------
-const IDB_NAME = "dastyare-offline";
+const IDB_NAME = "ds-cs-offline";
 const IDB_VERSION = 1;
 const POSTS_STORE = "posts";
 
@@ -168,8 +168,15 @@ function cacheMediaInCacheAPI(urls) {
 // ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
-self.addEventListener("install", () => {
-  self.skipWaiting();
+const SHELL_URLS = ["/"];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(PAGE_CACHE)
+      .then((cache) => cache.addAll(SHELL_URLS))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -179,7 +186,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(keys.filter((k) => k.endsWith("-dev")).map((k) => caches.delete(k)))
       )
-      .then(() => clients.claim())
+      .then(() => self.clients.claim())
   );
 });
 
