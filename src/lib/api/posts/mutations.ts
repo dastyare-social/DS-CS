@@ -167,7 +167,7 @@ async function insertPost({
 
     if (push) {
       await sendPushNotification({
-        title: "New Post",
+        title: `New Post — ${app_config.en.name}'s Channel`,
         body: content ? content.slice(0, 80) : "A new post is now available",
         url: "/",
       });
