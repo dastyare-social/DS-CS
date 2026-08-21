@@ -10,7 +10,7 @@ export function createMcpServer(options: McpServerOptions = {}): McpServer {
   const canWrite = options.canWrite ?? (() => false);
 
   const server = new McpServer({
-    name: "dastyare-social",
+    name: "ds-cs",
     version: "1.0.0",
   });
 

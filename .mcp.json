@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "dastyare": {
+    "ds-cs": {
       "command": "bun",
       "args": ["run", "mcp"]
     }

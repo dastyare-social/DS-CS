@@ -13,7 +13,7 @@ export async function GET() {
     JSON.stringify(
       {
         mcpServers: {
-          dastyare: {
+          "ds-cs": {
             url: `${app_url}/api/mcp`,
           },
         },

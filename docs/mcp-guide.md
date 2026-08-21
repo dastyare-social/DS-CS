@@ -53,7 +53,7 @@ Run `bun run mcp` to start a stdio MCP server that talks directly to your databa
 ```json
 {
   "mcpServers": {
-    "dastyare": {
+    "ds-cs": {
       "url": "https://cs.dastyare.social/api/mcp"
     }
   }
@@ -67,7 +67,7 @@ Run `bun run mcp` to start a stdio MCP server that talks directly to your databa
 ```json
 {
   "mcpServers": {
-    "dastyare": {
+    "ds-cs": {
       "url": "https://cs.dastyare.social/api/mcp",
       "headers": {
         "Authorization": "Bearer YOUR_API_KEY"
@@ -82,7 +82,7 @@ Run `bun run mcp` to start a stdio MCP server that talks directly to your databa
 ```json
 {
   "mcpServers": {
-    "dastyare": {
+    "ds-cs": {
       "command": "bun",
       "args": ["run", "mcp"],
       "cwd": "/path/to/dastyare_social_cs"
@@ -102,7 +102,7 @@ Or create `.cursor/mcp.json` in your project root:
 ```json
 {
   "mcpServers": {
-    "dastyare": {
+    "ds-cs": {
       "url": "https://cs.dastyare.social/api/mcp"
     }
   }
@@ -121,7 +121,7 @@ The repo already includes `.mcp.json` at the root. Claude Code auto-discovers it
 ```json
 {
   "mcpServers": {
-    "dastyare": {
+    "ds-cs": {
       "type": "url",
       "url": "https://cs.dastyare.social/api/mcp"
     }
@@ -142,7 +142,7 @@ Response:
 ```json
 {
   "mcpServers": {
-    "dastyare": {
+    "ds-cs": {
       "url": "https://cs.dastyare.social/api/mcp"
     }
   }

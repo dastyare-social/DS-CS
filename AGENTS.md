@@ -344,7 +344,7 @@ Connect from a remote MCP client (`.mcp.json`):
 ```json
 {
   "mcpServers": {
-    "dastyare": {
+    "ds-cs": {
       "url": "{APP_URL}/api/mcp"
     }
   }
@@ -356,7 +356,7 @@ For write access, include the API key as a header on the MCP server:
 ```json
 {
   "mcpServers": {
-    "dastyare": {
+    "ds-cs": {
       "url": "{APP_URL}/api/mcp",
       "headers": { "Authorization": "Bearer {API_KEY}" }
     }
@@ -371,7 +371,7 @@ Run `bun run mcp` (wraps `scripts/mcp-server.ts`) to start a stdio MCP server th
 ```json
 {
   "mcpServers": {
-    "dastyare": {
+    "ds-cs": {
       "command": "bun",
       "args": ["run", "mcp"]
     }
