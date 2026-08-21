@@ -168,9 +168,11 @@ const Page = () => {
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(
     null,
   );
-  const [activePinnedIndex, setActivePinnedIndex] = useState(0);
+  const [displayIndex, setDisplayIndex] = useState(0);
   const [dbPinnedPosts, setDbPinnedPosts] = useState<PostWithReactions[]>([]);
   const programmaticScrollRef = useRef(false);
+  // Ref tracks the user's cycle position — only changes on tap, never by scroll
+  const cycleIndexRef = useRef(0);
 
   // Fetch pinned posts from DB
   const refreshPinnedPosts = useCallback(async () => {
@@ -185,12 +187,15 @@ const Page = () => {
   // Re-fetch pinned posts when a post is pinned/unpinned
   const pinnedPosts = dbPinnedPosts;
 
-  // Clamp activePinnedIndex when pinned list shrinks
+  // Clamp both display and cycle when pinned list shrinks
   useEffect(() => {
-    setActivePinnedIndex((prev) =>
-      prev >= pinnedPosts.length ? Math.max(0, pinnedPosts.length - 1) : prev,
-    );
-  }, [pinnedPosts.length]);
+    if (pinnedPosts.length === 0) return;
+    if (displayIndex >= pinnedPosts.length) {
+      const clamped = pinnedPosts.length - 1;
+      setDisplayIndex(clamped);
+      cycleIndexRef.current = clamped;
+    }
+  }, [pinnedPosts.length, displayIndex]);
 
   const activeEditPost = useMemo(
     () =>
@@ -456,7 +461,7 @@ const Page = () => {
     return `${post.type.charAt(0).toUpperCase()}${post.type.slice(1)} Post`;
   };
 
-  const scrollToPost = async (targetId: string) => {
+  const scrollToPost = useCallback(async (targetId: string) => {
     // If the post isn't loaded yet, keep loading more pages until we find it or run out
     let el = document.getElementById(`message-${targetId}`);
     let attempts = 0;
@@ -486,14 +491,49 @@ const Page = () => {
     } else {
       setTimeout(releaseLock, 1500);
     }
-  };
+  }, [hasMore, isLoading, isLoadingMore, loadMore]);
 
   const handleCyclePinned = useCallback(() => {
     if (pinnedPosts.length === 0) return;
-    const next = (activePinnedIndex + 1) % pinnedPosts.length;
-    setActivePinnedIndex(next);
+    const next = (cycleIndexRef.current + 1) % pinnedPosts.length;
+    cycleIndexRef.current = next;
+    setDisplayIndex(next);
     scrollToPost(pinnedPosts[next].id);
-  }, [pinnedPosts, activePinnedIndex]);
+  }, [pinnedPosts, scrollToPost]);
+
+  // Scroll-based display: show which pinned post is most visible
+  // Only updates displayIndex when user is scrolling manually (not programmatic)
+  useEffect(() => {
+    if (pinnedPosts.length === 0) return;
+    const container = pageRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      if (programmaticScrollRef.current) return;
+      const containerRect = container.getBoundingClientRect();
+      let bestIndex = 0;
+      let bestVisibility = -Infinity;
+
+      for (let i = 0; i < pinnedPosts.length; i++) {
+        const el = document.getElementById(`message-${pinnedPosts[i].id}`);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        const visibleTop = Math.max(rect.top, containerRect.top);
+        const visibleBottom = Math.min(rect.bottom, containerRect.bottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+        if (visibleHeight > bestVisibility) {
+          bestVisibility = visibleHeight;
+          bestIndex = i;
+        }
+      }
+
+      setDisplayIndex(bestIndex);
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [pinnedPosts]);
 
   const handleEditPost = (post: PostWithReactions) => {
     if (!post.content) return;
@@ -547,7 +587,7 @@ const Page = () => {
       {/* Pinned posts — outside scroll container, fixed at top */}
       <PinnedBar
         pinnedPosts={pinnedPosts}
-        activeIndex={activePinnedIndex}
+        activeIndex={displayIndex}
         onCycle={handleCyclePinned}
         onUnpin={handleTogglePinPost}
       />

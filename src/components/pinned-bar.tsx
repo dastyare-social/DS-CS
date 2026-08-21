@@ -2,6 +2,7 @@
 
 import { PinIcon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useEffect, useRef } from "react";
 import type { PostWithReactions } from "@/lib/api/posts";
 
 interface PinnedBarProps {
@@ -24,6 +25,26 @@ export default function PinnedBar({
   onUnpin,
 }: PinnedBarProps) {
   const t = useTranslations();
+  const barRef = useRef<HTMLDivElement>(null);
+
+  // Self-report height via CSS variable so pages can offset content
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const update = () => {
+      document.documentElement.style.setProperty(
+        "--pinned-bar-height",
+        `${el.offsetHeight}px`,
+      );
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.setProperty("--pinned-bar-height", "0px");
+    };
+  }, [pinnedPosts.length]);
 
   if (pinnedPosts.length === 0) return null;
 
@@ -31,7 +52,7 @@ export default function PinnedBar({
   const current = pinnedPosts[clampedIndex];
 
   return (
-    <div className="fixed top-[var(--chat-header-height)] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4">
+    <div ref={barRef} className="fixed top-[var(--chat-header-height)] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4">
       <div
         onClick={onCycle}
         className="w-full backdrop-blur-md border border-secondary/5 cursor-pointer px-3 py-2 rounded-2xl bg-background/50"
