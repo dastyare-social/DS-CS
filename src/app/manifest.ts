@@ -1,7 +1,7 @@
-import type { MetadataRoute } from 'next';
-import { app_config } from '@/config/app';
-import { getLocale } from 'next-intl/server';
-import { Locale } from '@/config/locale';
+import type { MetadataRoute } from "next";
+import { app_config } from "@/config/app";
+import { getLocale } from "next-intl/server";
+import { Locale } from "@/config/locale";
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const locale = (await getLocale()) as Locale;
@@ -12,7 +12,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     id: "/",
     name: `${appName}'s Channel`,
     short_name: appName,
-    description: appDescription,
+    // description: appDescription,
     start_url: "/",
     scope: "/",
     display: "standalone",
@@ -39,17 +39,17 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
       },
     ],
     screenshots: [
-      {
-        src: "/screenshots/wide-1280x720.png",
-        sizes: "1280x720",
-        type: "image/png",
-        form_factor: "wide",
-      },
-      {
-        src: "/screenshots/mobile-750x1334.png",
-        sizes: "750x1334",
-        type: "image/png",
-      },
+      // {
+      //   src: "/screenshots/wide-1280x720.png",
+      //   sizes: "1280x720",
+      //   type: "image/png",
+      //   form_factor: "wide",
+      // },
+      // {
+      //   src: "/screenshots/mobile-750x1334.png",
+      //   sizes: "750x1334",
+      //   type: "image/png",
+      // },
     ],
   };
 }

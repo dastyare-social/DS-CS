@@ -413,5 +413,5 @@ See [SECURITY.md](./SECURITY.md) for details.
 ---
 
 <p align="center">
-  Built by <a href="https://github.com/omidshabab">Dastyare Social</a>
+  Built by <a href="https://dastyare.social">Dastyare Social</a>
 </p>
