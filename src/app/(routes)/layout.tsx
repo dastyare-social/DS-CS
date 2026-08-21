@@ -14,7 +14,7 @@ import OfflineIndicator from "@/components/offline-indicator";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#ea580c",
+  themeColor: "#ffffff",
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -40,7 +40,7 @@ export default async function RootLayout({
         suppressHydrationWarning
         className={cn(
           font,
-          "antialiased tracking-tighter select-none w-full flex justify-center"
+          "antialiased tracking-tighter select-none w-full flex justify-center",
         )}
       >
         <NextIntlClientProvider locale={locale} messages={messages}>
