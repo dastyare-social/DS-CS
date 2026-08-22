@@ -117,20 +117,19 @@ body {
   animation: pulse-text 2s ease-in-out infinite;
 }
 
-@keyframes stutter-2x {
-  0% { opacity: 1; }
-  10% { opacity: 0.7; }
-  20% { opacity: 1; }
-  30% { opacity: 0.8; }
-  40% { opacity: 1; }
-  50% { opacity: 0.7; }
-  60% { opacity: 1; }
-  70% { opacity: 0.75; }
-  80% { opacity: 1; }
-  90% { opacity: 0.8; }
-  100% { opacity: 1; }
+@keyframes stutter-freeze {
+  0% { visibility: visible; }
+  15% { visibility: visible; }
+  16% { visibility: hidden; }
+  48% { visibility: hidden; }
+  50% { visibility: visible; }
+  65% { visibility: visible; }
+  66% { visibility: hidden; }
+  80% { visibility: hidden; }
+  82% { visibility: visible; }
+  100% { visibility: visible; }
 }
 
-.animate-stutter-2x {
-  animation: stutter-2x 0.5s steps(5, end) infinite;
+.animate-stutter-freeze {
+  animation: stutter-freeze 0.4s steps(1, end) infinite;
 }

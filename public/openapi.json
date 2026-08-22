@@ -91,6 +91,9 @@
           }
         }
       },
+      "endpoint": {
+        "type": "object"
+      },
       "insertPostsSchema": {
         "type": "object"
       },
@@ -163,54 +166,44 @@
           }
         }
       },
-      "MediaUploadResponse": {
+      "MediaInput": {
         "type": "object",
         "properties": {
           "url": {
             "type": "string"
           },
-          "key": {
-            "type": "string"
-          },
-          "kind": {
+          "type": {
             "type": "string",
             "enum": [
+              "text",
               "image",
               "video",
-              "audio",
+              "voice",
               "file"
-            ]
-          },
-          "mimeType": {
-            "type": "string"
-          },
-          "size": {
-            "type": "number"
+            ],
+            "nullable": true
           },
           "width": {
-            "type": "number"
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0
           },
           "height": {
-            "type": "number"
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0
           },
           "duration": {
-            "type": "number"
-          },
-          "filename": {
-            "type": "string"
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0
           }
         },
         "required": [
-          "url",
-          "key",
-          "kind",
-          "mimeType",
-          "size",
-          "width",
-          "height",
-          "filename"
+          "url"
         ]
       },
+      "MediaUploadResponse": {},
       "patchPostsSchema": {
         "type": "object"
       },
@@ -283,6 +276,9 @@
               "list",
               "shorts"
             ]
+          },
+          "bypassCache": {
+            "type": "boolean"
           }
         }
       },
@@ -389,6 +385,27 @@
         },
         "required": [
           "success"
+        ]
+      },
+      "postUpdateInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "string",
+            "nullable": true
+          },
+          "pinnedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id"
         ]
       },
       "PostWithReactionsSchema": {
@@ -725,6 +742,46 @@
           }
         }
       },
+      "StoryMediaInput": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "nullable": true
+          },
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0
+          },
+          "duration": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0
+          },
+          "thumbnail": {
+            "type": "string"
+          },
+          "caption": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
       "StoryMediaItem": {
         "type": "object",
         "properties": {
@@ -788,67 +845,6 @@
     "responses": {}
   },
   "paths": {
-    "/media": {
-      "post": {
-        "operationId": "post-media",
-        "summary": "Upload media files",
-        "description": "Uploads one or more media files to S3-compatible storage. Accepts multipart/form-data with a `files[]` field. Each file is validated against the configured size limits and MIME allowlist, then uploaded under a `media/<kind>/` key prefix. Returns an array of media objects. Use the returned `url`, `kind`, `width`, `height`, and `duration` when creating a post or story.",
-        "tags": [
-          "Media"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "properties": {
-                  "file": {
-                    "format": "binary",
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "file"
-                ],
-                "type": "object"
-              }
-            }
-          },
-          "description": "Multipart form data containing a file upload.",
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MediaUploadResponse"
-                  }
-                },
-                "examples": {
-                  "example": {
-                    "value": {
-                      "url": "https://cdn.example.com/media/image/abc.jpg",
-                      "key": "media/image/abc.jpg",
-                      "kind": "image",
-                      "mimeType": "image/jpeg",
-                      "size": 12345,
-                      "width": 1080,
-                      "height": 1920,
-                      "duration": 0,
-                      "filename": "photo.jpg"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/upload": {
       "post": {
         "operationId": "post-upload",
@@ -864,8 +860,9 @@
               "schema": {
                 "properties": {
                   "file": {
+                    "type": "string",
                     "format": "binary",
-                    "type": "string"
+                    "x-jsonschema-contentMediaType": "application/octet-stream"
                   }
                 },
                 "required": [
@@ -905,6 +902,39 @@
             }
           }
         }
+      }
+    },
+    "/upload-stream": {
+      "post": {
+        "operationId": "post-upload-stream",
+        "summary": "Streaming upload with real-time progress via SSE",
+        "description": "Upload a single media file with server-side progress tracking.",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "x-jsonschema-contentMediaType": "application/octet-stream"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Multipart form data containing a file upload.",
+          "required": true
+        },
+        "responses": {}
       }
     },
     "/posts": {
@@ -1213,8 +1243,7 @@
                   "type": "object",
                   "properties": {
                     "active": {
-                      "type": "boolean",
-                      "nullable": false
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -1286,8 +1315,7 @@
                   "type": "object",
                   "properties": {
                     "success": {
-                      "type": "boolean",
-                      "nullable": false
+                      "type": "boolean"
                     }
                   },
                   "required": [

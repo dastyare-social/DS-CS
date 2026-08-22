@@ -2,10 +2,12 @@
 
 import { Dialog, DialogContent } from "@/components/dialog";
 import { streamingTransport } from "@/lib/hooks/use-media-upload";
-import type { UploadResult } from "@/lib/hooks/use-media-upload";
-import { ArrowRightIcon, Loader2Icon, XIcon } from "lucide-react";
+import { createStoryAction } from "@/lib/actions/stories";
+import { ArrowRightIcon, XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+type UploadPhase = "idle" | "uploading" | "creating" | "done";
 
 interface UploadStoryModalProps {
   open: boolean;
@@ -21,120 +23,147 @@ export default function UploadStoryModal({
   const [preview, setPreview] = useState<string | null>(null);
   const [mediaLoading, setMediaLoading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [uploading, setUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
+  const [phase, setPhase] = useState<UploadPhase>("idle");
   const [muted, setMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const cancelledRef = useRef(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isVideo = file?.type.startsWith("video/");
-  const uploadComplete = uploadResult !== null;
-  const uploadError = uploadResult && !uploadResult.ok;
 
   useEffect(() => {
     if (!file) {
       setPreview(null);
       setProgress(0);
-      setUploading(false);
-      setUploadResult(null);
+      setPhase("idle");
       setMuted(true);
       return;
     }
     setMediaLoading(true);
     setProgress(0);
-    setUploading(false);
-    setUploadResult(null);
+    setPhase("idle");
     setMuted(true);
+    cancelledRef.current = false;
     const url = URL.createObjectURL(file);
     setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
   useEffect(() => {
-    if (!file || !open || uploadResult) return;
-
-    let cancelled = false;
-
-    const doUpload = async () => {
-      setUploading(true);
-      const result = await streamingTransport(file, (percent) => {
-        if (!cancelled) setProgress(percent);
-      });
-      if (!cancelled) {
-        setUploadResult(result);
-        setUploading(false);
-      }
-    };
-
-    doUpload();
-
     return () => {
-      cancelled = true;
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     };
-  }, [file, open, uploadResult]);
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      cancelledRef.current = true;
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+      setPhase("idle");
+      setProgress(0);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!videoRef.current) return;
     videoRef.current.muted = muted;
   }, [muted]);
 
-  useEffect(() => {
-    if (!videoRef.current) return;
-    videoRef.current.playbackRate = uploading ? 2 : 1;
-  }, [uploading]);
+  const handleStartUpload = useCallback(async () => {
+    if (!file || phase !== "idle") return;
 
-  const handleToggleMute = useCallback(() => {
-    setMuted((prev) => !prev);
-  }, []);
+    cancelledRef.current = false;
+    setPhase("uploading");
+    setProgress(0);
 
-  const borderOpacity = uploading
-    ? Math.max(0.1, (progress / 100) * 0.8)
-    : uploadComplete && uploadResult?.ok
-      ? 0.8
-      : 0.1;
+    const result = await streamingTransport(file, (percent) => {
+      if (!cancelledRef.current) setProgress(percent);
+    });
+
+    if (cancelledRef.current) return;
+
+    if (result.ok) {
+      setProgress(100);
+      setPhase("creating");
+
+      try {
+        await createStoryAction({
+          url: result.media.url,
+          width: result.media.width,
+          height: result.media.height,
+          duration: result.media.duration,
+        });
+      } catch {
+        // story creation failed — still show done
+      }
+
+      if (cancelledRef.current) return;
+
+      setPhase("done");
+      closeTimerRef.current = setTimeout(() => {
+        onOpenChange(false);
+      }, 2000);
+    } else {
+      setPhase("idle");
+    }
+  }, [file, phase, onOpenChange]);
+
+  const handleClose = useCallback(() => {
+    cancelledRef.current = true;
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    onOpenChange(false);
+  }, [onOpenChange]);
+
+  const borderOpacity =
+    phase === "uploading"
+      ? Math.max(0.1, (progress / 100) * 0.8)
+      : phase === "creating" || phase === "done"
+        ? 0.8
+        : 0.1;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent onInteractOutside={(e) => e.preventDefault()}>
         <div className="relative w-full overflow-hidden flex items-center justify-center border border-secondary/5 backdrop-blur-3xl bg-white/50 aspect-9/16 min-w-xs max-w-xs">
           <button
             type="button"
-            onClick={() => onOpenChange(false)}
+            onClick={handleClose}
             className="absolute top-3 right-3 z-20 p-2 hover:cursor-pointer rounded-full bg-black/10 backdrop-blur-xs border border-white/10 hover:bg-black/20 transition-colors text-white"
           >
             <XIcon className="size-5 stroke-1" />
           </button>
 
-          <button
-            type="button"
-            onClick={handleToggleMute}
-            className="absolute bottom-3 right-3 z-20 p-2 hover:cursor-pointer rounded-full bg-black/10 backdrop-blur-xs border border-white/10 hover:bg-black/20 transition-colors text-white"
-          >
-            {uploading ? (
-              <Loader2Icon className="size-5 stroke-1 animate-spin" />
-            ) : (
+          {phase === "idle" && (
+            <button
+              type="button"
+              onClick={handleStartUpload}
+              className="absolute bottom-3 right-3 z-20 p-2 hover:cursor-pointer rounded-full bg-black/10 backdrop-blur-xs border border-white/10 hover:bg-black/20 transition-colors text-white"
+            >
               <ArrowRightIcon className="size-5 stroke-1" />
-            )}
-          </button>
+            </button>
+          )}
 
-          {(uploading || (uploadComplete && uploadResult?.ok)) && (
+          {(phase === "uploading" || phase === "creating" || phase === "done") && (
             <div className="absolute inset-0 z-10 bg-black/10 pointer-events-none" />
           )}
 
-          {(uploading || (uploadComplete && uploadResult?.ok)) && (
+          {(phase === "uploading" || phase === "creating" || phase === "done") && (
             <div className="absolute flex flex-col justify-center items-center gap-y-2 z-10">
               <div
                 className="text-white bg-white/10 backdrop-blur-xs border-2 rounded-full px-2.5 text-md transition-all duration-300"
                 style={{ borderColor: `rgba(255,255,255,${borderOpacity})` }}
               >
-                {uploadComplete && uploadResult?.ok
-                  ? "done"
-                  : `${progress} / 100`}
+                {phase === "uploading" && `${progress} / 100 — uploaded`}
+                {phase === "creating" && "wait — creating story"}
+                {phase === "done" && "done —"}
               </div>
             </div>
           )}
 
           {mediaLoading && (
-            <Loader2Icon className="size-12 text-primary/50 animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center z-5">
+              <div className="stroke-1 animate-spin size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
+            </div>
           )}
 
           {preview && isVideo ? (
@@ -149,7 +178,7 @@ export default function UploadStoryModal({
               className={cn(
                 "w-full h-full object-contain",
                 mediaLoading && "hidden",
-                uploading && "animate-stutter-2x",
+                phase === "uploading" && "animate-stutter-freeze",
               )}
             />
           ) : preview ? (
