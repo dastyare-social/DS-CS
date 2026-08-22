@@ -2,22 +2,11 @@
 
 import Image, { ImageProps } from "next/image";
 import { useState } from "react";
-import { Loader2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Loader from "./loader";
 
 interface SafeImageProps extends Omit<ImageProps, "onError"> {
   fallbackClassName?: string;
-}
-
-function ImageLoader({ className }: { className?: string }) {
-  return (
-    <Loader2Icon
-      className={cn(
-        "animate-spin text-secondary/30",
-        className,
-      )}
-    />
-  );
 }
 
 export default function SafeImage({
@@ -31,11 +20,14 @@ export default function SafeImage({
 
   if (error) {
     return (
-      <ImageLoader
-        className={cn(
-          useFill ? "absolute inset-0 m-auto" : "",
-          fallbackClassName,
-        )}
+      <Loader
+        className={
+          fallbackClassName ??
+          cn(
+            useFill ? "absolute inset-0 m-auto" : "",
+            "size-12 border-1 border-primary/5 text-primary/50 p-2 rounded-full",
+          )
+        }
       />
     );
   }
