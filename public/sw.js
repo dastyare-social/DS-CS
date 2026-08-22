@@ -153,13 +153,10 @@ self.addEventListener("install", (event) => {
     (async () => {
       try {
         const cache = await caches.open(SHELL_CACHE);
-        const urls = ["/", "/profile-image.png", "/_next/image?url=%2Fprofile-image.png&w=128&q=75"];
-        for (const u of urls) {
-          try {
-            const response = await fetch(u);
-            if (response.ok) await cache.put(u, response);
-          } catch (_) {}
-        }
+        try {
+          const response = await fetch("/");
+          if (response.ok) await cache.put("/", response);
+        } catch (_) {}
       } catch (_) {}
       self.skipWaiting();
     })(),
