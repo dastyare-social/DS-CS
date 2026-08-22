@@ -58,7 +58,7 @@ const Header = ({
       ? formatTimeAgo(new Date(latestPost.createdAt))
       : null;
 
-  const [isOffline, setIsOffline] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
