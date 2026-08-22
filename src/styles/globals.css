@@ -83,17 +83,34 @@ body {
 }
 
 @keyframes dot-blink {
-  0%, 20% { opacity: 0.2; }
-  40%, 100% { opacity: 1; }
+  0%,
+  20% {
+    opacity: 0.2;
+  }
+  40%,
+  100% {
+    opacity: 1;
+  }
 }
 
-.dot-1 { animation: dot-blink 1.4s infinite 0s; }
-.dot-2 { animation: dot-blink 1.4s infinite 0.2s; }
-.dot-3 { animation: dot-blink 1.4s infinite 0.4s; }
+.dot-1 {
+  animation: dot-blink 1.4s infinite 0s;
+}
+.dot-2 {
+  animation: dot-blink 1.4s infinite 0.2s;
+}
+.dot-3 {
+  animation: dot-blink 1.4s infinite 0.4s;
+}
 
 @keyframes pulse-text {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 .animate-pulse-text {

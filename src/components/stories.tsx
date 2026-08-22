@@ -298,8 +298,8 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                       ? data.views
                       : story.views + 1,
                 }
-              : story
-          )
+              : story,
+          ),
         );
       } catch (err) {
         console.error("Error incrementing view", err);
@@ -469,7 +469,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                           "rounded-full bg-secondary/5 flex-1 backdrop-blur-3xl",
                           isPreloading || mediaLoading
                             ? "bg-secondary/5"
-                            : "bg-white/50"
+                            : "bg-white/50",
                         )}
                       >
                         <div
@@ -477,7 +477,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                             "h-full bg-white transition-all duration-100 linear rounded-full",
                             isPreloading || mediaLoading
                               ? "bg-secondary/10"
-                              : "bg-white"
+                              : "bg-white",
                           )}
                           style={{ width }}
                         />
@@ -503,21 +503,21 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                     "rounded-full border p-[2px] aspect-square cursor-pointer",
                     isPreloading || mediaLoading
                       ? "border-secondary/20"
-                      : "border-white/35"
+                      : "border-white/35",
                   )}
                 />
                 <div
                   className={cn(
                     isPreloading || mediaLoading
                       ? "text-secondary"
-                      : "text-white"
+                      : "text-white",
                   )}
                 >
                   {app_config[locale].name}&nbsp;—&nbsp;
                   <span className="text-sm opacity-60">
                     {(() => {
                       const { key, values } = formatTimeAgo(
-                        new Date(currentStory.createdAt)
+                        new Date(currentStory.createdAt),
                       );
                       return tLastTime(key, values);
                     })()}

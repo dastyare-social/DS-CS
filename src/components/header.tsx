@@ -2,13 +2,13 @@
 
 import { usePosts } from "@/lib/hooks/use-posts";
 import ProfileModal from "@/components/modals/profile";
-import StoryPreviewModal from "@/components/modals/story-preview";
+import UploadStoryModal from "@/components/modals/upload-story-modal";
 import Stories from "@/components/stories";
 import { capitalize, cn, formatTimeAgo } from "@/lib/utils";
 import { CircleDashedIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
-import { RefObject, useEffect, useState } from "react";
+import { RefObject, useEffect, useRef, useState } from "react";
 import { Button } from "./button";
 import Link from "next/link";
 import { routes } from "@/config/routes";
@@ -78,6 +78,9 @@ const Header = ({
   }, []);
 
   const [storyModalOpen, setStoryModalOpen] = useState(false);
+  const [storyFile, setStoryFile] = useState<File | null>(null);
+  const [storyError, setStoryError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div
@@ -178,20 +181,77 @@ const Header = ({
         )}
 
         {new_story && (
-          <Button
-            variant="primary"
-            onClick={() => setStoryModalOpen(true)}
-            className="text-sm md:text-sm px-2.5 py-0.5 backdrop-blur-3xl text-nowrap"
-          >
-            {t("general.new_story")}
-          </Button>
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) {
+                  e.target.value = "";
+                  return;
+                }
+
+                const TARGET_RATIO = 9 / 16;
+                const TOLERANCE = 0.02;
+
+                const checkRatio = (w: number, h: number) => {
+                  const ratio = w / h;
+                  if (Math.abs(ratio - TARGET_RATIO) <= TOLERANCE) {
+                    setStoryFile(file);
+                    setStoryModalOpen(true);
+                  } else {
+                    setStoryError(t("general.story_ratio_error"));
+                    setTimeout(() => setStoryError(null), 3000);
+                  }
+                };
+
+                if (file.type.startsWith("video/")) {
+                  const video = document.createElement("video");
+                  video.preload = "metadata";
+                  video.onloadedmetadata = () => {
+                    URL.revokeObjectURL(video.src);
+                    checkRatio(video.videoWidth, video.videoHeight);
+                  };
+                  video.src = URL.createObjectURL(file);
+                } else {
+                  const img = new Image();
+                  img.onload = () => {
+                    URL.revokeObjectURL(img.src);
+                    checkRatio(img.naturalWidth, img.naturalHeight);
+                  };
+                  img.src = URL.createObjectURL(file);
+                }
+
+                e.target.value = "";
+              }}
+            />
+            <Button
+              variant="primary"
+              onClick={() => fileInputRef.current?.click()}
+              className="text-sm md:text-sm px-2.5 py-0.5 backdrop-blur-3xl text-nowrap"
+            >
+              {t("general.new_story")}
+            </Button>
+          </>
         )}
       </div>
 
-      <StoryPreviewModal
+      <UploadStoryModal
         open={storyModalOpen}
         onOpenChange={setStoryModalOpen}
+        file={storyFile}
       />
+
+      {storyError && (
+        <div className="fixed left-1/2 -translate-x-1/2 z-[60] px-4 w-full max-w-2xl pointer-events-none" style={{ top: `calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) + 8px)` }}>
+          <div className="w-full rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-md px-4 py-3 text-center text-sm text-red-500">
+            {storyError}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

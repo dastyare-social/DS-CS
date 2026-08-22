@@ -15,6 +15,7 @@ import {
 } from "@/lib/actions/posts";
 import {
   GalleryVerticalEndIcon,
+  HardDriveIcon,
   PlayIcon,
   SendHorizonalIcon,
   WifiOffIcon,
@@ -635,8 +636,15 @@ const Page = () => {
 
           {/* Error */}
           {error && (
-            <div className="text-center text-sm text-primary">
-              Failed to load messages: {error}
+            <div
+              className="fixed left-1/2 -translate-x-1/2 z-[60] px-4 w-full max-w-2xl pointer-events-none"
+              style={{
+                top: `calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) + 8px)`,
+              }}
+            >
+              <div className="w-full rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-md px-4 py-3 text-center text-sm text-red-500">
+                Failed to Load Posts — {error}
+              </div>
             </div>
           )}
 
@@ -693,7 +701,12 @@ const Page = () => {
 
         {/* Write error toast */}
         {writeError && (
-          <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] px-4 w-full max-w-2xl pointer-events-none">
+          <div
+            className="fixed left-1/2 -translate-x-1/2 z-[60] px-4 w-full max-w-2xl pointer-events-none"
+            style={{
+              top: `calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) + 8px)`,
+            }}
+          >
             <div className="w-full rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-md px-4 py-3 text-center text-sm text-red-500">
               {writeError}
             </div>
@@ -716,10 +729,15 @@ const Page = () => {
                       {resolvePostPreview(activeEditPost)}
                     </span>
                   </div>
-                  <XIcon
-                    onClick={handleCancelEdit}
-                    className="size-3 stroke-[1.5px] cursor-pointer"
-                  />
+                  <div
+                    className="p-2 -m-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCancelEdit();
+                    }}
+                  >
+                    <XIcon className="size-3 stroke-[1.5px] cursor-pointer" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -901,20 +919,22 @@ const Page = () => {
                   />
                 </div>
 
-                {/* hidden input + clickable icon to open file picker */}
-                <label className="relative">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*,video/*,audio/*,application/*"
-                    className="hidden"
-                    onChange={handleFileChange}
-                    disabled={isOffline || isUploading}
-                  />
-                  <GalleryVerticalEndIcon
-                    className={`stroke-[1px] flex justify-center items-center opacity-80 w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full cursor-pointer ${isOffline || isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
-                  />
-                </label>
+                {/* hidden input + clickable icon to open file picker — hidden during edit */}
+                {!editingPostId && (
+                  <label className="relative">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*,video/*,audio/*,application/*"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      disabled={isOffline || isUploading}
+                    />
+                    <HardDriveIcon
+                      className={`stroke-[1px] flex justify-center items-center opacity-80 w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full cursor-pointer ${isOffline || isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+                    />
+                  </label>
+                )}
 
                 <button
                   type="button"

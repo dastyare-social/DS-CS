@@ -48,11 +48,11 @@ const Page = () => {
       const footerHeight = footerRef.current?.offsetHeight ?? 0;
       document.documentElement.style.setProperty(
         "--chat-header-height",
-        `${headerHeight + 20}px`
+        `${headerHeight + 20}px`,
       );
       document.documentElement.style.setProperty(
         "--chat-footer-height",
-        `${footerHeight + 20}px`
+        `${footerHeight + 20}px`,
       );
     });
   };
@@ -60,7 +60,8 @@ const Page = () => {
   useEffect(() => {
     updateHeaderFooterOffsets();
     window.addEventListener("resize", updateHeaderFooterOffsets);
-    return () => window.removeEventListener("resize", updateHeaderFooterOffsets);
+    return () =>
+      window.removeEventListener("resize", updateHeaderFooterOffsets);
   }, []);
 
   const { posts, total, isLoading, isLoadingMore, error, hasMore, loadMore } =
@@ -73,7 +74,9 @@ const Page = () => {
   // ──────────────────────────────────────
   const [dbPinnedPosts, setDbPinnedPosts] = useState<PostWithReactions[]>([]);
   const [displayIndex, setDisplayIndex] = useState(0);
-  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(
+    null,
+  );
   const programmaticScrollRef = useRef(false);
   // Ref tracks the user's cycle position — only changes on tap, never by scroll
   // Starts at -1 so first click goes to index 0 (the first pinned post)
@@ -101,36 +104,39 @@ const Page = () => {
   }, [pinnedPosts.length, displayIndex]);
 
   // Scroll to a specific post with retry (loads more if needed)
-  const scrollToPost = useCallback(async (targetId: string) => {
-    let el = document.getElementById(`message-${targetId}`);
-    let attempts = 0;
-    while (!el && hasMore && attempts < 20) {
-      if (!isLoading && !isLoadingMore) {
-        loadMore();
+  const scrollToPost = useCallback(
+    async (targetId: string) => {
+      let el = document.getElementById(`message-${targetId}`);
+      let attempts = 0;
+      while (!el && hasMore && attempts < 20) {
+        if (!isLoading && !isLoadingMore) {
+          loadMore();
+        }
+        await new Promise((r) => setTimeout(r, 200));
+        el = document.getElementById(`message-${targetId}`);
+        attempts++;
       }
-      await new Promise((r) => setTimeout(r, 200));
-      el = document.getElementById(`message-${targetId}`);
-      attempts++;
-    }
-    if (!el) return;
-    programmaticScrollRef.current = true;
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    setHighlightedPostId(targetId);
+      if (!el) return;
+      programmaticScrollRef.current = true;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightedPostId(targetId);
 
-    const releaseLock = () => {
-      programmaticScrollRef.current = false;
-      setHighlightedPostId((current) =>
-        current === targetId ? null : current
-      );
-    };
+      const releaseLock = () => {
+        programmaticScrollRef.current = false;
+        setHighlightedPostId((current) =>
+          current === targetId ? null : current,
+        );
+      };
 
-    if ("onscrollend" in el) {
-      el.addEventListener("scrollend", releaseLock, { once: true });
-      setTimeout(releaseLock, 3000);
-    } else {
-      setTimeout(releaseLock, 1500);
-    }
-  }, [hasMore, isLoading, isLoadingMore, loadMore]);
+      if ("onscrollend" in el) {
+        el.addEventListener("scrollend", releaseLock, { once: true });
+        setTimeout(releaseLock, 3000);
+      } else {
+        setTimeout(releaseLock, 1500);
+      }
+    },
+    [hasMore, isLoading, isLoadingMore, loadMore],
+  );
 
   // Click handler: advance cycle ref, scroll to that pin, update display
   const handleCyclePinned = useCallback(() => {
@@ -213,7 +219,7 @@ const Page = () => {
           loadMore();
         }
       },
-      { root: null, rootMargin: "200px", threshold: 0.1 }
+      { root: null, rootMargin: "200px", threshold: 0.1 },
     );
 
     observer.observe(target);
@@ -244,7 +250,7 @@ const Page = () => {
           }
         });
       },
-      { root: container, threshold: 0.4 }
+      { root: container, threshold: 0.4 },
     );
 
     const items = container.querySelectorAll<HTMLDivElement>("[data-post-id]");
@@ -264,13 +270,16 @@ const Page = () => {
     if (typeof window === "undefined") return;
     const handlePlay = (event: Event) => {
       const target = event.target as HTMLMediaElement | null;
-      if (!target || (target.tagName !== "AUDIO" && target.tagName !== "VIDEO")) return;
-      document.querySelectorAll<HTMLMediaElement>("audio, video").forEach((el) => {
-        if (el !== target && !el.paused) {
-          el.pause();
-          el.dispatchEvent(new Event("forcedpause"));
-        }
-      });
+      if (!target || (target.tagName !== "AUDIO" && target.tagName !== "VIDEO"))
+        return;
+      document
+        .querySelectorAll<HTMLMediaElement>("audio, video")
+        .forEach((el) => {
+          if (el !== target && !el.paused) {
+            el.pause();
+            el.dispatchEvent(new Event("forcedpause"));
+          }
+        });
     };
     document.addEventListener("play", handlePlay, true);
     return () => document.removeEventListener("play", handlePlay, true);
@@ -325,7 +334,7 @@ const Page = () => {
 
           {error && (
             <div className="text-center text-sm text-red-500">
-              Failed to load messages: {error}
+              Failed to Load Posts — {error}
             </div>
           )}
 

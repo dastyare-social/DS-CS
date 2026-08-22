@@ -22,6 +22,7 @@
     "view_other_contents": "View Other Contents",
     "join_my_channel": "Join My Channel",
     "new_story": "New Story",
+    "story_ratio_error": "Story must be 9:16 aspect ratio (1080×1920)",
     "posts": "Posts",
     "posted": "Posted",
     "published": "Published",
