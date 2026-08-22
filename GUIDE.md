@@ -212,37 +212,25 @@ AI agents ───► MCP tools ────────┘
 
 ---
 
-## 10. Features walkthrough
+## 10. Features Walkthrough
 
-### 10.1 Media upload (S3)
+### 10.1 Media Upload — Upload Files For Posts And Stories
 
 - `POST /api/upload` accepts multipart `file`; `POST /api/upload-stream` is the same but streams real-time progress via SSE.
 - `src/lib/media/upload.ts` validates size/MIME (see `MEDIA_*` env), probes dimensions (sharp / ffmpeg-probe), uploads to the S3-compatible bucket, and returns `{ url, key, kind, mimeType, size, width, height, duration }`.
 - Use the returned `url` as `media` when creating posts/stories. `src/lib/media/config.ts` builds the bucket client; `src/lib/media/auth.ts` guards access where needed.
 
-### 10.2 Content filters
+### 10.2 Content Filters — Sanitize And Render Text
 
 `src/lib/filters/` runs a sanitization pipeline (HTML/script stripping, NSFW handling) over text content before rendering. `render-post-markdown.tsx` renders post markdown client-side.
 
-### 10.3 Posts & stories
+### 10.3 Posts And Stories — Content Types And Reactions
 
 - Posts support text and media (`text | image | video | voice | file`), emoji reactions, pinning, views, and search.
 - Stories support image/video, likes, and views.
-- Publishing triggers `sendPushNotification` to active subscribers (§10.4).
+- Publishing triggers `sendPushNotification` to active subscribers.
 
-### 10.4 Web push notifications
-
-Flow:
-
-1. Operator sets VAPID keys (`NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY`, `WEBPUSH_PRIVATE_KEY`, `WEBPUSH_SUBJECT`).
-2. User opens the notification modal (`src/components/modals/notifications.tsx`) via "Join My Channel".
-3. `src/lib/notifications/client.ts` registers `/sw.js`, requests `Notification.requestPermission()`, subscribes via `pushManager.subscribe`, and POSTs the subscription to `/api/push`.
-4. On new posts/stories, `sendPushNotification` (`src/lib/notifications/push.ts`) uses `web-push` to deliver to stored subscribers.
-5. The service worker (`public/sw.js`) handles `push` (show notification) and `notificationclick` (open target URL).
-
-**Notifications are independent of PWA install** — enabling browser push does not require installing the app.
-
-### 10.5 PWA (install to home screen)
+### 10.4 PWA — Install To Home Screen
 
 - `src/app/manifest.ts` serves a valid web app manifest (name, standalone display, 192/512 icons).
 - `public/sw.js` is a self-contained service worker with `install`/`activate`/`fetch` handlers (runtime caching, network-first navigations) plus `push`/`notificationclick`.
@@ -251,19 +239,19 @@ Flow:
 
 > The SW is hand-maintained in `public/sw.js`. Do not rely on a build step to generate it (Serwist was removed because Next 16's Turbopack build does not run its webpack plugin).
 
-### 10.6 OS admin dashboard
+### 10.5 OS Admin Dashboard — Manage Posts And Stories
 
 - `/os` is the operator panel (`src/app/(routes)/os/`). It requires admin sign-in (Better Auth) and exposes post management: create, edit, pin/unpin, delete, plus stories and media management.
 - Route handlers and mutations apply the same business logic and guards as the public surface (including demo mode).
 
-### 10.7 SEO, analytics & metadata
+### 10.6 SEO, Analytics & Metadata
 
 - `src/app/robots.ts` + `src/app/sitemap.ts` generate `robots.txt` and `sitemap.xml`; `src/app/llms.txt` and `agents.md` serve agent-oriented docs.
 - `src/components/seo.tsx` and `next.config.ts` `headers()` control `X-Robots-Tag`. Indexing is blocked unless `NEXT_PUBLIC_ALLOW_INDEXING=true`.
 - PostHog captures client events (`src/lib/analytics/client.ts`) and server events (`src/lib/analytics/server.ts`), wired through `src/components/analytics.tsx`.
 - OG images: `src/app/api/og/*` generate home/explore/post cards via `ImageResponse`.
 
-### 10.8 MCP (agents)
+### 10.7 MCP — AI Agent Integration
 
 Two entrypoints:
 
@@ -272,7 +260,7 @@ Two entrypoints:
 
 `src/mcp/server.ts` builds the server with post + story tools. Write tools honor a `canWrite` callback wired to demo mode and/or `MCP_API_KEY`/`API_KEY`.
 
-### 10.9 Demo mode
+### 10.8 Demo Mode — Read-Only Switch
 
 An **operator-only** switch (set `DEMO_MODE=true` in the server `.env`):
 
@@ -284,7 +272,7 @@ An **operator-only** switch (set `DEMO_MODE=true` in the server `.env`):
 
 ---
 
-## 11. Auth
+## 11. Authentication
 
 - **Sessions** — Better Auth (email/password) via `/api/auth/*`. Admin sign-in on `/os`.
 - **API keys** — `src/lib/auth/api-key.ts` implements `requireApiKeyAuth`, which expects `Authorization: Bearer <API_KEY>` (not `x-api-key`). REST write/read routes use it; rate limits are configured via `API_KEY_RATE_LIMIT_*`.
@@ -316,7 +304,7 @@ Production checklist (also in README/`SEARCH-CONSOLE.md`): HTTPS, `NEXT_PUBLIC_A
 
 ---
 
-## 14. Git workflow
+## 14. Git Workflow
 
 - **Conventional commits**: `feat(scope):`, `fix(scope):`, `chore:`, etc.
 - **Branching**: small self-contained fixes commit directly to `main`. Larger features get a branch (e.g. `feat/push-flow`) merged into `main` via PR — even solo, this keeps `main` shippable and gives a review/revert checkpoint.

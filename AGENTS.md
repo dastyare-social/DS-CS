@@ -33,7 +33,7 @@ Public read endpoints (GET posts/stories) do not require auth. Write operations 
 
 Admin bootstrap: set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`; `bun run bootstrap:admin` creates or updates the admin user.
 
-## Media uploads
+## Media Upload — Upload Files For Posts And Stories
 
 Upload files first, then reference the returned URL when creating posts or stories.
 
@@ -55,24 +55,11 @@ Upload files first, then reference the returned URL when creating posts or stori
 
 - **`POST /api/upload-stream`** — same as `/api/upload` but returns Server-Sent Events for real-time progress tracking. Events: `progress` (with `percent` 0–100), `done` (with full media object), `error` (with `error` message).
 
-Pass the returned `url` (and optionally `width`/`height`/`duration`) as `media` when creating a post or story.
-
-### Media upload configuration (env)
-
-| Variable | Default |
-|----------|---------|
-| `MEDIA_MAX_IMAGE_SIZE_MB` | `10` |
-| `MEDIA_MAX_VIDEO_SIZE_MB` | `100` |
-| `MEDIA_MAX_AUDIO_SIZE_MB` | `25` |
-| `MEDIA_MAX_FILE_SIZE_MB` | `25` |
-| `MEDIA_ALLOWED_MIME_TYPES` | built-in allowlist (image/video/audio/pdf/text) |
-| `MEDIA_KEY_PREFIX` | `media` |
-
 ## REST API — Posts
 
 Base: `/api/posts`
 
-### List posts
+### List Posts — Paginated Feed
 
 ```
 GET /api/posts?page=1&limit=20&search=keyword
@@ -84,7 +71,7 @@ Response: `{ items: PostWithReactions[], total, hasMore, page, limit }`
 
 Post types: `text`, `image`, `video`, `voice`, `file`
 
-### Create post (URL-based media)
+### Create Post — Upload Media Via URL
 
 ```
 POST /api/posts
@@ -98,14 +85,14 @@ Content-Type: application/json
 
 Returns `201` with the created post. Upload files via `/api/upload` or `/api/upload-stream` first, then reference the returned URL. Multiple media items create one post per item, or a single image post when all items are images.
 
-### Batch increment views
+### Batch Views — Increment View Counts
 
 ```
 POST /api/posts
 { "action": "batch-view", "ids": ["id1", "id2"] }
 ```
 
-### Single post
+### Single Post — Get, Update, Or Delete
 
 ```
 GET    /api/posts/{post_id}
@@ -113,7 +100,7 @@ PATCH  /api/posts/{post_id}     body: partial post fields
 DELETE /api/posts/{post_id}
 ```
 
-### Post actions (POST on single post)
+### Post Actions — React Or View
 
 ```
 POST /api/posts/{post_id}
@@ -129,7 +116,7 @@ Base: `/api/stories`
 
 Story types: `image`, `video`
 
-### List stories
+### List Stories — Paginated Feed
 
 ```
 GET /api/stories?page=1&limit=20&search=keyword
@@ -138,7 +125,7 @@ GET /api/stories?kind=image        → filter by kind
 GET /api/stories?kind=video
 ```
 
-### Create story (URL-based media)
+### Create Story — Upload Media Via URL
 
 ```
 POST /api/stories
@@ -152,7 +139,7 @@ Content-Type: application/json
 
 Upload files via `/api/upload` or `/api/upload-stream` first, then reference the returned URL. An array of media creates one story per item (returns the first).
 
-### Single story
+### Single Story — Get, Update, Or Delete
 
 ```
 GET    /api/stories/{story_id}
@@ -160,7 +147,7 @@ PATCH  /api/stories/{story_id}
 DELETE /api/stories/{story_id}
 ```
 
-### Story actions
+### Story Actions — View Or Like
 
 ```
 POST /api/stories/{story_id}
@@ -292,14 +279,6 @@ npx -y @posthog/wizard@latest
 	2. Copy the dashboard **Project API key / token** into `NEXT_PUBLIC_POSTHOG_PROJECT_API_KEY` and a server **Personal API key** or **Project Secret** into `POSTHOG_API_KEY`.
 
 	3. Client init is centralized in `src/lib/analytics/client.ts`. Agents should not attempt to read or fetch `POSTHOG_API_KEY` (server secret).
-
-## Push notification endpoints
-
-- `POST /api/push` — Store a browser push subscription. Requires `Authorization: Bearer <API_KEY>`.
-- `POST /api/push/send` — Send push notifications to all active subscribers. Requires `Authorization: Bearer <API_KEY>`.
-- These endpoints are intended for browser push only; they do not send email.
-
-Never commit `.env` or expose secrets in generated docs.
 
 ## Common commands
 
