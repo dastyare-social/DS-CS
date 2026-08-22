@@ -22,6 +22,7 @@ import {
   EraserIcon,
   PinIcon,
   CopyIcon,
+  Clock8Icon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -51,7 +52,7 @@ const normalizeMediaUrl = (raw?: string | null): string => {
   // and "https:/host" -> "https://host"
   url = url.replace(
     /^([a-zA-Z][a-zA-Z0-9+\-.]*:)(\/)([^/])/, // protocol + single slash + non-slash
-    "$1//$3"
+    "$1//$3",
   );
 
   return url;
@@ -220,7 +221,7 @@ const VoicePlayer = ({ src }: VoicePlayerProps) => {
           const safeVisible = visibleProgress > 0 ? visibleProgress : 0.01; // avoid being stuck at exactly 0
 
           setDownloadProgress((prev) =>
-            safeVisible > prev ? safeVisible : prev
+            safeVisible > prev ? safeVisible : prev,
           );
         }
       }
@@ -287,7 +288,7 @@ const VoicePlayer = ({ src }: VoicePlayerProps) => {
       Array.from({ length: 50 }, () => {
         return 8 + Math.round(Math.random() * 20);
       }),
-    []
+    [],
   );
 
   const showDownloadPhase = !audioUrl;
@@ -376,7 +377,7 @@ const VoicePlayer = ({ src }: VoicePlayerProps) => {
             {showDownloadPhase
               ? isDownloading
                 ? `Downloading ${Math.floor(
-                    Math.min(downloadProgress, 1) * 100
+                    Math.min(downloadProgress, 1) * 100,
                   )}%`
                 : t("tap_to_download")
               : isPlaying
@@ -545,7 +546,7 @@ const FileDownload = ({
         <div className="flex items-center justify-between text-[11px] text-primary">
           {isDownloading
             ? `${t("general.downloading")} ${Math.floor(
-                Math.min(downloadProgress, 1) * 100
+                Math.min(downloadProgress, 1) * 100,
               )}%`
             : t("general.tap_to_download")}
         </div>
@@ -556,440 +557,449 @@ const FileDownload = ({
 
 /* -------------------- MAIN MESSAGE COMPONENT -------------------- */
 
-const Post = memo(({
-  post,
-  can_pin_post = false,
-  can_edit_post = false,
-  can_delete_post = false,
-  can_copy_text = false,
-  pinned = false,
-  onDelete,
-  onDeleteError,
-  onPin,
-  onEdit,
-  onRetry,
-}: PostProps) => {
-  const t = useTranslations();
+const Post = memo(
+  ({
+    post,
+    can_pin_post = false,
+    can_edit_post = false,
+    can_delete_post = false,
+    can_copy_text = false,
+    pinned = false,
+    onDelete,
+    onDeleteError,
+    onPin,
+    onEdit,
+    onRetry,
+  }: PostProps) => {
+    const t = useTranslations();
 
-  const { id, content, createdAt, views, reactions, type, media } = post;
-  const postStatus = (post as any)._status as "sending" | "error" | undefined;
+    const { id, content, createdAt, views, reactions, type, media } = post;
+    const postStatus = (post as any)._status as "sending" | "error" | undefined;
 
-  const hasMedia = media != null && type !== "text";
+    const hasMedia = media != null && type !== "text";
 
-  // Local state so UI updates immediately for reactions + views
-  const [localReactions, setLocalReactions] = useState(
-    reactions ?? [] // <- defensive default
-  );
-  const [localViews, setLocalViews] = useState<number>(Number(views || "0"));
+    // Local state so UI updates immediately for reactions + views
+    const [localReactions, setLocalReactions] = useState(
+      reactions ?? [], // <- defensive default
+    );
+    const [localViews, setLocalViews] = useState<number>(Number(views || "0"));
 
-  // Tracks duplicate view *inside one mounted instance*
-  const hasSentViewRef = useRef(false);
+    // Tracks duplicate view *inside one mounted instance*
+    const hasSentViewRef = useRef(false);
 
-  // For video thumbnail
-  const [videoThumb, setVideoThumb] = useState<string | null>(null);
-  const hiddenVideoRef = useRef<HTMLVideoElement | null>(null);
+    // For video thumbnail
+    const [videoThumb, setVideoThumb] = useState<string | null>(null);
+    const hiddenVideoRef = useRef<HTMLVideoElement | null>(null);
 
-  const getCount = (emoji: string) =>
-    (localReactions ?? []).find((r: any) => r.emoji === emoji)?.count ?? 0;
+    const getCount = (emoji: string) =>
+      (localReactions ?? []).find((r: any) => r.emoji === emoji)?.count ?? 0;
 
-  const handleReact = async (emoji: string) => {
-    // optimistic reaction update
-    setLocalReactions((prev: any[] | null) => {
-      const safePrev = prev ?? [];
-      const existing = safePrev.find((r: any) => r.emoji === emoji);
-      if (existing) {
-        return safePrev.map((r: any) =>
-          r.emoji === emoji ? { ...r, count: r.count + 1 } : r
-        );
-      }
-      return [...safePrev, { emoji, count: 1 }];
-    });
-
-    try {
-      await addReaction(id, emoji);
-    } catch (err) {
-      console.error("Failed to send reaction", err);
-    }
-  };
-
-  const handleViewed = async () => {
-    if (hasSentViewRef.current) return;
-
-    const storageKey = `message_viewed_${id}`;
-
-    if (typeof window !== "undefined") {
-      const alreadyViewed = window.localStorage.getItem(storageKey);
-      if (alreadyViewed === "1") {
-        hasSentViewRef.current = true;
-        return;
-      }
-      window.localStorage.setItem(storageKey, "1");
-    }
-
-    hasSentViewRef.current = true;
-
-    setLocalViews((prev) => prev + 1);
-
-    try {
-      const result = await viewPost(id);
-      if (result) {
-        setLocalViews(Number(result.views));
-      }
-    } catch (err) {
-      console.error("Failed to send view", err);
-    }
-  };
-
-  useEffect(() => {
-    handleViewed();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Generate a random-frame thumbnail for video
-  useEffect(() => {
-    if (!hasMedia || !media || type !== "video") return;
-    if (typeof window === "undefined") return;
-
-    const video = document.createElement("video");
-    hiddenVideoRef.current = video;
-    video.src = normalizeMediaUrl(media.url);
-    video.crossOrigin = "anonymous";
-    video.muted = true;
-    video.playsInline = true;
-
-    const handleLoadedMetadata = () => {
-      const duration = video.duration || 0;
-      if (!duration || Number.isNaN(duration)) return;
-
-      const targetTime = Math.random() * duration;
-      const seekHandler = () => {
-        try {
-          const canvas = document.createElement("canvas");
-          canvas.width = video.videoWidth || 640;
-          canvas.height = video.videoHeight || 360;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
-
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL("image/jpeg");
-          setVideoThumb(dataUrl);
-        } catch (e) {
-          console.error("Failed to capture video frame", e);
-        } finally {
-          video.removeEventListener("seeked", seekHandler);
+    const handleReact = async (emoji: string) => {
+      // optimistic reaction update
+      setLocalReactions((prev: any[] | null) => {
+        const safePrev = prev ?? [];
+        const existing = safePrev.find((r: any) => r.emoji === emoji);
+        if (existing) {
+          return safePrev.map((r: any) =>
+            r.emoji === emoji ? { ...r, count: r.count + 1 } : r,
+          );
         }
+        return [...safePrev, { emoji, count: 1 }];
+      });
+
+      try {
+        await addReaction(id, emoji);
+      } catch (err) {
+        console.error("Failed to send reaction", err);
+      }
+    };
+
+    const handleViewed = async () => {
+      if (hasSentViewRef.current) return;
+
+      const storageKey = `message_viewed_${id}`;
+
+      if (typeof window !== "undefined") {
+        const alreadyViewed = window.localStorage.getItem(storageKey);
+        if (alreadyViewed === "1") {
+          hasSentViewRef.current = true;
+          return;
+        }
+        window.localStorage.setItem(storageKey, "1");
+      }
+
+      hasSentViewRef.current = true;
+
+      setLocalViews((prev) => prev + 1);
+
+      try {
+        const result = await viewPost(id);
+        if (result) {
+          setLocalViews(Number(result.views));
+        }
+      } catch (err) {
+        console.error("Failed to send view", err);
+      }
+    };
+
+    useEffect(() => {
+      handleViewed();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Generate a random-frame thumbnail for video
+    useEffect(() => {
+      if (!hasMedia || !media || type !== "video") return;
+      if (typeof window === "undefined") return;
+
+      const video = document.createElement("video");
+      hiddenVideoRef.current = video;
+      video.src = normalizeMediaUrl(media.url);
+      video.crossOrigin = "anonymous";
+      video.muted = true;
+      video.playsInline = true;
+
+      const handleLoadedMetadata = () => {
+        const duration = video.duration || 0;
+        if (!duration || Number.isNaN(duration)) return;
+
+        const targetTime = Math.random() * duration;
+        const seekHandler = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 360;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL("image/jpeg");
+            setVideoThumb(dataUrl);
+          } catch (e) {
+            console.error("Failed to capture video frame", e);
+          } finally {
+            video.removeEventListener("seeked", seekHandler);
+          }
+        };
+
+        video.currentTime = targetTime;
+        video.addEventListener("seeked", seekHandler);
       };
 
-      video.currentTime = targetTime;
-      video.addEventListener("seeked", seekHandler);
-    };
+      video.addEventListener("loadedmetadata", handleLoadedMetadata);
 
-    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+      return () => {
+        video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        hiddenVideoRef.current = null;
+      };
+    }, [hasMedia, media, type]);
 
-    return () => {
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      hiddenVideoRef.current = null;
-    };
-  }, [hasMedia, media, type]);
+    const normalizedReactions = reactionEmojis.map((emoji) => ({
+      emoji,
+      count: getCount(emoji),
+    }));
 
-  const normalizedReactions = reactionEmojis.map((emoji) => ({
-    emoji,
-    count: getCount(emoji),
-  }));
+    const renderMedia = () => {
+      if (!hasMedia || !media) return null;
 
-  const renderMedia = () => {
-    if (!hasMedia || !media) return null;
+      // Check if media is an array (multiple images)
+      if (Array.isArray(media) && media.length > 0) {
+        const normalizedMedia = media.map((item: any) => ({
+          url: normalizeMediaUrl(item.url),
+          width: item.width || 0,
+          height: item.height || 0,
+        }));
+        return <ImageSlider media={normalizedMedia} content={content} />;
+      }
 
-    // Check if media is an array (multiple images)
-    if (Array.isArray(media) && media.length > 0) {
-      const normalizedMedia = media.map((item: any) => ({
-        url: normalizeMediaUrl(item.url),
-        width: item.width || 0,
-        height: item.height || 0,
-      }));
-      return <ImageSlider media={normalizedMedia} content={content} />;
-    }
+      const src = normalizeMediaUrl(media.url);
 
-    const src = normalizeMediaUrl(media.url);
+      if (!src) return null;
 
-    if (!src) return null;
+      if (type === "image") {
+        const aspectRatio =
+          post.media["width"] && post.media["height"]
+            ? post.media["width"] / post.media["height"]
+            : 16 / 9;
 
-    if (type === "image") {
-      const aspectRatio = post.media["width"] && post.media["height"]
-        ? post.media["width"] / post.media["height"]
-        : 16 / 9;
-
-      return (
-        <Dialog>
-          <DialogTrigger className="outline-none">
-            <div
-              className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer"
-              style={{ aspectRatio }}
-            >
-              <SafeImage
-                src={src}
-                alt=""
-                fill
-                unoptimized
-                sizes="(max-width: 768px) 80vw, 320px"
-                loading="lazy"
-                className="object-cover p-1"
-              />
-            </div>
-          </DialogTrigger>
-          <DialogContent>
-            <div
-              className="relative w-full min-w-sm max-w-xl max-h-[560px] overflow-hidden backdrop-blur-3xl p-1 border border-secondary/5 bg-white/50"
-              style={{ aspectRatio }}
-            >
-              <SafeImage
-                src={src}
-                alt=""
-                fill
-                unoptimized
-                sizes="(max-width: 768px) 80vw, 320px"
-                loading="lazy"
-                className="object-contain p-1"
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      );
-    }
-
-    if (type === "video") {
-      const aspectRatio = post.media["width"] && post.media["height"]
-        ? post.media["width"] / post.media["height"]
-        : 16 / 9;
-
-      return (
-        <Dialog>
-          <DialogTrigger className="outline-none">
-            <div
-              className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer"
-              style={{ aspectRatio }}
-            >
-              {videoThumb && (
-                <>
-                  <SafeImage
-                    src={videoThumb}
-                    unoptimized
-                    alt=""
-                    fill
-                    className="absolute inset-0 h-full w-full object-cover p-1"
-                  />
-
-                  <div className="absolute inset-0 flex items-center justify-center text-white/60">
-                    <PlayIcon className="stroke-1 rounded-full bg-black/10 backdrop-blur-sm border-[1.5px] border-white/20 p-2 size-12 hover:scale-110" />
-                  </div>
-                </>
-              )}
-            </div>
-          </DialogTrigger>
-          {videoThumb && (
-            <DialogContent>
+        return (
+          <Dialog>
+            <DialogTrigger className="outline-none">
               <div
-                className="overflow-hidden backdrop-blur-3xl border border-secondary/5 bg-white/50"
+                className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer"
                 style={{ aspectRatio }}
               >
-                <video
+                <SafeImage
                   src={src}
-                  controls
-                  autoPlay
-                  className="h-full w-full p-1"
+                  alt=""
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 80vw, 320px"
+                  loading="lazy"
+                  className="object-cover p-1"
+                />
+              </div>
+            </DialogTrigger>
+            <DialogContent>
+              <div
+                className="relative w-full min-w-sm max-w-xl max-h-[560px] overflow-hidden backdrop-blur-3xl p-1 border border-secondary/5 bg-white/50"
+                style={{ aspectRatio }}
+              >
+                <SafeImage
+                  src={src}
+                  alt=""
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 80vw, 320px"
+                  loading="lazy"
+                  className="object-contain p-1"
                 />
               </div>
             </DialogContent>
-          )}
-        </Dialog>
-      );
-    }
+          </Dialog>
+        );
+      }
 
-    if (type === "voice") {
-      return <VoicePlayer src={src} />;
-    }
+      if (type === "video") {
+        const aspectRatio =
+          post.media["width"] && post.media["height"]
+            ? post.media["width"] / post.media["height"]
+            : 16 / 9;
 
-    if (type === "file") {
-      return (
-        <FileDownload
-          src={src}
-          filename={media.filename}
-          filesize={media.filesize}
-          mimeType={media.mimeType}
-        />
-      );
-    }
+        return (
+          <Dialog>
+            <DialogTrigger className="outline-none">
+              <div
+                className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer"
+                style={{ aspectRatio }}
+              >
+                {videoThumb && (
+                  <>
+                    <SafeImage
+                      src={videoThumb}
+                      unoptimized
+                      alt=""
+                      fill
+                      className="absolute inset-0 h-full w-full object-cover p-1"
+                    />
 
-    return null;
-  };
-
-  const handleDelete = async () => {
-    // optimistic removal from parent list
-    if (onDelete) {
-      onDelete(id);
-    }
-
-    try {
-      await deletePost(id);
-    } catch (err) {
-      console.error("Failed to delete message", err);
-      onDeleteError?.(err);
-      // NOTE: you could add rollback logic here if needed
-    }
-  };
-
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger>
-        <div className="flex gap-x-2 items-end cursor-pointer mt-5">
-          <Stories size={35} />
-
-          <div className={cn(
-            "flex flex-col gap-y-2.5",
-            postStatus === "sending" && "animate-pulse opacity-60"
-          )}>
-            {pinned && (
-              <div className="flex items-center gap-x-1.5 text-[11px] opacity-60 pl-1">
-                <PinIcon className="size-3.5 stroke-[1.5px] rotate-45" />
-                <span>{t("general.pinned_to_top")}</span>
+                    <div className="absolute inset-0 flex items-center justify-center text-white/60">
+                      <PlayIcon className="stroke-1 rounded-full bg-black/10 backdrop-blur-sm border-[1.5px] border-white/20 p-2 size-12 hover:scale-110" />
+                    </div>
+                  </>
+                )}
               </div>
-            )}
-
-            {renderMedia()}
-
-            <div className="rounded-2xl border border-secondary/5 bg-secondary/1 px-3.5 py-2 max-w-2xs min-w-[220px] backdrop-blur-sm bg-white/10">
-              {renderSimpleMarkdown(content)}
-
-              <div className="flex text-[12px] mt-2.5 ml-[-1px] gap-x-1">
-                {normalizedReactions.map((r) => (
-                  <Reaction
-                    key={r.emoji}
-                    emoji={r.emoji}
-                    count={r.count}
-                    onClick={() => handleReact(r.emoji)}
+            </DialogTrigger>
+            {videoThumb && (
+              <DialogContent>
+                <div
+                  className="overflow-hidden backdrop-blur-3xl border border-secondary/5 bg-white/50"
+                  style={{ aspectRatio }}
+                >
+                  <video
+                    src={src}
+                    controls
+                    autoPlay
+                    className="h-full w-full p-1"
                   />
-                ))}
-              </div>
-
-              <div className="flex justify-between items-center opacity-60 mt-1.5">
-                <div className="text-[12px]">
-                  {localViews.toLocaleString()} {t("general.views")}
                 </div>
-                <div className={cn(pally.className, "text-[12px]")} dir="ltr">
-                  {formatTime(createdAt)}
-                </div>
-              </div>
+              </DialogContent>
+            )}
+          </Dialog>
+        );
+      }
 
-              {postStatus === "sending" && (
-                <div className="text-[11px] text-primary/60 mt-1 animate-pulse">
-                  {t("general.sending")}
+      if (type === "voice") {
+        return <VoicePlayer src={src} />;
+      }
+
+      if (type === "file") {
+        return (
+          <FileDownload
+            src={src}
+            filename={media.filename}
+            filesize={media.filesize}
+            mimeType={media.mimeType}
+          />
+        );
+      }
+
+      return null;
+    };
+
+    const handleDelete = async () => {
+      // optimistic removal from parent list
+      if (onDelete) {
+        onDelete(id);
+      }
+
+      try {
+        await deletePost(id);
+      } catch (err) {
+        console.error("Failed to delete message", err);
+        onDeleteError?.(err);
+        // NOTE: you could add rollback logic here if needed
+      }
+    };
+
+    return (
+      <ContextMenu>
+        <ContextMenuTrigger>
+          <div className="flex gap-x-2 items-end cursor-pointer mt-5">
+            <Stories size={35} />
+
+            <div
+              className={cn(
+                "flex flex-col gap-y-2.5",
+                postStatus === "sending" && "animate-pulse opacity-60",
+              )}
+            >
+              {pinned && (
+                <div className="flex items-center gap-x-1.5 text-[11px] opacity-60 pl-1">
+                  <PinIcon className="size-3.5 stroke-[1.5px] rotate-45" />
+                  <span>{t("general.pinned_to_top")}</span>
                 </div>
               )}
+
+              {renderMedia()}
+
+              <div className="rounded-2xl border border-secondary/5 bg-secondary/1 px-3.5 py-2 max-w-2xs min-w-[220px] backdrop-blur-sm bg-white/10">
+                {renderSimpleMarkdown(content)}
+
+                <div className="flex text-[12px] mt-2.5 ml-[-1px] gap-x-1">
+                  {normalizedReactions.map((r) => (
+                    <Reaction
+                      key={r.emoji}
+                      emoji={r.emoji}
+                      count={r.count}
+                      onClick={() => handleReact(r.emoji)}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex justify-between items-center opacity-60 mt-1.5">
+                  <div className="text-[12px]">
+                    {postStatus === "sending" ? (
+                      <Clock8Icon className="size-2.5 animate-spin inline" />
+                    ) : (
+                      <>
+                        {localViews.toLocaleString()} {t("general.views")}
+                      </>
+                    )}
+                  </div>
+                  <div className={cn(pally.className, "text-[12px]")} dir="ltr">
+                    {formatTime(createdAt)}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </ContextMenuTrigger>
+        </ContextMenuTrigger>
 
-      <ContextMenuContent className="w-36">
-        <ContextMenuItem
-          className="flex gap-x-2 py-1.5"
-          onClick={() => {
-            if (typeof window === "undefined") return;
-            const url = new URL(window.location.href);
-            url.pathname = `/posts/${id}`;
-            const full = url.toString();
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(full).catch(() => {});
-            } else {
-              const textarea = document.createElement("textarea");
-              textarea.value = full;
-              textarea.style.position = "fixed";
-              textarea.style.left = "-9999px";
-              document.body.appendChild(textarea);
-              textarea.select();
-              try {
-                document.execCommand("copy");
-              } catch {
-              } finally {
-                document.body.removeChild(textarea);
-              }
-            }
-          }}
-        >
-          <div className="flex-1">{t("general.copy_post_link")} —</div>
-          <BoxIcon className="stroke-[1.5px] size-4" />
-        </ContextMenuItem>
-
-        {can_copy_text && content && (
+        <ContextMenuContent className="w-36">
           <ContextMenuItem
             className="flex gap-x-2 py-1.5"
             onClick={() => {
-              if (!content) return;
+              if (typeof window === "undefined") return;
+              const url = new URL(window.location.href);
+              url.pathname = `/posts/${id}`;
+              const full = url.toString();
+
               if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(content).catch(() => {});
+                navigator.clipboard.writeText(full).catch(() => {});
               } else {
                 const textarea = document.createElement("textarea");
-                textarea.value = content;
+                textarea.value = full;
                 textarea.style.position = "fixed";
                 textarea.style.left = "-9999px";
                 document.body.appendChild(textarea);
                 textarea.select();
-                try { document.execCommand("copy"); } catch {} finally {
+                try {
+                  document.execCommand("copy");
+                } catch {
+                } finally {
                   document.body.removeChild(textarea);
                 }
               }
             }}
           >
-            <div className="flex-1">{t("general.copy_text")} —</div>
-            <CopyIcon className="stroke-[1.5px] size-4" />
-          </ContextMenuItem>
-        )}
-
-        {can_pin_post && (
-          <ContextMenuItem
-            className="flex gap-x-2 py-1.5"
-            onClick={() => onPin?.(post)}
-          >
-            <div className="flex-1">
-              {pinned ? t("general.unpin") : t("general.pin_to_top")} —
-            </div>
-            <PinIcon className="stroke-[1.5px] size-4 rotate-45" />
-          </ContextMenuItem>
-        )}
-
-        {can_edit_post && (
-          <ContextMenuItem
-            className="flex gap-x-2 py-1.5"
-            onClick={() => onEdit?.(post)}
-          >
-            <div className="flex-1">{t("general.edit_post")} —</div>
+            <div className="flex-1">{t("general.copy_post_link")} —</div>
             <BoxIcon className="stroke-[1.5px] size-4" />
           </ContextMenuItem>
-        )}
 
-        {can_delete_post && (
-          <ContextMenuItem
-            className="flex gap-x-2 py-1.5"
-            onClick={handleDelete}
-          >
-            <div className="flex-1">{t("general.delete_post")} —</div>
-            <EraserIcon className="stroke-[1.5px] size-4" />
-          </ContextMenuItem>
-        )}
+          {can_copy_text && content && (
+            <ContextMenuItem
+              className="flex gap-x-2 py-1.5"
+              onClick={() => {
+                if (!content) return;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                  navigator.clipboard.writeText(content).catch(() => {});
+                } else {
+                  const textarea = document.createElement("textarea");
+                  textarea.value = content;
+                  textarea.style.position = "fixed";
+                  textarea.style.left = "-9999px";
+                  document.body.appendChild(textarea);
+                  textarea.select();
+                  try {
+                    document.execCommand("copy");
+                  } catch {
+                  } finally {
+                    document.body.removeChild(textarea);
+                  }
+                }
+              }}
+            >
+              <div className="flex-1">{t("general.copy_text")} —</div>
+              <CopyIcon className="stroke-[1.5px] size-4" />
+            </ContextMenuItem>
+          )}
 
-        {postStatus === "error" && onRetry && (
-          <ContextMenuItem
-            className="flex gap-x-2 py-1.5"
-            onClick={() => onRetry(post)}
-          >
-            <div className="flex-1">{t("general.try_again")} —</div>
-            <BoxIcon className="stroke-[1.5px] size-4" />
-          </ContextMenuItem>
-        )}
-      </ContextMenuContent>
-    </ContextMenu>
-  );
-});
+          {can_pin_post && (
+            <ContextMenuItem
+              className="flex gap-x-2 py-1.5"
+              onClick={() => onPin?.(post)}
+            >
+              <div className="flex-1">
+                {pinned ? t("general.unpin") : t("general.pin_to_top")} —
+              </div>
+              <PinIcon className="stroke-[1.5px] size-4 rotate-45" />
+            </ContextMenuItem>
+          )}
+
+          {can_edit_post && (
+            <ContextMenuItem
+              className="flex gap-x-2 py-1.5"
+              onClick={() => onEdit?.(post)}
+            >
+              <div className="flex-1">{t("general.edit_post")} —</div>
+              <BoxIcon className="stroke-[1.5px] size-4" />
+            </ContextMenuItem>
+          )}
+
+          {can_delete_post && (
+            <ContextMenuItem
+              className="flex gap-x-2 py-1.5"
+              onClick={handleDelete}
+            >
+              <div className="flex-1">{t("general.delete_post")} —</div>
+              <EraserIcon className="stroke-[1.5px] size-4" />
+            </ContextMenuItem>
+          )}
+
+          {postStatus === "error" && onRetry && (
+            <ContextMenuItem
+              className="flex gap-x-2 py-1.5"
+              onClick={() => onRetry(post)}
+            >
+              <div className="flex-1">{t("general.try_again")} —</div>
+              <BoxIcon className="stroke-[1.5px] size-4" />
+            </ContextMenuItem>
+          )}
+        </ContextMenuContent>
+      </ContextMenu>
+    );
+  },
+);
 
 export default Post;

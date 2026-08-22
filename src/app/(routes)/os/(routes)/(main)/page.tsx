@@ -462,37 +462,40 @@ const Page = () => {
     return `${post.type.charAt(0).toUpperCase()}${post.type.slice(1)} Post`;
   };
 
-  const scrollToPost = useCallback(async (targetId: string) => {
-    // If the post isn't loaded yet, keep loading more pages until we find it or run out
-    let el = document.getElementById(`message-${targetId}`);
-    let attempts = 0;
-    while (!el && hasMore && attempts < 20) {
-      if (!isLoading && !isLoadingMore) {
-        loadMore();
+  const scrollToPost = useCallback(
+    async (targetId: string) => {
+      // If the post isn't loaded yet, keep loading more pages until we find it or run out
+      let el = document.getElementById(`message-${targetId}`);
+      let attempts = 0;
+      while (!el && hasMore && attempts < 20) {
+        if (!isLoading && !isLoadingMore) {
+          loadMore();
+        }
+        await new Promise((r) => setTimeout(r, 200));
+        el = document.getElementById(`message-${targetId}`);
+        attempts++;
       }
-      await new Promise((r) => setTimeout(r, 200));
-      el = document.getElementById(`message-${targetId}`);
-      attempts++;
-    }
-    if (!el) return;
-    programmaticScrollRef.current = true;
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    setHighlightedPostId(targetId);
+      if (!el) return;
+      programmaticScrollRef.current = true;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightedPostId(targetId);
 
-    const releaseLock = () => {
-      programmaticScrollRef.current = false;
-      setHighlightedPostId((current) =>
-        current === targetId ? null : current,
-      );
-    };
+      const releaseLock = () => {
+        programmaticScrollRef.current = false;
+        setHighlightedPostId((current) =>
+          current === targetId ? null : current,
+        );
+      };
 
-    if ("onscrollend" in el) {
-      el.addEventListener("scrollend", releaseLock, { once: true });
-      setTimeout(releaseLock, 3000);
-    } else {
-      setTimeout(releaseLock, 1500);
-    }
-  }, [hasMore, isLoading, isLoadingMore, loadMore]);
+      if ("onscrollend" in el) {
+        el.addEventListener("scrollend", releaseLock, { once: true });
+        setTimeout(releaseLock, 3000);
+      } else {
+        setTimeout(releaseLock, 1500);
+      }
+    },
+    [hasMore, isLoading, isLoadingMore, loadMore],
+  );
 
   const handleCyclePinned = useCallback(() => {
     if (pinnedPosts.length === 0) return;
@@ -560,7 +563,9 @@ const Page = () => {
     } else {
       setDbPinnedPosts((prev) =>
         [...prev, { ...post, pinnedAt: new Date() }].sort(
-          (a, b) => (new Date(b.createdAt ?? 0).getTime()) - (new Date(a.createdAt ?? 0).getTime()),
+          (a, b) =>
+            new Date(b.createdAt ?? 0).getTime() -
+            new Date(a.createdAt ?? 0).getTime(),
         ),
       );
     }
@@ -596,350 +601,360 @@ const Page = () => {
         onUnpin={handleTogglePinPost}
       />
 
-    <div
-      ref={pageRef}
-      style={{ height: `${pageHeight}px` }}
-      className="flex flex-col-reverse overflow-y-scroll none-scroll-bar w-full outline-none max-w-2xl border-x border-secondary/5"
-    >
-      {/* Header */}
-      <Header
-        new_story={true}
-        headerRef={headerRef}
-        container_className="max-w-2xl"
-      />
+      <div
+        ref={pageRef}
+        style={{ height: `${pageHeight}px` }}
+        className="flex flex-col-reverse overflow-y-scroll none-scroll-bar w-full outline-none max-w-2xl border-x border-secondary/5"
+      >
+        {/* Header */}
+        <Header
+          new_story={true}
+          headerRef={headerRef}
+          container_className="max-w-2xl"
+        />
 
-      {/* —— List —— */}
-      <div className="flex-1 px-2.5 w-full">
-        {/* Initial load */}
-        {isLoading && posts.length === 0 && (
-          <div className="w-full h-full flex justify-center items-center text-xl text-center">
-            <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
-          </div>
-        )}
-
-        {!isLoading && posts.length === 0 && (
-          <div className="w-full h-full flex justify-center items-center text-xl text-center">
-            {t.rich("general.wait_for_first_content", {
-              owner_name: app_config[locale].name,
-              highlight: (chunks) => (
-                <span className="text-primary">&nbsp;{chunks}&nbsp;</span>
-              ),
-            })}
-          </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div className="text-center text-sm text-primary">
-            Failed to load messages: {error}
-          </div>
-        )}
-
-        {/* Posts */}
-        <div
-          ref={listRef}
-          className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height))] pb-[var(--chat-footer-height)]"
-        >
-          {posts.map((msg: PostWithReactions) => (
-            <div
-              key={msg.id}
-              id={`message-${msg.id}`}
-              data-message-id={msg.id}
-              className={cn(
-                "rounded-2xl",
-                highlightedPostId === msg.id &&
-                  "bg-primary/5 ring-2 ring-primary/40",
-              )}
-            >
-              <Message
-                can_pin_post
-                can_edit_post
-                can_delete_post
-                can_copy_text
-                post={msg}
-                pinned={msg.pinnedAt != null}
-                onDelete={(id) => {
-                  const wasPinned = msg.pinnedAt != null;
-                  removePost(id);
-                  if (wasPinned) refreshPinnedPosts();
-                }}
-                onDeleteError={(err) => {
-                  showWriteError(err);
-                  addPost(msg);
-                }}
-                onPin={handleTogglePinPost}
-                onEdit={handleEditPost}
-                onRetry={handleRetryPost}
-              />
-            </div>
-          ))}
-
-          {/* Loading more (top infinite scroll) */}
-          {isLoadingMore && posts.length > 0 && (
-            <div className="grid place-items-center">
-              <Loader />
+        {/* —— List —— */}
+        <div className="flex-1 px-2.5 w-full">
+          {/* Initial load */}
+          {isLoading && posts.length === 0 && (
+            <div className="w-full h-full flex justify-center items-center text-xl text-center">
+              <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
             </div>
           )}
 
-          {/* Sentinel for infinite scroll at visual TOP (DOM bottom because of flex-col-reverse) */}
-          <div ref={sentinelRef} />
-        </div>
-      </div>
+          {!isLoading && posts.length === 0 && (
+            <div className="w-full h-full flex justify-center items-center text-xl text-center">
+              {t.rich("general.wait_for_first_content", {
+                owner_name: app_config[locale].name,
+                highlight: (chunks) => (
+                  <span className="text-primary">&nbsp;{chunks}&nbsp;</span>
+                ),
+              })}
+            </div>
+          )}
 
-      {/* Write error toast */}
-      {writeError && (
-        <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] px-4 w-full max-w-2xl pointer-events-none">
-          <div className="w-full rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-md px-4 py-3 text-center text-sm text-red-500">
-            {writeError}
-          </div>
-        </div>
-      )}
+          {/* Error */}
+          {error && (
+            <div className="text-center text-sm text-primary">
+              Failed to load messages: {error}
+            </div>
+          )}
 
-      {/* Footer */}
-      <div ref={footerRef} className="fixed bottom-0 max-w-2xl w-full z-50">
-        <div className="flex w-full gap-x-3 px-4 pb-3 lg:pb-5 justify-center items-center border-t border-x border-secondary/5 backdrop-blur-md bg-white/50">
-          <div className="flex flex-col max-w-3xl w-full gap-y-2">
-            {/* selected attachments preview */}
-            {selectedFiles.length > 0 && (
-              <div className="flex flex-wrap gap-x-2">
-                {selectedFiles.map((item, index) => {
-                  const file = item.file;
-                  const progress = item.progress;
-                  const error = item.error;
-                  const isImage = file.type.startsWith("image/");
-                  const isVideo = file.type.startsWith("video/");
-                  const isAudio = file.type.startsWith("audio/");
-                  const sizeKB = Math.round(file.size / 1024);
-                  const objectUrl = URL.createObjectURL(file);
-                  const isUploadingFile = progress >= 0 && progress < 100;
-                  const isUploaded = progress === 100 && !error;
-                  const hasError = !!error;
-
-                  return (
-                    <div
-                      key={`${file.name}-${index}`}
-                      className={`relative cursor-pointer flex items-center gap-2 rounded-xl border bg-primary/1 px-1 py-1 mt-2 text-xs text-primary ${
-                        hasError
-                          ? "border-red-500/50 bg-red-500/5"
-                          : "border-primary/5"
-                      }`}
-                    >
-                      {/* Thumbnail / icon */}
-                      <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-primary/5 bg-primary/3 flex items-center justify-center text-sm">
-                        {isImage ? (
-                          <img
-                            src={objectUrl}
-                            alt={file.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : isVideo ? (
-                          <div className="relative w-full h-full">
-                            {/* Simple video element used only to show a random-ish frame as poster substitute */}
-                            <video
-                              src={objectUrl}
-                              className="w-full h-full object-cover"
-                              muted
-                              playsInline
-                              preload="metadata"
-                              onLoadedMetadata={(e) => {
-                                const video = e.currentTarget;
-                                // Try to seek to ~1s to get a "random" thumbnail-like frame
-                                try {
-                                  if (video.duration > 2) {
-                                    video.currentTime = 1;
-                                  }
-                                } catch {
-                                  // ignore
-                                }
-                              }}
-                              // do not autoplay / controls => acts as a thumbnail
-                              controls={false}
-                            />
-                            <div className="pointer-events-none absolute inset-0 bg-black/10 flex items-center justify-center">
-                              <span className="text-sm text-white rounded-full bg-black/20 border border-white/20 backdrop-blur-sm">
-                                <PlayIcon className="p-1 stroke-1 size-6 opacity-50" />
-                              </span>
-                            </div>
-                          </div>
-                        ) : isAudio ? (
-                          <span className="px-1 text-[11px]">AUD</span>
-                        ) : (
-                          <span className="px-1 text-[11px]">FILE</span>
-                        )}
-
-                        {/* Progress bar overlay */}
-                        {isUploadingFile && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <div className="w-8 h-8 rounded-full border-2 border-white/30 flex items-center justify-center">
-                              <div
-                                className="w-6 h-6 rounded-full bg-white/80"
-                                style={{
-                                  clipPath: `polygon(0 0, ${progress}% 0, ${progress}% 100%, 0 100%)`,
-                                }}
-                              />
-                              <span className="absolute text-[8px] font-bold text-white">
-                                {Math.round(progress)}%
-                              </span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Error indicator */}
-                        {hasError && (
-                          <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
-                            <span className="text-lg text-red-500">✕</span>
-                          </div>
-                        )}
-
-                        {/* Success indicator */}
-                        {isUploaded && (
-                          <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
-                            <span className="text-lg text-green-500">✓</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Meta */}
-                      <div className="flex flex-col max-w-[150px]">
-                        <span className="truncate text-[11px] font-medium">
-                          {file.name}
-                        </span>
-                        <span
-                          className={`text-[10px] ${hasError ? "text-red-500" : "opacity-60"}`}
-                        >
-                          {hasError ? error : `${sizeKB} KB`}
-                        </span>
-                      </div>
-
-                      {/* Remove button */}
-                      <div
-                        onClick={() => handleRemoveFile(index)}
-                        className="cursor-pointer hover:opacity-60"
-                      >
-                        <XIcon className="size-3 stroke-1" />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Editing post bar */}
-            {activeEditPost && (
-              <div className="w-full flex justify-center items-center tracking-tight px-4 pb-3 xl:px-0">
-                <div className="w-full max-w-3xl backdrop-blur-md border border-secondary/5 cursor-pointer px-3 py-2 rounded-2xl bg-background/50">
-                  <div className="flex items-center gap-x-2.5">
-                    <div className="flex flex-col flex-1 text-xs">
-                      <span>{t("general.editing_post")}</span>
-                      <span className="line-clamp-1 whitespace-pre-wrap wrap-break-word opacity-60">
-                        {resolvePostPreview(activeEditPost)}
-                      </span>
-                    </div>
-                    <XIcon
-                      onClick={handleCancelEdit}
-                      className="size-3 stroke-[1.5px] cursor-pointer"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-x-2 w-full items-end">
-              <div className="flex-1 sm:px-0 border-b border-secondary/5">
-                <textarea
-                  value={filterString(inputValue)}
-                  onChange={(e) => {
-                    if (isOffline) return;
-                    const newValue = e.target.value;
-                    const lines = newValue.split("\n");
-                    if (lines.length > MAX_LINES) {
-                      setInputValue(lines.slice(0, MAX_LINES).join("\n"));
-                      return;
-                    }
-                    setInputValue(newValue);
-                  }}
-                  onPaste={(e) => {
-                    if (isOffline) return;
-                    const pasted = e.clipboardData.getData("text");
-                    if (!pasted) return;
-                    const currentLines = inputValue.split("\n");
-                    const pastedLines = pasted.split("\n");
-                    if (currentLines.length + pastedLines.length <= MAX_LINES) return;
-                    e.preventDefault();
-                    const remaining = MAX_LINES - currentLines.length;
-                    if (remaining <= 0) return;
-                    const truncated = pastedLines.slice(0, remaining).join("\n");
-                    setInputValue(inputValue + truncated);
-                  }}
-                  ref={inputRef}
-                  placeholder={isOffline ? "You are offline" : t("general.message_input_placeholder")}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoFocus={false}
-                  rows={1}
-                  maxLength={4096}
-                  disabled={isOffline}
-                  className={cn(
-                    "text-start resize-none w-full flex py-2 pt-3 lg:pt-6 none-scroll-bar focus:outline-none active:outline-none overflow-y-hidden",
-                    isOffline && "opacity-50 cursor-not-allowed",
-                  )}
-                />
-              </div>
-
-              {/* hidden input + clickable icon to open file picker */}
-              <label className="relative">
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*,video/*,audio/*,application/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  disabled={isOffline || isUploading}
-                />
-                <GalleryVerticalEndIcon
-                  className={`stroke-[1px] flex justify-center items-center opacity-80 w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full cursor-pointer ${isOffline || isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
-                />
-              </label>
-
-              <button
-                type="button"
-                onClick={handleSendMessage}
-                disabled={
-                  isOffline ||
-                  (!inputValue.trim() && completedMedia.length === 0) ||
-                  isUploading ||
-                  hasError
-                }
+          {/* Posts */}
+          <div
+            ref={listRef}
+            className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height))] pb-[var(--chat-footer-height)]"
+          >
+            {posts.map((msg: PostWithReactions) => (
+              <div
+                key={msg.id}
+                id={`message-${msg.id}`}
+                data-message-id={msg.id}
                 className={cn(
-                  "flex justify-center items-center w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full",
-                  (isOffline ||
-                    (!inputValue.trim() && completedMedia.length === 0) ||
-                    isUploading ||
-                    hasError) &&
-                    "opacity-60",
+                  "rounded-2xl",
+                  highlightedPostId === msg.id &&
+                    "bg-primary/5 ring-2 ring-primary/40",
                 )}
               >
-                {isUploading ? (
-                  <Loader className="size-5" />
-                ) : (
-                  <SendHorizonalIcon className="size-5 stroke-[1.5px] rtl:rotate-180 opacity-80" />
-                )}
-              </button>
+                <Message
+                  can_pin_post
+                  can_edit_post
+                  can_delete_post
+                  can_copy_text
+                  post={msg}
+                  pinned={msg.pinnedAt != null}
+                  onDelete={(id) => {
+                    const wasPinned = msg.pinnedAt != null;
+                    removePost(id);
+                    if (wasPinned) refreshPinnedPosts();
+                  }}
+                  onDeleteError={(err) => {
+                    showWriteError(err);
+                    addPost(msg);
+                  }}
+                  onPin={handleTogglePinPost}
+                  onEdit={handleEditPost}
+                  onRetry={handleRetryPost}
+                />
+              </div>
+            ))}
+
+            {/* Loading more (top infinite scroll) */}
+            {isLoadingMore && posts.length > 0 && (
+              <div className="grid place-items-center">
+                <Loader />
+              </div>
+            )}
+
+            {/* Sentinel for infinite scroll at visual TOP (DOM bottom because of flex-col-reverse) */}
+            <div ref={sentinelRef} />
+          </div>
+        </div>
+
+        {/* Write error toast */}
+        {writeError && (
+          <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] px-4 w-full max-w-2xl pointer-events-none">
+            <div className="w-full rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-md px-4 py-3 text-center text-sm text-red-500">
+              {writeError}
             </div>
-            <div className="line-clamp-2 md:line-clamp-1 text-sm tracking-tighter opacity-60">
-              {isOffline ? (
-                <span className="flex items-center gap-1.5 text-amber-500">
-                  <WifiOffIcon className="size-3.5" />
-                  You are offline. Viewing cached content.
-                </span>
-              ) : (
-                t("general.lorem_ipsum")
+          </div>
+        )}
+
+        {/* Footer */}
+        <div ref={footerRef} className="fixed bottom-0 max-w-2xl w-full z-50">
+          {/* Editing post bar */}
+          {activeEditPost && (
+            <div className="w-full flex justify-center items-center tracking-tight px-4 pb-3">
+              <div
+                className="w-full max-w-3xl backdrop-blur-md border border-secondary/5 cursor-pointer px-3 py-2 rounded-2xl bg-background/50"
+                onClick={() => scrollToPost(activeEditPost.id)}
+              >
+                <div className="flex items-center gap-x-2.5">
+                  <div className="flex flex-col flex-1 text-xs">
+                    <span>{t("general.editing_post")}</span>
+                    <span className="line-clamp-1 whitespace-pre-wrap wrap-break-word opacity-60">
+                      {resolvePostPreview(activeEditPost)}
+                    </span>
+                  </div>
+                  <XIcon
+                    onClick={handleCancelEdit}
+                    className="size-3 stroke-[1.5px] cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex w-full gap-x-3 px-4 pb-3 lg:pb-5 justify-center items-center border-t border-x border-secondary/5 backdrop-blur-md bg-white/50">
+            <div className="flex flex-col max-w-3xl w-full gap-y-2">
+              {/* selected attachments preview — hidden during edit mode */}
+              {!editingPostId && selectedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-x-2 border-b border-secondary/5">
+                  {selectedFiles.map((item, index) => {
+                    const file = item.file;
+                    const progress = item.progress;
+                    const error = item.error;
+                    const isImage = file.type.startsWith("image/");
+                    const isVideo = file.type.startsWith("video/");
+                    const isAudio = file.type.startsWith("audio/");
+                    const sizeKB = Math.round(file.size / 1024);
+                    const objectUrl = URL.createObjectURL(file);
+                    const isUploadingFile = progress >= 0 && progress < 100;
+                    const isUploaded = progress === 100 && !error;
+                    const hasError = !!error;
+
+                    return (
+                      <div
+                        key={`${file.name}-${index}`}
+                        className={`relative cursor-pointer flex items-center gap-2 rounded-xl border bg-primary/1 px-1 py-1 mt-2 text-xs text-primary ${
+                          hasError
+                            ? "border-red-500/50 bg-red-500/5"
+                            : "border-primary/5"
+                        }`}
+                      >
+                        {/* Thumbnail / icon */}
+                        <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-primary/5 bg-primary/3 flex items-center justify-center text-sm">
+                          {isImage ? (
+                            <img
+                              src={objectUrl}
+                              alt={file.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : isVideo ? (
+                            <div className="relative w-full h-full">
+                              {/* Simple video element used only to show a random-ish frame as poster substitute */}
+                              <video
+                                src={objectUrl}
+                                className="w-full h-full object-cover"
+                                muted
+                                playsInline
+                                preload="metadata"
+                                onLoadedMetadata={(e) => {
+                                  const video = e.currentTarget;
+                                  // Try to seek to ~1s to get a "random" thumbnail-like frame
+                                  try {
+                                    if (video.duration > 2) {
+                                      video.currentTime = 1;
+                                    }
+                                  } catch {
+                                    // ignore
+                                  }
+                                }}
+                                // do not autoplay / controls => acts as a thumbnail
+                                controls={false}
+                              />
+                              <div className="pointer-events-none absolute inset-0 bg-black/10 flex items-center justify-center">
+                                <span className="text-sm text-white rounded-full bg-black/20 border border-white/20 backdrop-blur-sm">
+                                  <PlayIcon className="p-1 stroke-1 size-6 opacity-50" />
+                                </span>
+                              </div>
+                            </div>
+                          ) : isAudio ? (
+                            <span className="px-1 text-[11px]">AUD</span>
+                          ) : (
+                            <span className="px-1 text-[11px]">FILE</span>
+                          )}
+
+                          {/* Progress bar overlay */}
+                          {isUploadingFile && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <div className="w-8 h-8 rounded-full border-2 border-white/30 flex items-center justify-center">
+                                <div
+                                  className="w-6 h-6 rounded-full bg-white/80"
+                                  style={{
+                                    clipPath: `polygon(0 0, ${progress}% 0, ${progress}% 100%, 0 100%)`,
+                                  }}
+                                />
+                                <span className="absolute text-[8px] font-bold text-white">
+                                  {Math.round(progress)}%
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Error indicator */}
+                          {hasError && (
+                            <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
+                              <span className="text-lg text-red-500">✕</span>
+                            </div>
+                          )}
+
+                          {/* Success indicator */}
+                          {isUploaded && (
+                            <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
+                              <span className="text-lg text-green-500">✓</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Meta */}
+                        <div className="flex flex-col max-w-[150px]">
+                          <span className="truncate text-[11px] font-medium">
+                            {file.name}
+                          </span>
+                          <span
+                            className={`text-[10px] ${hasError ? "text-red-500" : "opacity-60"}`}
+                          >
+                            {hasError ? error : `${sizeKB} KB`}
+                          </span>
+                        </div>
+
+                        {/* Remove button */}
+                        <div
+                          onClick={() => handleRemoveFile(index)}
+                          className="cursor-pointer hover:opacity-60"
+                        >
+                          <XIcon className="size-3 stroke-1" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
+
+              <div className="flex gap-x-2 w-full items-end">
+                <div className="flex-1 sm:px-0 border-b border-secondary/5">
+                  <textarea
+                    value={filterString(inputValue)}
+                    onChange={(e) => {
+                      if (isOffline) return;
+                      const newValue = e.target.value;
+                      const lines = newValue.split("\n");
+                      if (lines.length > MAX_LINES) {
+                        setInputValue(lines.slice(0, MAX_LINES).join("\n"));
+                        return;
+                      }
+                      setInputValue(newValue);
+                    }}
+                    onPaste={(e) => {
+                      if (isOffline) return;
+                      const pasted = e.clipboardData.getData("text");
+                      if (!pasted) return;
+                      const currentLines = inputValue.split("\n");
+                      const pastedLines = pasted.split("\n");
+                      if (currentLines.length + pastedLines.length <= MAX_LINES)
+                        return;
+                      e.preventDefault();
+                      const remaining = MAX_LINES - currentLines.length;
+                      if (remaining <= 0) return;
+                      const truncated = pastedLines
+                        .slice(0, remaining)
+                        .join("\n");
+                      setInputValue(inputValue + truncated);
+                    }}
+                    ref={inputRef}
+                    placeholder={
+                      isOffline
+                        ? "You are offline"
+                        : t("general.message_input_placeholder")
+                    }
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoFocus={false}
+                    rows={1}
+                    maxLength={4096}
+                    disabled={isOffline}
+                    className={cn(
+                      "text-start resize-none w-full flex py-2 pt-3 lg:pt-6 none-scroll-bar focus:outline-none active:outline-none overflow-y-hidden",
+                      isOffline && "opacity-50 cursor-not-allowed",
+                    )}
+                  />
+                </div>
+
+                {/* hidden input + clickable icon to open file picker */}
+                <label className="relative">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,video/*,audio/*,application/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    disabled={isOffline || isUploading}
+                  />
+                  <GalleryVerticalEndIcon
+                    className={`stroke-[1px] flex justify-center items-center opacity-80 w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full cursor-pointer ${isOffline || isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={handleSendMessage}
+                  disabled={
+                    isOffline ||
+                    (!inputValue.trim() && completedMedia.length === 0) ||
+                    isUploading ||
+                    hasError
+                  }
+                  className={cn(
+                    "flex justify-center items-center w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full",
+                    (isOffline ||
+                      (!inputValue.trim() && completedMedia.length === 0) ||
+                      isUploading ||
+                      hasError) &&
+                      "opacity-60",
+                  )}
+                >
+                  {isUploading ? (
+                    <Loader className="size-5" />
+                  ) : (
+                    <SendHorizonalIcon className="size-5 stroke-[1.5px] rtl:rotate-180 opacity-80" />
+                  )}
+                </button>
+              </div>
+              <div className="line-clamp-2 md:line-clamp-1 text-sm tracking-tighter opacity-60">
+                {isOffline ? (
+                  <span className="flex items-center gap-1.5 text-amber-500">
+                    <WifiOffIcon className="size-3.5" />
+                    You are offline. Viewing cached content.
+                  </span>
+                ) : (
+                  t("general.lorem_ipsum")
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
     </>
   );
 };

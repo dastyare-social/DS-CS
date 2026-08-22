@@ -52,7 +52,10 @@ export default function PinnedBar({
   const current = pinnedPosts[clampedIndex];
 
   return (
-    <div ref={barRef} className="fixed top-[var(--chat-header-height)] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4">
+    <div
+      ref={barRef}
+      className="fixed top-[var(--chat-header-height)] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4"
+    >
       <div
         onClick={onCycle}
         className="w-full backdrop-blur-md border border-secondary/5 cursor-pointer px-3 py-2 rounded-2xl bg-background/50"
