@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Upload a single media file
- * @description Single-file upload convenience endpoint (multipart/form-data with a `file` field). Returns the same metadata as `/api/media` but for one file, with an object response instead of an array. Use the returned `url`, `kind`, `width`, `height`, and `duration` when creating a post or story.
+ * @description Single-file upload endpoint (multipart/form-data with a `file` field). Returns media metadata. Use the returned `url`, `kind`, `width`, `height`, and `duration` when creating a post or story. For real-time upload progress, use `/api/upload-stream` instead.
  * @tag Media
  * @contentType multipart/form-data
  * @response MediaUploadResponse

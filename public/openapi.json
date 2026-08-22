@@ -853,7 +853,7 @@
       "post": {
         "operationId": "post-upload",
         "summary": "Upload a single media file",
-        "description": "Single-file upload convenience endpoint (multipart/form-data with a `file` field). Returns the same metadata as `/api/media` but for one file, with an object response instead of an array. Use the returned `url`, `kind`, `width`, `height`, and `duration` when creating a post or story.",
+        "description": "Single-file upload endpoint (multipart/form-data with a `file` field). Returns media metadata. Use the returned `url`, `kind`, `width`, `height`, and `duration` when creating a post or story. For real-time upload progress, use `/api/upload-stream` instead.",
         "tags": [
           "Media"
         ],
@@ -969,7 +969,7 @@
       "post": {
         "operationId": "post-posts",
         "summary": "Create a post or batch-increment views",
-        "description": "Create a post from a JSON body. Media must be referenced by URL — upload files to `/api/media` first, then map the returned `url`, `kind` (as `type`), `width`, `height`, and `duration` into the `media` array below. JSON body with action=batch-view and ids array increments views for multiple posts.",
+        "description": "Create a post from a JSON body. Media must be referenced by URL — upload files to `/api/upload` or `/api/upload-stream` first, then map the returned `url`, `kind` (as `type`), `width`, `height`, and `duration` into the `media` array below. JSON body with action=batch-view and ids array increments views for multiple posts.",
         "tags": [
           "Posts"
         ],
@@ -1371,7 +1371,7 @@
       "post": {
         "operationId": "post-stories",
         "summary": "Create a story",
-        "description": "Create a story from a JSON body. Media must be referenced by URL — upload files to `/api/media` first, then map the returned `url`, `kind` (as `type`), `width`, `height`, and `duration` into the `media` field below. Types: image, video. An array of media items creates one story per item.",
+        "description": "Create a story from a JSON body. Media must be referenced by URL — upload files to `/api/upload` or `/api/upload-stream` first, then map the returned `url`, `kind` (as `type`), `width`, `height`, and `duration` into the `media` field below. Types: image, video. An array of media items creates one story per item.",
         "tags": [
           "Stories"
         ],

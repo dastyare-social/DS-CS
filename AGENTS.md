@@ -37,25 +37,23 @@ Admin bootstrap: set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`; `bun run boot
 
 Upload files first, then reference the returned URL when creating posts or stories.
 
-- **`POST /api/media`** — multipart/form-data with `files[]`. Validates MIME and size limits, uploads to S3 under `media/<kind>/<uuid>.<ext>`, and returns an array:
+- **`POST /api/upload`** — multipart/form-data with `file` field. Validates MIME and size limits, uploads to S3 under `media/<kind>/<uuid>.<ext>`, and returns:
 
 ```json
-[
-  {
-    "url": "https://cdn.example.com/media/image/abc.jpg",
-    "key": "media/image/abc.jpg",
-    "kind": "image",
-    "mimeType": "image/jpeg",
-    "size": 12345,
-    "width": 1080,
-    "height": 1920,
-    "duration": 0,
-    "filename": "photo.jpg"
-  }
-]
+{
+  "url": "https://cdn.example.com/media/image/abc.jpg",
+  "key": "media/image/abc.jpg",
+  "kind": "image",
+  "mimeType": "image/jpeg",
+  "size": 12345,
+  "width": 1080,
+  "height": 1920,
+  "duration": 0,
+  "filename": "photo.jpg"
+}
 ```
 
-- **`POST /api/upload`** — single-file alias of `/api/media` using field `file`. Returns one object (not an array).
+- **`POST /api/upload-stream`** — same as `/api/upload` but returns Server-Sent Events for real-time progress tracking. Events: `progress` (with `percent` 0–100), `done` (with full media object), `error` (with `error` message).
 
 Pass the returned `url` (and optionally `width`/`height`/`duration`) as `media` when creating a post or story.
 
@@ -98,7 +96,7 @@ Content-Type: application/json
 { "content": "Hello", "media": [{ "url": "https://cdn.example.com/media/image/abc.jpg", "type": "image", "width": 1080, "height": 1920 }] }
 ```
 
-Returns `201` with the created post. Upload files via `/api/media` first, then reference the returned URL. Multiple media items create one post per item, or a single image post when all items are images.
+Returns `201` with the created post. Upload files via `/api/upload` or `/api/upload-stream` first, then reference the returned URL. Multiple media items create one post per item, or a single image post when all items are images.
 
 ### Batch increment views
 
@@ -152,7 +150,7 @@ Content-Type: application/json
 { "type": "video", "media": [{ "url": "https://cdn.example.com/media/video/abc.mp4", "duration": 8000 }] }
 ```
 
-Upload files via `/api/media` first, then reference the returned URL. An array of media creates one story per item (returns the first).
+Upload files via `/api/upload` or `/api/upload-stream` first, then reference the returned URL. An array of media creates one story per item (returns the first).
 
 ### Single story
 

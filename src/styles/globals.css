@@ -116,3 +116,21 @@ body {
 .animate-pulse-text {
   animation: pulse-text 2s ease-in-out infinite;
 }
+
+@keyframes stutter-2x {
+  0% { opacity: 1; }
+  10% { opacity: 0.7; }
+  20% { opacity: 1; }
+  30% { opacity: 0.8; }
+  40% { opacity: 1; }
+  50% { opacity: 0.7; }
+  60% { opacity: 1; }
+  70% { opacity: 0.75; }
+  80% { opacity: 1; }
+  90% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
+
+.animate-stutter-2x {
+  animation: stutter-2x 0.5s steps(5, end) infinite;
+}

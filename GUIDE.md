@@ -216,7 +216,7 @@ AI agents ───► MCP tools ────────┘
 
 ### 10.1 Media upload (S3)
 
-- `POST /api/media` accepts multipart `files[]`; `POST /api/upload` is a single-file alias.
+- `POST /api/upload` accepts multipart `file`; `POST /api/upload-stream` is the same but streams real-time progress via SSE.
 - `src/lib/media/upload.ts` validates size/MIME (see `MEDIA_*` env), probes dimensions (sharp / ffmpeg-probe), uploads to the S3-compatible bucket, and returns `{ url, key, kind, mimeType, size, width, height, duration }`.
 - Use the returned `url` as `media` when creating posts/stories. `src/lib/media/config.ts` builds the bucket client; `src/lib/media/auth.ts` guards access where needed.
 

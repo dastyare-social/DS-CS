@@ -116,7 +116,7 @@ export function registerPostTools(
     {
       title: "Create a post",
       description:
-        "Create a new post on the channel. Media must reference an existing URL — upload files to /api/media first. Requires API key auth.",
+        "Create a new post on the channel. Media must reference an existing URL — upload files to /api/upload or /api/upload-stream first. Requires API key auth.",
       inputSchema: {
         content: z.string().nullish().describe("Text content of the post"),
         media: z

@@ -70,6 +70,71 @@ const defaultTransport: UploadTransport = (file, onProgress) =>
     xhr.send(formData);
   });
 
+export const streamingTransport: UploadTransport = (file, onProgress) =>
+  new Promise<UploadResult>(async (resolve) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload-stream", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        resolve({ ok: false, error: `Upload failed: ${response.status}` });
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        resolve({ ok: false, error: "No response stream" });
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        let eventType = "";
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            try {
+              const parsed = JSON.parse(data);
+
+              if (eventType === "progress") {
+                onProgress(parsed.percent);
+              } else if (eventType === "done") {
+                onProgress(100);
+                resolve({ ok: true, media: parsed as UploadedMedia });
+                return;
+              } else if (eventType === "error") {
+                resolve({ ok: false, error: parsed.error });
+                return;
+              }
+            } catch {
+              // skip unparseable lines
+            }
+          }
+        }
+      }
+
+      resolve({ ok: false, error: "Stream ended unexpectedly" });
+    } catch {
+      resolve({ ok: false, error: "Network error" });
+    }
+  });
+
 export function mediaKindToPostType(kind: MediaKind): PostType {
   switch (kind) {
     case "image":

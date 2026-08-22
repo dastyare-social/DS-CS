@@ -214,11 +214,10 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Media files + Next.js optimized images: cache-first (same-origin only)
-  // Covers /_next/image (next/image optimization), /api/media/, animated emojis, and static media files
+  // Covers /_next/image (next/image optimization), animated emojis, and static media files
   if (
     sameOrigin &&
     (url.pathname.startsWith("/_next/image") ||
-      url.pathname.startsWith("/api/media/") ||
       url.pathname.startsWith("/animated-emojies/") ||
       /\.(png|jpe?g|webp|gif|svg|mp4|webm|mp3|ogg|wav|ico)$/i.test(url.pathname))
   ) {

@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
 import { S3_BUCKET, buildPublicFileUrl, getS3Client } from "./s3";
 import { MediaValidationError, classifyMediaType, mediaConfig, validateFile } from "./config";
 import type { MediaKind } from "./config";
@@ -59,6 +60,53 @@ export async function uploadFileToS3(file: File): Promise<UploadedMedia> {
 
 export async function uploadFilesToS3(files: File[]): Promise<UploadedMedia[]> {
   return Promise.all(files.map((file) => uploadFileToS3(file)));
+}
+
+export async function uploadFileToS3Stream(
+  file: File,
+  onProgress: (percent: number) => void,
+): Promise<UploadedMedia> {
+  assertWritable();
+  const kind = validateFile(file);
+
+  const mimeType = (file.type || "application/octet-stream").toLowerCase();
+  const key = `${mediaConfig().keyPrefix}/${kind}/${randomUUID()}.${safeExtension(mimeType)}`;
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  const upload = new Upload({
+    client: getS3Client(),
+    params: {
+      Bucket: S3_BUCKET(),
+      Key: key,
+      Body: buffer,
+      ContentType: mimeType,
+    },
+    queueSize: 4,
+    partSize: 5 * 1024 * 1024,
+  });
+
+  upload.on("httpUploadProgress", (progress) => {
+    if (progress.loaded != null && progress.total) {
+      onProgress(Math.round((progress.loaded / progress.total) * 100));
+    }
+  });
+
+  await upload.done();
+
+  const dimensions = await getMediaDimensions(buffer, mimeType);
+
+  return {
+    url: buildPublicFileUrl(key),
+    key,
+    kind,
+    mimeType,
+    size: file.size,
+    width: dimensions.width,
+    height: dimensions.height,
+    duration: dimensions.duration ?? 0,
+    filename: file.name || key.split("/").pop() || key,
+  };
 }
 
 export { MediaValidationError, classifyMediaType };
