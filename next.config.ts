@@ -1,9 +1,6 @@
-import { spawnSync } from "node:child_process";
-import crypto from "node:crypto";
 import type { NextConfig } from "next";
 
 import createNextIntlPlugin from "next-intl/plugin";
-import withSerwistInit from "@serwist/next";
 
 // Define RemotePattern type inline since it might not be exported in Next.js 16
 type RemotePattern = {
@@ -15,18 +12,11 @@ type RemotePattern = {
 
 const withNextIntl = createNextIntlPlugin("./src/i18n.ts");
 
-const withSerwist = withSerwistInit({
-  swSrc: "src/app/sw.ts",
-  swDest: "public/sw.js",
-  cacheOnNavigation: true,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV !== "production",
-});
-
-const revision =
-  spawnSync("git", ["rev-parse", "HEAD"], {
-    encoding: "utf-8",
-  }).stdout?.trim() ?? crypto.randomUUID();
+// Serwist is disabled — we maintain public/sw.js by hand.
+// On Turbopack (Next.js 16 default) Serwist's webpack plugin never runs anyway.
+// On Vercel with next build (webpack) it WOULD overwrite public/sw.js, so we
+// wrap with a no-op passthrough instead.
+const withSerwist = (_config: NextConfig) => _config;
 
 // Build a remotePattern entry from an arbitrary URL string (e.g. S3_ENDPOINT).
 // Returns null if the value is empty or not a valid URL.
