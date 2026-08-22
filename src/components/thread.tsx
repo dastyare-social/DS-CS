@@ -16,7 +16,7 @@ import { renderSimpleMarkdown } from "@/lib/render-post-markdown";
 import { cn, formatCount } from "@/lib/utils";
 import { BoxIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import Image from "next/image";
+import SafeImage from "./safe-image";
 import { useLocale } from "next-intl";
 
 import type { PostWithReactions } from "@/lib/api/posts";
@@ -86,9 +86,9 @@ export default function ThreadItem({
                   className="relative w-full max-w-2xs mt-2 max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer"
                   style={{ aspectRatio }}
                 >
-                  <Image
+                  <SafeImage
                     src={thread.media.url}
-                    alt={thread.content || "image_post"}
+                    alt=""
                     fill
                     unoptimized
                     sizes="(max-width: 768px) 80vw, 320px"

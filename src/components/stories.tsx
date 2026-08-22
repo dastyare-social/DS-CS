@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import SafeImage from "./safe-image";
 import { Dialog, DialogContent, DialogTrigger } from "./dialog";
 import { useEffect, useRef, useState } from "react";
 import { cn, formatCount, formatTimeAgo } from "@/lib/utils";
@@ -377,9 +377,9 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Image
+        <SafeImage
           src="/profile-image.png"
-          alt="profile-image"
+          alt=""
           width={size}
           height={size}
           loading="lazy"
@@ -410,9 +410,9 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                 {!isPreloading && (
                   <>
                     {currentStory.type === "image" ? (
-                      <Image
+                      <SafeImage
                         src={currentStory.url}
-                        alt={`story_${currentIndex}`}
+                        alt=""
                         fill
                         unoptimized
                         sizes="(max-width: 768px) 80vw, 320px"
@@ -492,10 +492,10 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                 dir={dir}
                 className="relative z-10 flex gap-x-1.5 px-3 py-2 items-center"
               >
-                <Image
+                <SafeImage
                   src="/profile-image.png"
                   unoptimized
-                  alt="profile-image"
+                  alt=""
                   width={35}
                   height={35}
                   loading="lazy"

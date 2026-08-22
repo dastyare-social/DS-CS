@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
+import SafeImage from "./safe-image";
 import { Dialog, DialogContent, DialogTrigger } from "./dialog";
 import { cn } from "@/lib/utils";
 
@@ -109,9 +109,9 @@ export default function ImageSlider({ media, content }: ImageSliderProps) {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <Image
+          <SafeImage
             src={currentMedia.url}
-            alt={content || "image_message"}
+            alt=""
             fill
             unoptimized
             sizes="(max-width: 768px) 80vw, 320px"
@@ -149,9 +149,9 @@ export default function ImageSlider({ media, content }: ImageSliderProps) {
           className="relative w-full min-w-sm max-w-xl max-h-[560px] overflow-hidden backdrop-blur-3xl p-1 border border-secondary/5 bg-white/50"
           style={{ aspectRatio }}
         >
-          <Image
+          <SafeImage
             src={currentMedia.url}
-            alt={content || "image_message"}
+            alt=""
             fill
             unoptimized
             sizes="(max-width: 768px) 80vw, 320px"

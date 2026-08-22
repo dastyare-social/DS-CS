@@ -36,6 +36,9 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} dir={dir}>
+      <head>
+        <link rel="preload" href="/profile-image.png" as="image" />
+      </head>
       <body
         suppressHydrationWarning
         className={cn(

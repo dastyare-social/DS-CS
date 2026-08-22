@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, memo } from "react";
-import Image from "next/image";
+import SafeImage from "./safe-image";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -726,9 +726,9 @@ const Post = memo(({
               className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer"
               style={{ aspectRatio }}
             >
-              <Image
+              <SafeImage
                 src={src}
-                alt={content || "image_message"}
+                alt=""
                 fill
                 unoptimized
                 sizes="(max-width: 768px) 80vw, 320px"
@@ -742,9 +742,9 @@ const Post = memo(({
               className="relative w-full min-w-sm max-w-xl max-h-[560px] overflow-hidden backdrop-blur-3xl p-1 border border-secondary/5 bg-white/50"
               style={{ aspectRatio }}
             >
-              <Image
+              <SafeImage
                 src={src}
-                alt={content || "image_message"}
+                alt=""
                 fill
                 unoptimized
                 sizes="(max-width: 768px) 80vw, 320px"
@@ -771,10 +771,10 @@ const Post = memo(({
             >
               {videoThumb && (
                 <>
-                  <Image
+                  <SafeImage
                     src={videoThumb}
                     unoptimized
-                    alt={content || "video_thumbnail"}
+                    alt=""
                     fill
                     className="absolute inset-0 h-full w-full object-cover p-1"
                   />
