@@ -44,18 +44,6 @@ function idbPutAll(posts) {
   );
 }
 
-function idbGetAll() {
-  return idbOpen().then(
-    (db) =>
-      new Promise((resolve, reject) => {
-        const tx = db.transaction(POSTS_STORE, "readonly");
-        const req = tx.objectStore(POSTS_STORE).index("createdAt").getAll();
-        req.onsuccess = () => { db.close(); resolve(req.result.reverse()); };
-        req.onerror = () => { db.close(); reject(req.error); };
-      }),
-  );
-}
-
 function idbCount() {
   return idbOpen().then(
     (db) =>
@@ -73,16 +61,9 @@ function idbCount() {
 //
 // tRPC httpBatchLink + superjson wire format:
 //   [{"result":{"data":{"json":{"items":[...]},"meta":{}}}}]
-// or non-batch:
-//   {"result":{"data":{"json":{...},"meta":{}}}}
-// Without superjson wrapper:
-//   {"result":{"data":{"items":[...]}}}
 // ---------------------------------------------------------------------------
 function extractPostsFromResponse(data) {
-  if (!data || typeof data !== "object") {
-    console.log("[SW] extractPosts: not an object", typeof data);
-    return [];
-  }
+  if (!data || typeof data !== "object") return [];
 
   const entries = Array.isArray(data) ? data : [data];
   const allPosts = [];
@@ -90,12 +71,8 @@ function extractPostsFromResponse(data) {
   for (const entry of entries) {
     if (!entry || typeof entry !== "object") continue;
 
-    // tRPC: {result: {data: ...}} or {result: {data: {json: ..., meta: ...}}}
     const resultData = entry?.result?.data;
-    if (!resultData || typeof resultData !== "object") {
-      // Try error shape: {result: {error: ...}}
-      continue;
-    }
+    if (!resultData || typeof resultData !== "object") continue;
 
     // superjson wraps in {json, meta} — unwrap if present
     const unwrapped =
@@ -112,7 +89,7 @@ function extractPostsFromResponse(data) {
     }
 
     for (const p of items) {
-      if (p && p.id) {
+      if (p && p.id && p.content !== undefined) {
         allPosts.push({
           id: p.id,
           type: p.type || "text",
@@ -129,7 +106,6 @@ function extractPostsFromResponse(data) {
     }
   }
 
-  console.log(`[SW] extractPosts: found ${allPosts.length} posts`);
   return allPosts;
 }
 
@@ -173,7 +149,6 @@ function offlineHTML() {
 // Lifecycle — fast install, immediate activation
 // ---------------------------------------------------------------------------
 self.addEventListener("install", (event) => {
-  console.log("[SW] installing");
   event.waitUntil(
     (async () => {
       try {
@@ -189,7 +164,6 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  console.log("[SW] activated, claiming clients");
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
@@ -213,12 +187,16 @@ self.addEventListener("fetch", (event) => {
 
   if (event.request.method !== "GET") return;
 
-  // Static assets: cache-first
+  // Only intercept same-origin requests — never touch cross-origin (PostHog etc.)
+  const sameOrigin = url.origin === self.location.origin;
+
+  // Static assets: cache-first (same-origin only)
   if (
-    url.pathname.startsWith("/_next/static/") ||
-    url.pathname.endsWith(".js") ||
-    url.pathname.endsWith(".css") ||
-    url.pathname.endsWith(".woff2")
+    sameOrigin &&
+    (url.pathname.startsWith("/_next/static/") ||
+      url.pathname.endsWith(".js") ||
+      url.pathname.endsWith(".css") ||
+      url.pathname.endsWith(".woff2"))
   ) {
     event.respondWith(
       caches.match(event.request).then((cached) => {
@@ -235,11 +213,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Media files: cache-first
+  // Media files: cache-first (same-origin only)
   if (
-    url.pathname.startsWith("/api/media/") ||
-    url.pathname.startsWith("/animated-emojies/") ||
-    /\.(png|jpe?g|webp|gif|svg|mp4|webm|mp3|ogg|wav|ico)$/i.test(url.pathname)
+    sameOrigin &&
+    (url.pathname.startsWith("/api/media/") ||
+      url.pathname.startsWith("/animated-emojies/") ||
+      /\.(png|jpe?g|webp|gif|svg|mp4|webm|mp3|ogg|wav|ico)$/i.test(url.pathname))
   ) {
     event.respondWith(
       caches.match(event.request).then((cached) => {
@@ -256,53 +235,35 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // tRPC API: network-first, store posts in IDB + media in cache
-  if (url.pathname.startsWith("/api/trpc/")) {
+  // tRPC API: network-first, store posts in IDB + raw response in Cache API
+  if (sameOrigin && url.pathname.startsWith("/api/trpc/")) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          console.log(`[SW] tRPC response: ${url.pathname} status=${response.status} ct=${response.headers.get("content-type")}`);
+          // Clone both copies upfront — can't clone after body is consumed
+          const cloneForJson = response.clone();
+          const cloneForCache = response.clone();
 
-          const clone = response.clone();
-          clone.json()
+          // Parse tRPC response and store posts in IDB (background)
+          cloneForJson.json()
             .then((data) => {
-              console.log("[SW] tRPC parsed JSON, keys:", Object.keys(data), "isArray:", Array.isArray(data));
-              if (Array.isArray(data) && data[0]) {
-                console.log("[SW] tRPC batch[0] keys:", Object.keys(data[0]));
-                if (data[0].result) console.log("[SW] tRPC batch[0].result keys:", Object.keys(data[0].result));
-                if (data[0].result?.data) {
-                  const rd = data[0].result.data;
-                  console.log("[SW] tRPC batch[0].result.data keys:", Object.keys(rd));
-                  if (rd.json !== undefined) console.log("[SW] tRPC superjson.json type:", typeof rd.json, Array.isArray(rd.json) ? "array" : "");
-                  if (rd.json?.items) console.log("[SW] tRPC items count:", rd.json.items.length);
-                }
-              } else if (data.result) {
-                console.log("[SW] tRPC single result keys:", Object.keys(data.result));
-              }
-
               const posts = extractPostsFromResponse(data);
-              console.log(`[SW] extractPosts returned ${posts.length} posts`);
               if (posts.length) {
                 idbPutAll(posts)
-                  .then(() => {
-                    console.log(`[SW] IDB stored ${posts.length} posts`);
-                    return idbCount();
-                  })
+                  .then(() => idbCount())
                   .then((count) => {
-                    console.log(`[SW] IDB total count: ${count}`);
+                    console.log(`[SW] IDB stored ${posts.length} posts, total: ${count}`);
                   })
                   .catch((err) => {
                     console.error("[SW] IDB store failed:", err);
                   });
               }
             })
-            .catch((err) => {
-              console.error("[SW] tRPC JSON parse failed:", err);
-            });
+            .catch(() => {});
 
-          // Cache raw response for offline fallback
+          // Cache raw response for offline tRPC fallback
           caches.open(TRPC_CACHE).then((cache) => {
-            cache.put(event.request, response.clone());
+            cache.put(event.request, cloneForCache);
           });
 
           return response;
