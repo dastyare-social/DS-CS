@@ -213,10 +213,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Media files: cache-first (same-origin only)
+  // Media files + Next.js optimized images: cache-first (same-origin only)
+  // Covers /_next/image (next/image optimization), /api/media/, animated emojis, and static media files
   if (
     sameOrigin &&
-    (url.pathname.startsWith("/api/media/") ||
+    (url.pathname.startsWith("/_next/image") ||
+      url.pathname.startsWith("/api/media/") ||
       url.pathname.startsWith("/animated-emojies/") ||
       /\.(png|jpe?g|webp|gif|svg|mp4|webm|mp3|ogg|wav|ico)$/i.test(url.pathname))
   ) {
@@ -317,7 +319,19 @@ self.addEventListener("fetch", (event) => {
 // Push notifications
 // ---------------------------------------------------------------------------
 self.addEventListener("push", (event) => {
-  const data = event.data?.json() || {};
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (_) {
+    // Plain text push (e.g. "Test push") — show as-is
+    const text = event.data ? event.data.text() : "";
+    if (text) {
+      event.waitUntil(
+        self.registration.showNotification("Update", { body: text, icon: "/web-app-manifest-192x192.png", data: { url: "/" } })
+      );
+    }
+    return;
+  }
   const title = data.title || "New update";
   const options = {
     body: data.body || "A new update is available",

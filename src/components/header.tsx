@@ -58,17 +58,22 @@ const Header = ({
       ? formatTimeAgo(new Date(latestPost.createdAt))
       : null;
 
-  const [isOffline, setIsOffline] = useState(false);
+  const [isOffline, setIsOffline] = useState(true);
 
   useEffect(() => {
-    setIsOffline(!navigator.onLine);
-    const handleOffline = () => setIsOffline(true);
-    const handleOnline = () => setIsOffline(false);
-    window.addEventListener("offline", handleOffline);
-    window.addEventListener("online", handleOnline);
+    let cancelled = false;
+    const check = () =>
+      fetch("/favicon.ico", { method: "HEAD", cache: "no-store" })
+        .then(() => { if (!cancelled) setIsOffline(false); })
+        .catch(() => { if (!cancelled) setIsOffline(true); });
+
+    check();
+    window.addEventListener("online", check);
+    const interval = setInterval(check, 15000);
     return () => {
-      window.removeEventListener("offline", handleOffline);
-      window.removeEventListener("online", handleOnline);
+      cancelled = true;
+      window.removeEventListener("online", check);
+      clearInterval(interval);
     };
   }, []);
 
