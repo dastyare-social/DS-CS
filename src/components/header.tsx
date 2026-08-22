@@ -97,38 +97,41 @@ const Header = ({
                 </span>
                 <span className="text-sm opacity-80 flex">
                   —&nbsp;
-                  {finalPosts.length > 0 && (
-                    <>
-                      {finalTotal} {t("general.posts")}
-                      <span>&nbsp;{t("general.published")}</span>
-                    </>
-                  )}
-                  {!finalIsLoading && finalPosts.length === 0 && (
-                    <span className="hidden sm:block">
-                      {t("general.not_posted_any_content_yet")}
+                  {isOffline ? (
+                    <span className="text-amber-600">
+                      you lost internet connection — trying to connect
+                      <span className="inline-flex w-6 text-left">
+                        <span className="dot-1">.</span>
+                        <span className="dot-2">.</span>
+                        <span className="dot-3">.</span>
+                      </span>
                     </span>
+                  ) : (
+                    <>
+                      {finalPosts.length > 0 && (
+                        <>
+                          {finalTotal} {t("general.posts")}
+                          <span>&nbsp;{t("general.published")}</span>
+                        </>
+                      )}
+                      {!finalIsLoading && finalPosts.length === 0 && (
+                        <span className="hidden sm:block">
+                          {t("general.not_posted_any_content_yet")}
+                        </span>
+                      )}
+                    </>
                   )}
                 </span>
               </div>
               <div className="text-sm leading-4 opacity-80 hidden sm:flex">
-                {isOffline ? (
-                  <span className="text-amber-600">
-                    — you lost internet connection — trying to connect
-                    <span className="inline-flex w-6 text-left">
-                      <span className="dot-1">.</span>
-                      <span className="dot-2">.</span>
-                      <span className="dot-3">.</span>
-                    </span>
-                  </span>
-                ) : (
+                {!isOffline &&
                   finalPosts.length > 0 &&
                   latestTimeLabel && (
                     <>
                       — {t("general.posted")}&nbsp;&nbsp;
                       {t_last_time(latestTimeLabel.key, latestTimeLabel.values)}
                     </>
-                  )
-                )}
+                  )}
               </div>
             </div>
           </DialogTrigger>

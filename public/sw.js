@@ -31,18 +31,6 @@ function idbOpen() {
   });
 }
 
-function idbPut(post) {
-  return idbOpen().then(
-    (db) =>
-      new Promise((resolve, reject) => {
-        const tx = db.transaction(POSTS_STORE, "readwrite");
-        tx.objectStore(POSTS_STORE).put(post);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      })
-  );
-}
-
 function idbPutAll(posts) {
   return idbOpen().then(
     (db) =>
@@ -80,25 +68,12 @@ function idbGet(id) {
   );
 }
 
-function idbDelete(id) {
-  return idbOpen().then(
-    (db) =>
-      new Promise((resolve, reject) => {
-        const tx = db.transaction(POSTS_STORE, "readwrite");
-        tx.objectStore(POSTS_STORE).delete(id);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      })
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Extract posts from tRPC response and store in IndexedDB
 // ---------------------------------------------------------------------------
 function extractPostsFromResponse(data) {
   if (!data || typeof data !== "object") return [];
 
-  // tRPC responses: { result: { data: { items: [...], ... } } }
   const items =
     data?.result?.data?.items ??
     data?.result?.data ??
@@ -139,7 +114,6 @@ function extractMediaUrls(post) {
   if (m.url) urls.push(m.url);
   if (m.thumbnail) urls.push(m.thumbnail);
 
-  // If media is an array (multiple images/videos)
   if (Array.isArray(m)) {
     for (const item of m) {
       if (item?.url) urls.push(item.url);
@@ -166,28 +140,46 @@ function cacheMediaInCacheAPI(urls) {
 }
 
 // ---------------------------------------------------------------------------
-// Lifecycle
+// Lifecycle — resilient install (never fails, always activates)
 // ---------------------------------------------------------------------------
 const SHELL_URLS = ["/"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(PAGE_CACHE)
-      .then((cache) => cache.addAll(SHELL_URLS))
-      .then(() => self.skipWaiting())
+    (async () => {
+      try {
+        const cache = await caches.open(PAGE_CACHE);
+        // Cache individually — don't let one failure block everything
+        for (const url of SHELL_URLS) {
+          try {
+            const response = await fetch(url);
+            if (response.ok) await cache.put(url, response);
+          } catch (_) {}
+        }
+      } catch (_) {}
+      // ALWAYS skipWaiting — even if caching failed, activate so the SW controls the page
+      self.skipWaiting();
+    })()
   );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(keys.filter((k) => k.endsWith("-dev")).map((k) => caches.delete(k)))
-      )
-      .then(() => self.clients.claim())
+    (async () => {
+      // Clean old dev caches
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k.endsWith("-dev")).map((k) => caches.delete(k)));
+      // Take control of all open pages immediately
+      await self.clients.claim();
+    })()
   );
+});
+
+// Allow the page to message the SW to skip waiting (for updates)
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -220,7 +212,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Media files (images, video, audio): cache-first, store in IDB too
+  // Media files: cache-first
   if (
     url.pathname.startsWith("/api/media/") ||
     url.pathname.startsWith("/animated-emojies/") ||
@@ -254,7 +246,6 @@ self.addEventListener("fetch", (event) => {
               const posts = extractPostsFromResponse(data);
               if (posts.length) {
                 cachePostsInIDB(posts);
-                // Cache media URLs from posts
                 const mediaUrls = posts.flatMap(extractMediaUrls);
                 if (mediaUrls.length) cacheMediaInCacheAPI(mediaUrls);
               }
@@ -274,36 +265,39 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Navigation requests: network-first → cache → IDB → offline fallback
+  // Navigation requests: network-first → cache → offline fallback
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
+      (async () => {
+        try {
+          const response = await fetch(event.request);
+          // Cache the page for offline use
           const clone = response.clone();
           caches.open(PAGE_CACHE).then((cache) => cache.put(event.request, clone));
           return response;
-        })
-        .catch(() =>
-          caches.match(event.request).then(
-            (cached) =>
-              cached ||
-              caches.match("/").then(
-                (home) =>
-                  home ||
-                  new Response(offlineHTML(), {
-                    status: 200,
-                    headers: { "Content-Type": "text/html; charset=utf-8" },
-                  })
-              )
-          )
-        )
+        } catch (_) {
+          // Try cached version of this exact URL
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+
+          // Try cached home page
+          const home = await caches.match("/");
+          if (home) return home;
+
+          // Last resort: serve offline shell HTML
+          return new Response(offlineHTML(), {
+            status: 200,
+            headers: { "Content-Type": "text/html; charset=utf-8" },
+          });
+        }
+      })()
     );
     return;
   }
 });
 
 // ---------------------------------------------------------------------------
-// Offline fallback HTML
+// Offline fallback HTML — a real app shell, not just "you're offline"
 // ---------------------------------------------------------------------------
 function offlineHTML() {
   return `<!DOCTYPE html>
@@ -311,19 +305,27 @@ function offlineHTML() {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Offline</title>
+  <meta name="theme-color" content="#ffffff">
+  <title>Dastyare Social — CS</title>
   <style>
-    body{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:system-ui,sans-serif;background:#fff;color:#111}
-    .c{text-align:center;padding:2rem}
-    h1{font-size:1.5rem;margin:0 0 .5rem}
-    p{color:#666;margin:0 0 1rem}
-    button{padding:.5rem 1.5rem;border-radius:999px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:1rem}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,sans-serif;background:#fff;color:#111}
+    .c{text-align:center;padding:2rem;max-width:360px}
+    h1{font-size:1.25rem;margin-bottom:.5rem;font-weight:600}
+    p{color:#666;font-size:.875rem;margin-bottom:1.25rem;line-height:1.5}
+    .dots{display:inline-flex;gap:2px;vertical-align:middle;margin-left:4px}
+    .dots span{width:4px;height:4px;border-radius:50%;background:#ca8a04;display:inline-block;animation:blink 1.4s infinite both}
+    .dots span:nth-child(2){animation-delay:.2s}
+    .dots span:nth-child(3){animation-delay:.4s}
+    @keyframes blink{0%,20%{opacity:.2}40%,100%{opacity:1}}
+    button{padding:.5rem 1.25rem;border-radius:999px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:.875rem;font-weight:500;transition:background .15s}
+    button:hover{background:#f9fafb}
   </style>
 </head>
 <body>
   <div class="c">
     <h1>You're offline</h1>
-    <p>Check your connection and try again.</p>
+    <p>Waiting for connection<span class="dots"><span></span><span></span><span></span></span></p>
     <button onclick="location.reload()">Retry</button>
   </div>
 </body>
