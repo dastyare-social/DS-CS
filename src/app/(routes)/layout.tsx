@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Locale } from "@/config/locale";
 import { rootMetadata } from "../../../config/metadata";
 import Analytics from "@/components/analytics";
+import RegisterPWA from "@/components/register-pwa";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -49,6 +50,7 @@ export default async function RootLayout({
             shadow="none"
           />
           <Analytics />
+          <RegisterPWA />
           {children}
         </NextIntlClientProvider>
       </body>
