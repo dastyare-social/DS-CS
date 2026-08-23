@@ -7,11 +7,7 @@ import {
 } from "@/lib/db/schema/stories";
 import { z } from "zod";
 import { randomUUID } from "crypto";
-import type {
-  StoryItem,
-  StoryMediaPayload,
-  StoryType,
-} from "./queries";
+import type { StoryItem, StoryMediaPayload, StoryType } from "./queries";
 import { getStoryById } from "./queries";
 import { app_config } from "@/config/app";
 import { sendPushNotification } from "@/lib/notifications/push";
@@ -21,8 +17,17 @@ import { assertWritable } from "@/lib/demo-mode";
 
 export function inferStoryTypeFromUrl(url: string): StoryType {
   const lowerUrl = url.toLowerCase();
-  const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico'];
-  const videoExts = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.m4v'];
+  const imageExts = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".webp",
+    ".svg",
+    ".bmp",
+    ".ico",
+  ];
+  const videoExts = [".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v"];
 
   for (const ext of videoExts) {
     if (lowerUrl.endsWith(ext)) return "video";
@@ -36,7 +41,7 @@ export function inferStoryTypeFromUrl(url: string): StoryType {
 export async function buildStoryMediaFromUrl(
   url: string,
   type: StoryType,
-  dimensions?: { width: number; height: number; duration?: number }
+  dimensions?: { width: number; height: number; duration?: number },
 ): Promise<StoryMediaPayload> {
   switch (type) {
     case "image": {
@@ -94,13 +99,12 @@ async function buildStoryMediaForInput(input: StoryMediaInput): Promise<{
     }
   }
 
-  const built =
-    (await buildStoryMediaFromUrl(input.url, type, dimensions)) ?? {
-      url: input.url,
-      width: 0,
-      height: 0,
-      duration: 0,
-    };
+  const built = (await buildStoryMediaFromUrl(input.url, type, dimensions)) ?? {
+    url: input.url,
+    width: 0,
+    height: 0,
+    duration: 0,
+  };
 
   const media = { ...built };
   if (input.thumbnail) {
@@ -157,7 +161,7 @@ async function insertStory({
     if (push) {
       await sendPushNotification({
         title: `New Story — ${app_config.en.name}'s Channel`,
-        body: "A new story is now live",
+        body: "A New Story is Now LIVE",
         url: "/",
       });
     }
@@ -188,8 +192,9 @@ export async function createStory({
   }
 
   if (items.length === 1) {
-    const { type: itemType, media: itemMedia } =
-      await buildStoryMediaForInput(items[0]);
+    const { type: itemType, media: itemMedia } = await buildStoryMediaForInput(
+      items[0],
+    );
     return insertStory({
       type: itemType,
       views,
@@ -201,8 +206,9 @@ export async function createStory({
 
   const createdStories: StoryItem[] = [];
   for (let i = 0; i < items.length; i++) {
-    const { type: itemType, media: itemMedia } =
-      await buildStoryMediaForInput(items[i]);
+    const { type: itemType, media: itemMedia } = await buildStoryMediaForInput(
+      items[i],
+    );
     const created = await insertStory({
       type: itemType,
       views,
@@ -273,7 +279,7 @@ export async function deleteStoryById(id: string): Promise<boolean> {
 }
 
 export async function incrementStoryViews(
-  id: string
+  id: string,
 ): Promise<{ storyId: string; views: string } | null> {
   const existing = await getStoryById(id);
   if (!existing) return null;
@@ -293,10 +299,7 @@ export async function incrementStoryViews(
   return { storyId: id, views: newViews };
 }
 
-export async function toggleStoryLike(
-  id: string,
-  direction: "inc" | "dec"
-) {
+export async function toggleStoryLike(id: string, direction: "inc" | "dec") {
   const existing = await getStoryById(id);
   if (!existing) return null;
 

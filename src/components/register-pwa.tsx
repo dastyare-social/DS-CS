@@ -4,8 +4,26 @@ import { useEffect } from "react";
 
 const SW_URL = "/sw.js";
 
-function registerServiceWorker() {
+function isDev() {
+  return (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+  );
+}
+
+async function registerServiceWorker() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+    return;
+  }
+
+  // Dev: unregister and purge caches so stale bundles never survive a restart
+  if (isDev()) {
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) await registration.unregister();
+      const names = await caches.keys();
+      await Promise.all(names.map((name) => caches.delete(name)));
+    } catch (_) {}
     return;
   }
 
@@ -17,9 +35,11 @@ function registerServiceWorker() {
 export default function RegisterPWA() {
   useEffect(() => {
     if (document.readyState === "complete") {
-      registerServiceWorker();
+      void registerServiceWorker();
     } else {
-      window.addEventListener("load", registerServiceWorker, { once: true });
+      window.addEventListener("load", () => void registerServiceWorker(), {
+        once: true,
+      });
     }
   }, []);
 

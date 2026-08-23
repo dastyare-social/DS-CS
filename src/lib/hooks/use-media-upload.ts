@@ -89,6 +89,17 @@ function getClientDimensions(file: File): Promise<{ width: number; height: numbe
       };
       img.onerror = () => resolve({ width: 0, height: 0, duration: 0 });
       img.src = URL.createObjectURL(file);
+    } else if (file.type.startsWith("audio/")) {
+      const audio = document.createElement("audio");
+      audio.preload = "metadata";
+      audio.onloadedmetadata = () => {
+        URL.revokeObjectURL(audio.src);
+        // Some codecs report Infinity until first play — treat as unknown
+        const d = Number.isFinite(audio.duration) ? audio.duration : 0;
+        resolve({ width: 0, height: 0, duration: Math.round(d * 1000) });
+      };
+      audio.onerror = () => resolve({ width: 0, height: 0, duration: 0 });
+      audio.src = URL.createObjectURL(file);
     } else {
       resolve({ width: 0, height: 0, duration: 0 });
     }
@@ -115,6 +126,9 @@ export const presignedTransport: UploadTransport = (file, onProgress) =>
       const { uploadUrl, key, kind, mimeType } = await presignRes.json();
 
       const dims = await getClientDimensions(file);
+      // Voice: pass duration only — no size/width/height (the feed player
+      // shows stored duration before the audio is downloaded)
+      const isAudio = file.type.startsWith("audio/");
 
       const xhr = new XMLHttpRequest();
       xhr.upload.addEventListener("progress", (e) => {
@@ -146,10 +160,12 @@ export const presignedTransport: UploadTransport = (file, onProgress) =>
           key,
           mimeType,
           filename: file.name,
-          size: file.size,
-          width: dims.width,
-          height: dims.height,
-          duration: dims.duration,
+          ...(isAudio
+            ? { ...(dims.duration ? { duration: dims.duration } : {}) }
+            : {
+                size: file.size,
+                ...(dims.width || dims.height || dims.duration ? dims : {}),
+              }),
         }),
       });
 
@@ -191,15 +207,23 @@ export function buildMediaInputs(items: MediaUploadItem[]): MediaInput[] {
       (item): item is MediaUploadItem & { media: UploadedMedia } =>
         item.media !== null
     )
-    .map((item) => ({
-      url: item.media.url,
-      type: mediaKindToPostType(item.media.kind),
-      dimensions: {
-        width: item.media.width,
-        height: item.media.height,
-        duration: item.media.duration,
-      },
-    }));
+    .map((item) => {
+      const m = item.media;
+      const hasDimensions = !!(m.width || m.height || m.duration);
+      return {
+        url: m.url,
+        type: mediaKindToPostType(m.kind),
+        ...(hasDimensions
+          ? {
+              dimensions: {
+                width: m.width,
+                height: m.height,
+                duration: m.duration,
+              },
+            }
+          : {}),
+      };
+    });
 }
 
 export function inferPostType(items: MediaUploadItem[]): PostType {

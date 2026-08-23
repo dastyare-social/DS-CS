@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { pushSubscriptions } from "@/lib/db/schema/push-subscriptions";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import webPush from "web-push";
 
 export type PushPayload = {
@@ -72,7 +72,29 @@ export async function sendPushNotification(payload: PushPayload) {
   );
 
   const results = await Promise.allSettled(promises);
+
+  // Deactivate subscriptions whose endpoint is gone (app uninstalled,
+  // service worker unregistered) so future pushes only hit live devices
+  const deadIds: string[] = [];
+  results.forEach((result, i) => {
+    if (
+      result.status === "rejected" &&
+      [404, 410].includes(
+        (result.reason as { statusCode?: number })?.statusCode ?? 0,
+      )
+    ) {
+      deadIds.push(subscriptions[i].id);
+    }
+  });
+
+  if (deadIds.length > 0) {
+    await db
+      .update(pushSubscriptions)
+      .set({ active: false })
+      .where(inArray(pushSubscriptions.id, deadIds));
+  }
+
   const failed = results.filter((result) => result.status === "rejected").length;
 
-  return { success: true, sent: results.length - failed, failed };
+  return { success: true, sent: results.length - failed, failed, pruned: deadIds.length };
 }

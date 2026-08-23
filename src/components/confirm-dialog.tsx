@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 type ConfirmDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
+  title?: string;
   description?: string;
   confirmLabel?: string;
   cancelLabel?: string;
@@ -19,10 +19,10 @@ type ConfirmDialogProps = {
 export default function ConfirmDialog({
   open,
   onOpenChange,
-  title,
-  description,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  title = "Are You Sure?",
+  description = "are you sure you wanna cancel — changes wouldn't apply if you accept it",
+  confirmLabel = "Accept",
+  cancelLabel = "Keep Editing",
   onConfirm,
   onCancel,
   destructive = false,
@@ -40,32 +40,32 @@ export default function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={handleCancel}>
       <DialogContent
-        className="w-[85vw] max-w-[340px] bg-background/95 backdrop-blur-2xl border border-border/50 rounded-3xl p-0 overflow-hidden"
+        className="w-[85vw] max-w-[340px] bg-white/50 backdrop-blur-3xl border-primary/10 rounded-3xl p-0 overflow-hidden text-secondary/90"
         showCloseButton={false}
       >
-        <div className="flex flex-col items-center gap-3 px-6 pt-6 pb-2 text-center">
-          <span className="text-lg font-semibold">{title}</span>
-          {description && (
-            <span className="text-sm text-foreground/60 leading-relaxed">
-              {description}
-            </span>
-          )}
+        <div className="flex flex-col items-center gap-y-2 px-6 pt-6 pb-2 text-center">
+          <span className="text-[20px]">{title}</span>
+          <span className="text-[16px] text-secondary/70 leading-relaxed">
+            {description}
+          </span>
         </div>
 
-        <div className="flex gap-2 px-5 py-4 border-t border-border/30">
+        <div className="flex gap-x-2.5 justify-end px-5 py-4 mt-2.5">
           <Button
+            type="button"
             variant="secondary"
             onClick={handleCancel}
-            className="flex-1 text-sm py-2"
+            className="text-[18px] px-5"
           >
             {cancelLabel}
           </Button>
           <Button
-            variant={destructive ? "secondary" : "primary"}
+            type="button"
             onClick={handleConfirm}
             className={cn(
-              "flex-1 text-sm py-2",
-              destructive && "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20"
+              "text-[18px] px-5",
+              destructive &&
+                "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20",
             )}
           >
             {confirmLabel}

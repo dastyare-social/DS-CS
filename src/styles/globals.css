@@ -117,3 +117,35 @@ body {
   animation: pulse-text 2s ease-in-out infinite;
 }
 
+
+@property --ring-progress {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+
+.progress-ring {
+  position: relative;
+}
+
+.progress-ring::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    rgba(255, 255, 255, 0.8) var(--ring-progress),
+    rgba(255, 255, 255, 0.1) var(--ring-progress)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  transition: --ring-progress 300ms linear;
+}

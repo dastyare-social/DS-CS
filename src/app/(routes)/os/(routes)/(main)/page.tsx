@@ -14,24 +14,499 @@ import {
   getPinnedPosts,
 } from "@/lib/actions/posts";
 import {
-  GalleryVerticalEndIcon,
+  CheckIcon,
+  FileIcon,
   HardDriveIcon,
+  PauseIcon,
   PlayIcon,
   SendHorizonalIcon,
+  UploadIcon,
   WifiOffIcon,
   XIcon,
 } from "lucide-react";
 import { filterString } from "@/lib/filters";
 import Header from "@/components/header";
 import PinnedBar from "@/components/pinned-bar";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
 import type { PostWithReactions } from "@/lib/api/posts";
 import { app_config } from "@/config/app";
 import { Locale } from "@/config/locale";
 import {
   buildMediaInputs,
   inferPostType,
+  presignedTransport,
   useMediaUpload,
+  type MediaUploadItem,
 } from "@/lib/hooks/use-media-upload";
+
+// Voice attachment — mirrors VoicePlayer's download phase on posts:
+// circled progress icon + filling bars, then a playable local preview
+const VoiceAttachment = ({
+  item,
+  onRemove,
+}: {
+  item: MediaUploadItem;
+  onRemove: () => void;
+}) => {
+  const { file, progress, error } = item;
+  const ratio = Math.min(Math.max(progress / 100, 0), 1);
+  const uploading = error === null && progress < 100;
+  const done = error === null && progress >= 100;
+  const circumference = 2 * Math.PI * (0.45 * 36);
+
+  // Check mark phase: keep ✓ for 2s after finishing, then become playable
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (!done) {
+      setReady(false);
+      return;
+    }
+    const timer = setTimeout(() => setReady(true), 2000);
+    return () => clearTimeout(timer);
+  }, [done]);
+
+  const objectUrl = useObjectUrl(file);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [duration, setDuration] = useState<number | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const formatTime = (s: number) => {
+    if (!Number.isFinite(s)) return "";
+    const m = Math.floor(s / 60);
+    const sec = Math.round(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const formatSize = (bytes: number) =>
+    bytes < 1024 * 1024
+      ? `${Math.round(bytes / 1024)} KB`
+      : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+
+  // Played portion of the waveform once playable — like posts' VoicePlayer
+  const playedRatio =
+    ready && duration && duration > 0 ? Math.min(currentTime / duration, 1) : 0;
+
+  const handleWaveformClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = audioRef.current;
+    if (!ready || !el || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const r = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+    el.currentTime = r * duration;
+    setCurrentTime(r * duration);
+  };
+
+  const togglePlay = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (el.paused) {
+      void el.play();
+      setPlaying(true);
+    } else {
+      el.pause();
+      setPlaying(false);
+    }
+  };
+
+  const bars = useMemo(
+    () =>
+      Array.from({ length: 40 }, () => {
+        return 8 + Math.round(Math.random() * 20);
+      }),
+    [],
+  );
+
+  return (
+    <div
+      dir="ltr"
+      className={cn(
+        "relative rounded-2xl border bg-primary/5 px-3 py-2 flex items-center gap-3",
+        error ? "border-red-500/30" : "border-primary/5",
+      )}
+    >
+      {/* Progress button — same ring as posts' download circle */}
+      <button
+        type="button"
+        onClick={ready ? togglePlay : undefined}
+        disabled={!ready}
+        className="relative flex items-center justify-center rounded-full outline-none border-[1.5px] border-primary/10 hover:bg-primary/3 cursor-pointer text-primary/60 w-9 h-9 disabled:cursor-default disabled:hover:bg-transparent"
+      >
+        {!error && !ready && (
+          <svg className="absolute inset-0 h-full w-full -rotate-90">
+            <circle
+              cx="50%"
+              cy="50%"
+              r="45%"
+              className="stroke-primary/20"
+              strokeWidth="2"
+              fill="none"
+            />
+            <circle
+              cx="50%"
+              cy="50%"
+              r="45%"
+              className={cn("stroke-primary", error && "stroke-red-500")}
+              strokeWidth="2"
+              fill="none"
+              strokeDasharray={circumference}
+              strokeDashoffset={(1 - (error ? 1 : ratio)) * circumference}
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
+        {error ? (
+          <XIcon className="w-5 h-5 relative z-10 stroke-1 text-red-500" />
+        ) : !ready ? (
+          done ? (
+            <CheckIcon className="w-5 h-5 relative z-10 stroke-1" />
+          ) : (
+            <UploadIcon className="w-5 h-5 relative z-10 stroke-1 animate-pulse" />
+          )
+        ) : playing ? (
+          <PauseIcon className="w-5 h-5 relative z-10 stroke-1" />
+        ) : (
+          <PlayIcon className="w-5 h-5 relative z-10 stroke-1" />
+        )}
+      </button>
+
+      {ready && (
+        <audio
+          ref={audioRef}
+          src={objectUrl ?? undefined}
+          preload="metadata"
+          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+          onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+          onEnded={() => setPlaying(false)}
+          className="hidden"
+        />
+      )}
+
+      <div className="flex-1 flex flex-col gap-1">
+        <div
+          onClick={handleWaveformClick}
+          className={cn(
+            "w-40 max-w-full h-10 flex items-center gap-[2px]",
+            ready && "cursor-pointer select-none",
+          )}
+        >
+          {bars.map((h, idx) => {
+            const barRatio = bars.length > 1 ? idx / (bars.length - 1) : 0;
+            // Upload progress tint before ready, playback fill after — same
+            // colors as posts' VoicePlayer (download /20, played /50)
+            let bgClass = "bg-primary/10";
+            if (!ready && !error && ratio >= barRatio)
+              bgClass = "bg-primary/20";
+            if (ready && playedRatio >= barRatio) bgClass = "bg-primary/50";
+            return (
+              <div
+                key={idx}
+                className={cn(
+                  "flex-1 rounded-full transition-colors duration-150",
+                  bgClass,
+                )}
+                style={{ height: `${h}px` }}
+              />
+            );
+          })}
+        </div>
+
+        <div className="flex items-center justify-between text-[11px] text-primary">
+          {uploading ? (
+            <span>Uploading {Math.floor(ratio * 100)}%</span>
+          ) : error ? (
+            <span className="text-red-500 truncate">{error}</span>
+          ) : ready && duration ? (
+            <>
+              <span className="opacity-60 tabular-nums">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
+              <span className="opacity-60">{formatSize(file.size)}</span>
+            </>
+          ) : (
+            <span className="opacity-60">done</span>
+          )}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute -top-1.5 -right-1.5 z-10 p-1 hover:cursor-pointer rounded-full bg-black/10 backdrop-blur-xs border border-white/10 hover:bg-black/20 transition-colors text-white"
+      >
+        <XIcon className="size-2.5 stroke-[1.5px]" />
+      </button>
+    </div>
+  );
+};
+
+// File attachment — original card style: thumb box + name + size + X
+const formatFileSize = (bytes: number) =>
+  bytes < 1024 * 1024
+    ? `${Math.round(bytes / 1024)} KB`
+    : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+
+// File attachment — same chip style as voice upload: circled progress icon,
+// name + status/size row, fully rounded border
+const FileAttachment = ({
+  item,
+  onRemove,
+}: {
+  item: MediaUploadItem;
+  onRemove: () => void;
+}) => {
+  const { file, progress, error } = item;
+  const ratio = Math.min(Math.max(progress / 100, 0), 1);
+  const uploading = error === null && progress < 100;
+  const done = error === null && progress >= 100;
+  const circumference = 2 * Math.PI * (0.45 * 36);
+
+  // "done" phase for 2s after finishing, then settle on the file size
+  const [doneExpired, setDoneExpired] = useState(false);
+  useEffect(() => {
+    if (!done) {
+      setDoneExpired(false);
+      return;
+    }
+    const timer = setTimeout(() => setDoneExpired(true), 2000);
+    return () => clearTimeout(timer);
+  }, [done]);
+
+  return (
+    <div
+      dir="ltr"
+      className={cn(
+        "relative rounded-2xl border bg-primary/5 px-3 py-3 flex items-center gap-3 min-w-[200px] max-w-full self-center",
+        error ? "border-red-500/30" : "border-primary/5",
+      )}
+    >
+      {/* Progress circle — same ring as voice/posts download circle */}
+      <div className="relative flex items-center justify-center rounded-full outline-none border-[1.5px] border-primary/10 text-primary/60 w-9 h-9 shrink-0">
+        {!error && !doneExpired && (
+          <svg className="absolute inset-0 h-full w-full -rotate-90">
+            <circle
+              cx="50%"
+              cy="50%"
+              r="45%"
+              className="stroke-primary/20"
+              strokeWidth="2"
+              fill="none"
+            />
+            <circle
+              cx="50%"
+              cy="50%"
+              r="45%"
+              className={cn("stroke-primary", error && "stroke-red-500")}
+              strokeWidth="2"
+              fill="none"
+              strokeDasharray={circumference}
+              strokeDashoffset={(1 - (error ? 1 : ratio)) * circumference}
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
+        {error ? (
+          <XIcon className="w-5 h-5 relative z-10 stroke-1 text-red-500" />
+        ) : doneExpired ? (
+          <FileIcon className="w-5 h-5 relative z-10 stroke-1" />
+        ) : done ? (
+          <CheckIcon className="w-5 h-5 relative z-10 stroke-1" />
+        ) : (
+          <UploadIcon className="w-5 h-5 relative z-10 stroke-1 animate-pulse" />
+        )}
+      </div>
+
+      <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+        <span className="truncate text-xs">{file.name}</span>
+        <span
+          className={`text-[11px] ${
+            error ? "text-red-500 truncate" : "opacity-60 tabular-nums"
+          }`}
+        >
+          {uploading
+            ? `Uploading ${Math.floor(ratio * 100)}%`
+            : error
+              ? error
+              : doneExpired
+                ? formatFileSize(file.size)
+                : "done"}
+        </span>
+      </div>
+
+      <div
+        onClick={onRemove}
+        className="cursor-pointer hover:opacity-60 mr-1 shrink-0"
+      >
+        <XIcon className="size-3 stroke-1" />
+      </div>
+    </div>
+  );
+};
+
+// StrictMode-safe blob URL: create per effect run, revoke on cleanup
+function useObjectUrl(file: File) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+  return url;
+}
+
+// Keep the "done" pill + dark overlay for 2s after finishing, then reveal media
+function useDoneRevealTimer(done: boolean) {
+  const [doneExpired, setDoneExpired] = useState(false);
+  useEffect(() => {
+    if (!done) {
+      setDoneExpired(false);
+      return;
+    }
+    const timer = setTimeout(() => setDoneExpired(true), 2000);
+    return () => clearTimeout(timer);
+  }, [done]);
+  return doneExpired;
+}
+
+const UploadPillOverlay = ({
+  progress,
+  uploading,
+}: {
+  progress: number;
+  uploading: boolean;
+}) => (
+  <div className="absolute inset-0 z-10 bg-black/50 flex items-center justify-center p-1 pointer-events-none">
+    <div
+      className="progress-ring text-white bg-white/10 backdrop-blur-xs rounded-full px-1.5 py-0.5 text-[10px] leading-none whitespace-nowrap transition-all duration-300"
+      style={{ "--ring-progress": `${progress}%` } as React.CSSProperties}
+    >
+      {uploading ? `${Math.round(progress)} / 100` : "done"}
+    </div>
+  </div>
+);
+
+const ErrorOverlay = () => (
+  <div className="absolute inset-0 z-10 bg-red-500/30 flex items-center justify-center pointer-events-none">
+    <XIcon className="size-4 stroke-[1.5px] text-red-500" />
+  </div>
+);
+
+const RemoveBadge = ({ onClick }: { onClick: () => void }) => (
+  <div
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick();
+    }}
+    className="absolute top-1 right-1 z-20 p-1 cursor-pointer rounded-full bg-black/10 backdrop-blur-xs border border-white/10 hover:bg-black/20 transition-colors text-white"
+  >
+    <XIcon className="size-2.5 stroke-[1.5px]" />
+  </div>
+);
+
+// Image / video attachment: pill progress while uploading, then click-to-view
+// in a glassy modal exactly like post media
+const MediaAttachment = ({
+  item,
+  onRemove,
+  isImage,
+}: {
+  item: MediaUploadItem;
+  onRemove: () => void;
+  isImage: boolean;
+}) => {
+  const { file, progress, error, media } = item;
+  const uploading = error === null && progress < 100;
+  const done = error === null && progress >= 100;
+  const doneExpired = useDoneRevealTimer(done);
+  const showOverlay = uploading || (done && !doneExpired);
+  const objectUrl = useObjectUrl(file);
+
+  const viewable = error === null && media !== null && objectUrl !== null;
+
+  const thumbClasses =
+    "relative block w-20 h-20 overflow-hidden border border-primary/5 bg-primary/3";
+
+  const thumb = (
+    <>
+      {objectUrl &&
+        (isImage ? (
+          <img
+            src={objectUrl}
+            alt=""
+            draggable={false}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <video
+            src={objectUrl}
+            muted
+            playsInline
+            preload="metadata"
+            className="w-full h-full object-cover"
+          />
+        ))}
+
+      {showOverlay && (
+        <UploadPillOverlay progress={progress} uploading={uploading} />
+      )}
+      {error && <ErrorOverlay />}
+      <RemoveBadge onClick={onRemove} />
+    </>
+  );
+
+  if (!viewable) {
+    return <div className={thumbClasses}>{thumb}</div>;
+  }
+
+  return (
+    <Dialog>
+      <DialogTrigger className={`${thumbClasses} cursor-pointer outline-none`}>
+        {thumb}
+      </DialogTrigger>
+      <DialogContent>
+        <div className="flex items-center justify-center overflow-hidden backdrop-blur-3xl p-1 border border-secondary/5 bg-white/50">
+          {isImage ? (
+            <img
+              src={objectUrl!}
+              alt=""
+              className="object-contain max-w-full max-h-[70vh]"
+            />
+          ) : (
+            <video
+              src={objectUrl!}
+              controls
+              autoPlay
+              playsInline
+              className="max-w-full max-h-[70vh]"
+            />
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const MediaAttachmentThumb = ({
+  item,
+  onRemove,
+}: {
+  item: MediaUploadItem;
+  onRemove: () => void;
+}) => {
+  const { file } = item;
+  const isAudio = file.type.startsWith("audio/");
+  if (isAudio) {
+    return <VoiceAttachment item={item} onRemove={onRemove} />;
+  }
+
+  const isImage = file.type.startsWith("image/");
+  const isVideo = file.type.startsWith("video/");
+
+  if (!isImage && !isVideo) {
+    return <FileAttachment item={item} onRemove={onRemove} />;
+  }
+
+  return <MediaAttachment item={item} onRemove={onRemove} isImage={isImage} />;
+};
 
 const Page = () => {
   const t = useTranslations();
@@ -51,7 +526,7 @@ const Page = () => {
     selectFiles,
     removeFile,
     clear,
-  } = useMediaUpload();
+  } = useMediaUpload(presignedTransport);
 
   // only update header/footer CSS variables
   const updateHeaderFooterOffsets = () => {
@@ -747,126 +1222,14 @@ const Page = () => {
             <div className="flex flex-col max-w-3xl w-full gap-y-2">
               {/* selected attachments preview — hidden during edit mode */}
               {!editingPostId && selectedFiles.length > 0 && (
-                <div className="flex flex-wrap gap-x-2 border-b border-secondary/5">
-                  {selectedFiles.map((item, index) => {
-                    const file = item.file;
-                    const progress = item.progress;
-                    const error = item.error;
-                    const isImage = file.type.startsWith("image/");
-                    const isVideo = file.type.startsWith("video/");
-                    const isAudio = file.type.startsWith("audio/");
-                    const sizeKB = Math.round(file.size / 1024);
-                    const objectUrl = URL.createObjectURL(file);
-                    const isUploadingFile = progress >= 0 && progress < 100;
-                    const isUploaded = progress === 100 && !error;
-                    const hasError = !!error;
-
-                    return (
-                      <div
-                        key={`${file.name}-${index}`}
-                        className={`relative cursor-pointer flex items-center gap-2 rounded-xl border bg-primary/1 px-1 py-1 mt-2 text-xs text-primary ${
-                          hasError
-                            ? "border-red-500/50 bg-red-500/5"
-                            : "border-primary/5"
-                        }`}
-                      >
-                        {/* Thumbnail / icon */}
-                        <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-primary/5 bg-primary/3 flex items-center justify-center text-sm">
-                          {isImage ? (
-                            <img
-                              src={objectUrl}
-                              alt={file.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : isVideo ? (
-                            <div className="relative w-full h-full">
-                              {/* Simple video element used only to show a random-ish frame as poster substitute */}
-                              <video
-                                src={objectUrl}
-                                className="w-full h-full object-cover"
-                                muted
-                                playsInline
-                                preload="metadata"
-                                onLoadedMetadata={(e) => {
-                                  const video = e.currentTarget;
-                                  // Try to seek to ~1s to get a "random" thumbnail-like frame
-                                  try {
-                                    if (video.duration > 2) {
-                                      video.currentTime = 1;
-                                    }
-                                  } catch {
-                                    // ignore
-                                  }
-                                }}
-                                // do not autoplay / controls => acts as a thumbnail
-                                controls={false}
-                              />
-                              <div className="pointer-events-none absolute inset-0 bg-black/10 flex items-center justify-center">
-                                <span className="text-sm text-white rounded-full bg-black/20 border border-white/20 backdrop-blur-sm">
-                                  <PlayIcon className="p-1 stroke-1 size-6 opacity-50" />
-                                </span>
-                              </div>
-                            </div>
-                          ) : isAudio ? (
-                            <span className="px-1 text-[11px]">AUD</span>
-                          ) : (
-                            <span className="px-1 text-[11px]">FILE</span>
-                          )}
-
-                          {/* Progress bar overlay */}
-                          {isUploadingFile && (
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                              <div className="w-8 h-8 rounded-full border-2 border-white/30 flex items-center justify-center">
-                                <div
-                                  className="w-6 h-6 rounded-full bg-white/80"
-                                  style={{
-                                    clipPath: `polygon(0 0, ${progress}% 0, ${progress}% 100%, 0 100%)`,
-                                  }}
-                                />
-                                <span className="absolute text-[8px] font-bold text-white">
-                                  {Math.round(progress)}%
-                                </span>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Error indicator */}
-                          {hasError && (
-                            <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
-                              <span className="text-lg text-red-500">✕</span>
-                            </div>
-                          )}
-
-                          {/* Success indicator */}
-                          {isUploaded && (
-                            <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
-                              <span className="text-lg text-green-500">✓</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Meta */}
-                        <div className="flex flex-col max-w-[150px]">
-                          <span className="truncate text-[11px] font-medium">
-                            {file.name}
-                          </span>
-                          <span
-                            className={`text-[10px] ${hasError ? "text-red-500" : "opacity-60"}`}
-                          >
-                            {hasError ? error : `${sizeKB} KB`}
-                          </span>
-                        </div>
-
-                        {/* Remove button */}
-                        <div
-                          onClick={() => handleRemoveFile(index)}
-                          className="cursor-pointer hover:opacity-60"
-                        >
-                          <XIcon className="size-3 stroke-1" />
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-2 mt-2 pb-2 border-b border-secondary/5">
+                  {selectedFiles.map((item, index) => (
+                    <MediaAttachmentThumb
+                      key={`${item.file.name}-${index}`}
+                      item={item}
+                      onRemove={() => handleRemoveFile(index)}
+                    />
+                  ))}
                 </div>
               )}
 
@@ -928,10 +1291,10 @@ const Page = () => {
                       accept="image/*,video/*,audio/*,application/*"
                       className="hidden"
                       onChange={handleFileChange}
-                      disabled={isOffline || isUploading}
+                      disabled={isOffline}
                     />
                     <HardDriveIcon
-                      className={`stroke-[1px] flex justify-center items-center opacity-80 w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full cursor-pointer ${isOffline || isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+                      className={`stroke-[1px] flex justify-center items-center opacity-80 w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full cursor-pointer ${isOffline ? "opacity-50 cursor-not-allowed" : ""}`}
                     />
                   </label>
                 )}
@@ -954,11 +1317,7 @@ const Page = () => {
                       "opacity-60",
                   )}
                 >
-                  {isUploading ? (
-                    <Loader className="size-5" />
-                  ) : (
-                    <SendHorizonalIcon className="size-5 stroke-[1.5px] rtl:rotate-180 opacity-80" />
-                  )}
+                  <SendHorizonalIcon className="size-5 stroke-[1.5px] rtl:rotate-180 opacity-80" />
                 </button>
               </div>
               <div className="line-clamp-2 md:line-clamp-1 text-sm tracking-tighter opacity-60">

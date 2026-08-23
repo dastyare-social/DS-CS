@@ -2,20 +2,13 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { posts } from "@/lib/db/schema/posts";
 import { reactions } from "@/lib/db/schema/reactions";
-import {
-  insertPostsSchema,
-  patchPostsSchema,
-} from "@/lib/db/schema/posts";
+import { insertPostsSchema, patchPostsSchema } from "@/lib/db/schema/posts";
 import { insertReactionsSchema } from "@/lib/db/schema/reactions";
 import { z } from "zod";
 import { captureServerEvent, flushServerEvents } from "@/lib/analytics/server";
 import { randomUUID } from "crypto";
 import { app_config } from "@/config/app";
-import type {
-  MediaPayload,
-  PostType,
-  PostWithReactions,
-} from "./queries";
+import type { MediaPayload, PostType, PostWithReactions } from "./queries";
 import { getPostById, invalidatePostsCache } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
 import { shortenContentUrls } from "@/lib/shorten";
@@ -24,9 +17,18 @@ import { assertWritable } from "@/lib/demo-mode";
 
 export function inferPostTypeFromUrl(url: string): PostType {
   const lowerUrl = url.toLowerCase();
-  const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico'];
-  const videoExts = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.m4v'];
-  const audioExts = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac'];
+  const imageExts = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".webp",
+    ".svg",
+    ".bmp",
+    ".ico",
+  ];
+  const videoExts = [".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v"];
+  const audioExts = [".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac"];
 
   for (const ext of imageExts) {
     if (lowerUrl.endsWith(ext)) return "image";
@@ -43,7 +45,7 @@ export function inferPostTypeFromUrl(url: string): PostType {
 export async function buildMediaFromUrl(
   url: string,
   type: PostType,
-  dimensions?: { width: number; height: number; duration?: number }
+  dimensions?: { width: number; height: number; duration?: number },
 ): Promise<MediaPayload> {
   switch (type) {
     case "image": {
@@ -97,7 +99,7 @@ type CreatePostInput = {
 
 async function resolveMediaDimensions(
   input: PostMediaInput,
-  type: PostType
+  type: PostType,
 ): Promise<{ width: number; height: number; duration?: number }> {
   if (input.width || input.height || input.duration) {
     return {
@@ -166,11 +168,25 @@ async function insertPost({
     await flushServerEvents();
 
     if (push) {
-      await sendPushNotification({
+      const fallbackBody =
+        type === "image"
+          ? "New Photo Shared"
+          : type === "video"
+            ? "New Video Shared"
+            : type === "voice"
+              ? "New Voice Message"
+              : type === "file"
+                ? "New File Shared"
+                : "A New Post is Now Available";
+      const pushResult = await sendPushNotification({
         title: `New Post — ${app_config.en.name}'s Channel`,
-        body: content ? content.slice(0, 80) : "A new post is now available",
+        body: content ? content.slice(0, 80) : fallbackBody,
         url: "/",
       });
+      console.log(
+        `[push] post ${inserted.id} type=${type}`,
+        JSON.stringify(pushResult),
+      );
     }
   }
 
@@ -196,7 +212,7 @@ export async function createPost({
 
   if (mediaInputs && mediaInputs.length > 1) {
     const allImages = mediaInputs.every(
-      (input) => (input.type || inferPostTypeFromUrl(input.url)) === "image"
+      (input) => (input.type || inferPostTypeFromUrl(input.url)) === "image",
     );
 
     if (allImages) {
@@ -345,7 +361,7 @@ export async function addReaction({
 
   const whereClause = and(
     eq(reactions.postId, data.postId),
-    eq(reactions.emoji, data.emoji)
+    eq(reactions.emoji, data.emoji),
   );
 
   const existing = await db.select().from(reactions).where(whereClause);
@@ -387,7 +403,7 @@ export async function addReaction({
 }
 
 export async function viewPost(
-  id: string
+  id: string,
 ): Promise<{ messageId: string; views: string } | null> {
   const post = await getPostById(id);
   if (!post) return null;

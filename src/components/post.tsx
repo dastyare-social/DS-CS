@@ -79,9 +79,10 @@ type PostProps = {
 
 type VoicePlayerProps = {
   src: string;
+  storedDurationMs?: number | null;
 };
 
-const VoicePlayer = ({ src }: VoicePlayerProps) => {
+const VoicePlayer = ({ src, storedDurationMs }: VoicePlayerProps) => {
   const t = useTranslations();
 
   const [downloadProgress, setDownloadProgress] = useState(0); // 0..1
@@ -379,13 +380,17 @@ const VoicePlayer = ({ src }: VoicePlayerProps) => {
                 ? `Downloading ${Math.floor(
                     Math.min(downloadProgress, 1) * 100,
                   )}%`
-                : t("tap_to_download")
+                : t("general.tap_to_download")
               : isPlaying
                 ? ""
                 : ""}
           </span>
           <span>
-            {formatSeconds(currentTime)} / {formatSeconds(duration)}
+            {showDownloadPhase
+              ? storedDurationMs
+                ? formatSeconds(storedDurationMs / 1000)
+                : formatSeconds(currentTime)
+              : `${formatSeconds(currentTime)} / ${formatSeconds(duration)}`}
           </span>
         </div>
       </div>
@@ -495,7 +500,7 @@ const FileDownload = ({
   return (
     <div
       dir="ltr"
-      className="w-3xs rounded-2xl border border-primary/5 bg-primary/5 px-3 py-2 flex items-center gap-3"
+      className="w-3xs rounded-2xl border border-primary/5 bg-primary/5 px-3 py-3 flex items-center gap-3"
     >
       <button
         type="button"
@@ -792,15 +797,12 @@ const Post = memo(
             </DialogTrigger>
             {videoThumb && (
               <DialogContent>
-                <div
-                  className="overflow-hidden backdrop-blur-3xl border border-secondary/5 bg-white/50"
-                  style={{ aspectRatio }}
-                >
+                <div className="w-fit max-w-full overflow-hidden backdrop-blur-3xl border border-secondary/5 bg-white/50">
                   <video
                     src={src}
                     controls
                     autoPlay
-                    className="h-full w-full p-1"
+                    className="block max-h-[85vh] max-w-full p-1"
                   />
                 </div>
               </DialogContent>
@@ -810,7 +812,12 @@ const Post = memo(
       }
 
       if (type === "voice") {
-        return <VoicePlayer src={src} />;
+        return (
+          <VoicePlayer
+            src={src}
+            storedDurationMs={post.media?.["duration"] ?? null}
+          />
+        );
       }
 
       if (type === "file") {

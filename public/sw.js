@@ -9,6 +9,9 @@ const PAGE_CACHE = "page-cache-v1";
 const MEDIA_CACHE = "media-cache-v1";
 const SHELL_CACHE = "shell-cache-v1";
 
+// Dev bypass flag — the SW stays fully out of the way on localhost
+const IS_DEV = self.location.hostname === "localhost";
+
 // ---------------------------------------------------------------------------
 // IndexedDB helpers
 // ---------------------------------------------------------------------------
@@ -151,13 +154,15 @@ function offlineHTML() {
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
-      try {
-        const cache = await caches.open(SHELL_CACHE);
+      if (!IS_DEV) {
         try {
-          const response = await fetch("/");
-          if (response.ok) await cache.put("/", response);
+          const cache = await caches.open(SHELL_CACHE);
+          try {
+            const response = await fetch("/");
+            if (response.ok) await cache.put("/", response);
+          } catch (_) {}
         } catch (_) {}
-      } catch (_) {}
+      }
       self.skipWaiting();
     })(),
   );
@@ -167,7 +172,12 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
-      await Promise.all(keys.filter((k) => k.endsWith("-dev")).map((k) => caches.delete(k)));
+      if (IS_DEV) {
+        // Dev: purge every cache so stale bundles never survive a restart
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      } else {
+        await Promise.all(keys.filter((k) => k.endsWith("-dev")).map((k) => caches.delete(k)));
+      }
       await self.clients.claim();
     })(),
   );
@@ -186,6 +196,9 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
   if (event.request.method !== "GET") return;
+
+  // Dev bypass: never intercept on localhost — always fresh code from the dev server
+  if (IS_DEV) return;
 
   // Only intercept same-origin requests — never touch cross-origin (PostHog etc.)
   const sameOrigin = url.origin === self.location.origin;
