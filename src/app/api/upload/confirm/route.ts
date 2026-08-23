@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import {
   MediaValidationError,
   requireMediaAuth,
@@ -8,12 +9,48 @@ import { isDemoMode } from "@/lib/demo-mode";
 
 export const dynamic = "force-dynamic";
 
+/** @id ConfirmBody */
+export const ConfirmBody = z.object({
+  key: z.string().describe("S3 object key returned by /api/upload/presign"),
+  mimeType: z.string().describe("MIME type of the uploaded file"),
+  filename: z.string().optional().describe("Original file name"),
+  size: z.number().optional().describe("File size in bytes (from client)"),
+  width: z
+    .number()
+    .optional()
+    .describe("Media width in px — read on the client before upload"),
+  height: z
+    .number()
+    .optional()
+    .describe("Media height in px — read on the client before upload"),
+  duration: z
+    .number()
+    .optional()
+    .describe("Video duration in ms — read on the client before upload"),
+});
+
+/** @id ConfirmResultSchema */
+export const ConfirmResultSchema = z.object({
+  url: z.string().describe("Public URL of the uploaded media"),
+  key: z.string(),
+  kind: z.enum(["image", "video", "audio", "file"]),
+  mimeType: z.string(),
+  size: z.number(),
+  width: z.number(),
+  height: z.number(),
+  duration: z.number(),
+  filename: z.string(),
+});
+
 /**
  * Confirm a direct S3 upload and return media metadata
  * @summary Upload Media — Confirm Direct Upload
- * @description After the browser uploads directly to S3 via presigned URL, call this with { key, mimeType, filename, size, width, height, duration } to get the public URL and full media object.
+ * @description Step 2 of the direct upload flow: after the browser PUTs the file to the presigned URL, call this with the `key` plus client-side metadata. Returns the public URL and full media object ready for post/story creation.
  * @tag Media
- * @contentType application/json
+ * @body ConfirmBody
+ * @response ConfirmResultSchema
+ * @examples request: {"key": "media/video/0931725d-aedb-4e27-aac6-aae46f3a2872.mp4", "mimeType": "video/mp4", "filename": "story.mp4", "size": 6041570, "width": 1080, "height": 1920, "duration": 35533}
+ * @examples response: {"url": "https://ktbjawdgcckqqcslfwed.supabase.co/storage/v1/object/public/dastyare-social-cs/media/video/0931725d-aedb-4e27-aac6-aae46f3a2872.mp4", "key": "media/video/0931725d-aedb-4e27-aac6-aae46f3a2872.mp4", "kind": "video", "mimeType": "video/mp4", "size": 6041570, "width": 1080, "height": 1920, "duration": 35533, "filename": "story.mp4"}
  * @openapi
  */
 export async function POST(request: NextRequest) {
@@ -28,23 +65,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const { key, mimeType, filename, size, width, height, duration } = body as {
-      key?: string;
-      mimeType?: string;
-      filename?: string;
-      size?: number;
-      width?: number;
-      height?: number;
-      duration?: number;
-    };
+    const jsonBody = await request.json().catch(() => null);
+    const parseResult = ConfirmBody.safeParse(jsonBody);
 
-    if (!key || !mimeType) {
+    if (!parseResult.success) {
       return NextResponse.json(
         { error: "key and mimeType are required" },
         { status: 400 },
       );
     }
+
+    const { key, mimeType, filename, size, width, height, duration } =
+      parseResult.data;
 
     const kind = mimeType.startsWith("image/")
       ? "image"

@@ -117,19 +117,3 @@ body {
   animation: pulse-text 2s ease-in-out infinite;
 }
 
-@keyframes stutter-freeze {
-  0% { visibility: visible; }
-  15% { visibility: visible; }
-  16% { visibility: hidden; }
-  48% { visibility: hidden; }
-  50% { visibility: visible; }
-  65% { visibility: visible; }
-  66% { visibility: hidden; }
-  80% { visibility: hidden; }
-  82% { visibility: visible; }
-  100% { visibility: visible; }
-}
-
-.animate-stutter-freeze {
-  animation: stutter-freeze 0.4s steps(1, end) infinite;
-}

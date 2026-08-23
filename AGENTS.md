@@ -56,11 +56,9 @@ Browser uploads directly to S3, giving real upload progress via XHR.
 
 3. **`POST /api/upload/confirm`** — JSON body `{ key, mimeType, filename, size, width, height, duration }`. Returns the full media object with public URL.
 
-### Server-Side Upload (Legacy)
+### Server-Side Upload (API clients / scripts)
 
-- **`POST /api/upload`** — multipart/form-data with `file` field. Server buffers file then uploads to S3. Returns the full media object.
-
-- **`POST /api/upload-stream`** — same as `/api/upload` but returns Server-Sent Events for real-time progress tracking. Events: `progress` (with `percent` 0–100), `done` (with full media object), `error` (with `error` message).
+- **`POST /api/upload`** — multipart/form-data with `file` field. Server buffers file then uploads to S3. Returns the full media object. Use for curl, MCP tools, and server-to-server integrations — no browser progress needed.
 
 ## REST API — Posts
 
@@ -90,7 +88,7 @@ Content-Type: application/json
 { "content": "Hello", "media": [{ "url": "https://cdn.example.com/media/image/abc.jpg", "type": "image", "width": 1080, "height": 1920 }] }
 ```
 
-Returns `201` with the created post. Upload files via `/api/upload` or `/api/upload-stream` first, then reference the returned URL. Multiple media items create one post per item, or a single image post when all items are images.
+Returns `201` with the created post. Upload files via `/api/upload` or `/api/upload/presign` + `/api/upload/confirm` first, then reference the returned URL. Multiple media items create one post per item, or a single image post when all items are images.
 
 ### Batch Views — Increment View Counts
 
@@ -144,7 +142,7 @@ Content-Type: application/json
 { "type": "video", "media": [{ "url": "https://cdn.example.com/media/video/abc.mp4", "duration": 8000 }] }
 ```
 
-Upload files via `/api/upload` or `/api/upload-stream` first, then reference the returned URL. An array of media creates one story per item (returns the first).
+Upload files via `/api/upload` or `/api/upload/presign` + `/api/upload/confirm` first, then reference the returned URL. An array of media creates one story per item (returns the first).
 
 ### Single Story — Get, Update, Or Delete
 

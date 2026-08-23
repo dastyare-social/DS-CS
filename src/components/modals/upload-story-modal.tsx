@@ -26,7 +26,7 @@ export default function UploadStoryModal({
   const [mediaLoading, setMediaLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<UploadPhase>("idle");
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const cancelledRef = useRef(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -38,13 +38,13 @@ export default function UploadStoryModal({
       setPreview(null);
       setProgress(0);
       setPhase("idle");
-      setMuted(true);
+      setMuted(false);
       return;
     }
     setMediaLoading(true);
     setProgress(0);
     setPhase("idle");
-    setMuted(true);
+    setMuted(false);
     cancelledRef.current = false;
     const url = URL.createObjectURL(file);
     setPreview(url);
@@ -70,6 +70,45 @@ export default function UploadStoryModal({
     if (!videoRef.current) return;
     videoRef.current.muted = muted;
   }, [muted]);
+
+  // Freeze-frame stutter during upload: pause playback, then every second
+  // seek forward ~3 frames (frame 1 → 4 → 7 …), looping from the start.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (phase !== "uploading") {
+      if (phase === "creating" || phase === "done") {
+        video.play().catch(() => {});
+      }
+      return;
+    }
+
+    setMuted(true);
+    video.pause();
+
+    const STEP_SECONDS = 0.1; // ≈3 frames @30fps
+    const interval = setInterval(() => {
+      const duration = video.duration;
+      if (!duration || Number.isNaN(duration)) return;
+      const next = video.currentTime + STEP_SECONDS;
+      video.currentTime = next >= duration - STEP_SECONDS ? 0 : next;
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [phase]);
+
+  // Autoplay with sound; fall back to muted if the browser blocks it
+  useEffect(() => {
+    if (mediaLoading) return;
+    const video = videoRef.current;
+    if (!isVideo || !video || phase !== "idle") return;
+    if (!video.paused) return;
+    video.play().catch(() => {
+      setMuted(true);
+      video.play().catch(() => {});
+    });
+  }, [mediaLoading, isVideo, phase]);
 
   const handleStartUpload = useCallback(async () => {
     if (!file || phase !== "idle") return;
@@ -174,14 +213,12 @@ export default function UploadStoryModal({
               ref={videoRef}
               src={preview}
               autoPlay
-              muted
               loop
               playsInline
               onLoadedData={() => setMediaLoading(false)}
               className={cn(
                 "w-full h-full object-contain",
                 mediaLoading && "hidden",
-                phase === "uploading" && "animate-stutter-freeze",
               )}
             />
           ) : preview ? (

@@ -1,8 +1,6 @@
 import { randomUUID } from "crypto";
-import { Readable } from "stream";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { Upload } from "@aws-sdk/lib-storage";
 import { S3_BUCKET, buildPublicFileUrl, getS3Client } from "./s3";
 import { MediaValidationError, classifyMediaType, mediaConfig, validateFile } from "./config";
 import type { MediaKind } from "./config";
@@ -62,66 +60,6 @@ export async function uploadFileToS3(file: File): Promise<UploadedMedia> {
 
 export async function uploadFilesToS3(files: File[]): Promise<UploadedMedia[]> {
   return Promise.all(files.map((file) => uploadFileToS3(file)));
-}
-
-export async function uploadFileToS3Stream(
-  file: File,
-  onProgress: (percent: number) => void,
-): Promise<UploadedMedia> {
-  assertWritable();
-  const kind = validateFile(file);
-
-  const mimeType = (file.type || "application/octet-stream").toLowerCase();
-  const key = `${mediaConfig().keyPrefix}/${kind}/${randomUUID()}.${safeExtension(mimeType)}`;
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const totalSize = buffer.length;
-  let uploadedBytes = 0;
-  let offset = 0;
-
-  const readable = new Readable({
-    read() {
-      if (offset >= totalSize) {
-        this.push(null);
-        return;
-      }
-      const chunkSize = Math.min(256 * 1024, totalSize - offset);
-      const chunk = buffer.subarray(offset, offset + chunkSize);
-      offset += chunkSize;
-      uploadedBytes += chunkSize;
-      onProgress(Math.round((uploadedBytes / totalSize) * 100));
-      this.push(chunk);
-    },
-  });
-
-  const upload = new Upload({
-    client: getS3Client(),
-    params: {
-      Bucket: S3_BUCKET(),
-      Key: key,
-      Body: readable,
-      ContentType: mimeType,
-      ContentLength: totalSize,
-    },
-    queueSize: 4,
-    partSize: 5 * 1024 * 1024,
-  });
-
-  await upload.done();
-
-  const dimensions = await getMediaDimensions(buffer, mimeType);
-
-  return {
-    url: buildPublicFileUrl(key),
-    key,
-    kind,
-    mimeType,
-    size: file.size,
-    width: dimensions.width,
-    height: dimensions.height,
-    duration: dimensions.duration ?? 0,
-    filename: file.name || key.split("/").pop() || key,
-  };
 }
 
 export { MediaValidationError, classifyMediaType };
