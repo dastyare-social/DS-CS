@@ -4,11 +4,11 @@ import { Dialog, DialogContent } from "@/components/dialog";
 import ConfirmDialog from "@/components/confirm-dialog";
 import { createStoryAction } from "@/lib/actions/stories";
 import { presignedTransport } from "@/lib/hooks/use-media-upload";
-import { ArrowRightIcon, XIcon } from "lucide-react";
+import { ArrowRightIcon, RotateCcwIcon, XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type UploadPhase = "idle" | "uploading" | "creating" | "done";
+type UploadPhase = "idle" | "uploading" | "creating" | "done" | "failed";
 
 interface UploadStoryModalProps {
   open: boolean;
@@ -113,7 +113,7 @@ export default function UploadStoryModal({
   }, [mediaLoading, isVideo, phase]);
 
   const handleStartUpload = useCallback(async () => {
-    if (!file || phase !== "idle") return;
+    if (!file || (phase !== "idle" && phase !== "failed")) return;
 
     cancelledRef.current = false;
     setPhase("uploading");
@@ -148,7 +148,7 @@ export default function UploadStoryModal({
         onOpenChange(false);
       }, 2000);
     } else {
-      setPhase("idle");
+      setPhase("failed");
     }
   }, [file, phase, onOpenChange, onStoryCreated]);
 
@@ -167,7 +167,11 @@ export default function UploadStoryModal({
   }, [phase, handleClose]);
 
   const ringProgress =
-    phase === "idle" ? 0 : phase === "uploading" ? progress : 100;
+    phase === "idle" || phase === "failed"
+      ? 0
+      : phase === "uploading"
+        ? progress
+        : 100;
 
   return (
     <>
@@ -192,21 +196,44 @@ export default function UploadStoryModal({
               </button>
             )}
 
-            {(phase === "uploading" || phase === "creating" || phase === "done") && (
+            {(phase === "uploading" ||
+              phase === "creating" ||
+              phase === "done" ||
+              phase === "failed") && (
               <div className="absolute inset-0 z-10 bg-black/10 pointer-events-none" />
             )}
 
-            {(phase === "uploading" || phase === "creating" || phase === "done") && (
+            {phase === "failed" ? (
               <div className="absolute flex flex-col justify-center items-center gap-y-2 z-10">
-                <div
-                  className="progress-ring text-white bg-white/10 backdrop-blur-xs rounded-full px-2.5 text-md transition-all duration-300"
-                  style={{ "--ring-progress": `${ringProgress}%` } as React.CSSProperties}
+                <button
+                  type="button"
+                  onClick={handleStartUpload}
+                  className="progress-ring text-white bg-white/10 backdrop-blur-xs rounded-full px-2.5 text-md transition-all duration-300 flex items-center gap-x-2 cursor-pointer outline-none hover:bg-white/20"
+                  style={
+                    { "--ring-progress": "0%" } as React.CSSProperties
+                  }
                 >
-                  {phase === "uploading" && `${progress} / 100 — uploaded`}
-                  {phase === "creating" && "wait — creating story"}
-                  {phase === "done" && "done —"}
-                </div>
+                  <RotateCcwIcon className="size-4 stroke-[1.5]" />
+                  failed — try again
+                </button>
               </div>
+            ) : (
+              (phase === "uploading" || phase === "creating" || phase === "done") && (
+                <div className="absolute flex flex-col justify-center items-center gap-y-2 z-10">
+                  <div
+                    className="progress-ring text-white bg-white/10 backdrop-blur-xs rounded-full px-2.5 text-md transition-all duration-300"
+                    style={
+                      {
+                        "--ring-progress": `${ringProgress}%`,
+                      } as React.CSSProperties
+                    }
+                  >
+                    {phase === "uploading" && `${progress} / 100 — uploaded`}
+                    {phase === "creating" && "wait — creating story"}
+                    {phase === "done" && "done —"}
+                  </div>
+                </div>
+              )
             )}
 
             {mediaLoading && (

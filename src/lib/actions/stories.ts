@@ -78,3 +78,13 @@ export async function createStoryAction(media: {
   });
   return result;
 }
+
+export async function deleteStoryAction(id: string) {
+  const ok = await trpc.stories.delete.mutate({ id });
+  if (ok) {
+    void captureClientEvent("story_deleted", {
+      story_id: id,
+    });
+  }
+  return ok;
+}

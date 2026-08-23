@@ -19,6 +19,8 @@ import {
   HardDriveIcon,
   PauseIcon,
   PlayIcon,
+  ChevronDownIcon,
+  RotateCcwIcon,
   SendHorizonalIcon,
   UploadIcon,
   WifiOffIcon,
@@ -44,9 +46,11 @@ import {
 const VoiceAttachment = ({
   item,
   onRemove,
+  onRetry,
 }: {
   item: MediaUploadItem;
   onRemove: () => void;
+  onRetry: () => void;
 }) => {
   const { file, progress, error } = item;
   const ratio = Math.min(Math.max(progress / 100, 0), 1);
@@ -121,14 +125,15 @@ const VoiceAttachment = ({
       dir="ltr"
       className={cn(
         "relative rounded-2xl border bg-primary/5 px-3 py-2 flex items-center gap-3",
-        error ? "border-red-500/30" : "border-primary/5",
+        error ? "cursor-pointer" : "border-primary/5",
       )}
+      onClick={error ? onRetry : undefined}
     >
       {/* Progress button — same ring as posts' download circle */}
       <button
         type="button"
-        onClick={ready ? togglePlay : undefined}
-        disabled={!ready}
+        onClick={error ? onRetry : ready ? togglePlay : undefined}
+        disabled={!ready && !error}
         className="relative flex items-center justify-center rounded-full outline-none border-[1.5px] border-primary/10 hover:bg-primary/3 cursor-pointer text-primary/60 w-9 h-9 disabled:cursor-default disabled:hover:bg-transparent"
       >
         {!error && !ready && (
@@ -145,17 +150,17 @@ const VoiceAttachment = ({
               cx="50%"
               cy="50%"
               r="45%"
-              className={cn("stroke-primary", error && "stroke-red-500")}
+              className="stroke-primary"
               strokeWidth="2"
               fill="none"
               strokeDasharray={circumference}
-              strokeDashoffset={(1 - (error ? 1 : ratio)) * circumference}
+              strokeDashoffset={(1 - ratio) * circumference}
               strokeLinecap="round"
             />
           </svg>
         )}
         {error ? (
-          <XIcon className="w-5 h-5 relative z-10 stroke-1 text-red-500" />
+          <RotateCcwIcon className="w-5 h-5 relative z-10 stroke-1" />
         ) : !ready ? (
           done ? (
             <CheckIcon className="w-5 h-5 relative z-10 stroke-1" />
@@ -214,7 +219,7 @@ const VoiceAttachment = ({
           {uploading ? (
             <span>Uploading {Math.floor(ratio * 100)}%</span>
           ) : error ? (
-            <span className="text-red-500 truncate">{error}</span>
+            <span>Failed — Try Again</span>
           ) : ready && duration ? (
             <>
               <span className="opacity-60 tabular-nums">
@@ -250,9 +255,11 @@ const formatFileSize = (bytes: number) =>
 const FileAttachment = ({
   item,
   onRemove,
+  onRetry,
 }: {
   item: MediaUploadItem;
   onRemove: () => void;
+  onRetry: () => void;
 }) => {
   const { file, progress, error } = item;
   const ratio = Math.min(Math.max(progress / 100, 0), 1);
@@ -274,9 +281,10 @@ const FileAttachment = ({
   return (
     <div
       dir="ltr"
+      onClick={error ? onRetry : undefined}
       className={cn(
         "relative rounded-2xl border bg-primary/5 px-3 py-3 flex items-center gap-3 min-w-[200px] max-w-full self-center",
-        error ? "border-red-500/30" : "border-primary/5",
+        error ? "cursor-pointer" : "border-primary/5",
       )}
     >
       {/* Progress circle — same ring as voice/posts download circle */}
@@ -295,17 +303,17 @@ const FileAttachment = ({
               cx="50%"
               cy="50%"
               r="45%"
-              className={cn("stroke-primary", error && "stroke-red-500")}
+              className="stroke-primary"
               strokeWidth="2"
               fill="none"
               strokeDasharray={circumference}
-              strokeDashoffset={(1 - (error ? 1 : ratio)) * circumference}
+              strokeDashoffset={(1 - ratio) * circumference}
               strokeLinecap="round"
             />
           </svg>
         )}
         {error ? (
-          <XIcon className="w-5 h-5 relative z-10 stroke-1 text-red-500" />
+          <RotateCcwIcon className="w-5 h-5 relative z-10 stroke-1" />
         ) : doneExpired ? (
           <FileIcon className="w-5 h-5 relative z-10 stroke-1" />
         ) : done ? (
@@ -319,13 +327,13 @@ const FileAttachment = ({
         <span className="truncate text-xs">{file.name}</span>
         <span
           className={`text-[11px] ${
-            error ? "text-red-500 truncate" : "opacity-60 tabular-nums"
+            error ? "truncate" : "opacity-60 tabular-nums"
           }`}
         >
           {uploading
             ? `Uploading ${Math.floor(ratio * 100)}%`
             : error
-              ? error
+              ? "Failed — Try Again"
               : doneExpired
                 ? formatFileSize(file.size)
                 : "done"}
@@ -384,9 +392,20 @@ const UploadPillOverlay = ({
   </div>
 );
 
-const ErrorOverlay = () => (
-  <div className="absolute inset-0 z-10 bg-red-500/30 flex items-center justify-center pointer-events-none">
-    <XIcon className="size-4 stroke-[1.5px] text-red-500" />
+const ErrorOverlay = ({ onRetry }: { onRetry: () => void }) => (
+  <div className="absolute inset-0 z-10 bg-black/50 flex items-center justify-center p-1">
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onRetry();
+      }}
+      className="progress-ring text-white bg-white/10 backdrop-blur-xs rounded-full px-1.5 py-0.5 text-[10px] leading-none whitespace-nowrap transition-all duration-300 flex items-center gap-x-1 cursor-pointer outline-none"
+      style={{ "--ring-progress": "0%" } as React.CSSProperties}
+    >
+      <RotateCcwIcon className="size-2.5 stroke-[1.5]" />
+      Failed — Try Again
+    </button>
   </div>
 );
 
@@ -407,10 +426,12 @@ const RemoveBadge = ({ onClick }: { onClick: () => void }) => (
 const MediaAttachment = ({
   item,
   onRemove,
+  onRetry,
   isImage,
 }: {
   item: MediaUploadItem;
   onRemove: () => void;
+  onRetry: () => void;
   isImage: boolean;
 }) => {
   const { file, progress, error, media } = item;
@@ -448,7 +469,7 @@ const MediaAttachment = ({
       {showOverlay && (
         <UploadPillOverlay progress={progress} uploading={uploading} />
       )}
-      {error && <ErrorOverlay />}
+      {error && <ErrorOverlay onRetry={onRetry} />}
       <RemoveBadge onClick={onRemove} />
     </>
   );
@@ -488,24 +509,33 @@ const MediaAttachment = ({
 const MediaAttachmentThumb = ({
   item,
   onRemove,
+  onRetry,
 }: {
   item: MediaUploadItem;
   onRemove: () => void;
+  onRetry: () => void;
 }) => {
   const { file } = item;
   const isAudio = file.type.startsWith("audio/");
   if (isAudio) {
-    return <VoiceAttachment item={item} onRemove={onRemove} />;
+    return <VoiceAttachment item={item} onRemove={onRemove} onRetry={onRetry} />;
   }
 
   const isImage = file.type.startsWith("image/");
   const isVideo = file.type.startsWith("video/");
 
   if (!isImage && !isVideo) {
-    return <FileAttachment item={item} onRemove={onRemove} />;
+    return <FileAttachment item={item} onRemove={onRemove} onRetry={onRetry} />;
   }
 
-  return <MediaAttachment item={item} onRemove={onRemove} isImage={isImage} />;
+  return (
+    <MediaAttachment
+      item={item}
+      onRemove={onRemove}
+      onRetry={onRetry}
+      isImage={isImage}
+    />
+  );
 };
 
 const Page = () => {
@@ -525,6 +555,7 @@ const Page = () => {
     hasError,
     selectFiles,
     removeFile,
+    retryFile,
     clear,
   } = useMediaUpload(presignedTransport);
 
@@ -600,6 +631,21 @@ const Page = () => {
 
   // Reference to the scroll container (root div)
   const pageRef = useRef<HTMLDivElement | null>(null);
+
+  // scroll-to-bottom chevron — hidden while at (or near) the visual bottom
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+
+  const handleListScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    // column-reverse: scrollTop is 0 at the visual bottom
+    setShowScrollToBottom(Math.abs(target.scrollTop) > 80);
+  };
+
+  const scrollToBottom = () => {
+    if (!pageRef.current) return;
+    pageRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    setShowScrollToBottom(false);
+  };
 
   useEffect(() => {
     const el = inputRef.current;
@@ -1079,6 +1125,7 @@ const Page = () => {
 
       <div
         ref={pageRef}
+        onScroll={handleListScroll}
         style={{ height: `${pageHeight}px` }}
         className="flex flex-col-reverse overflow-y-scroll none-scroll-bar w-full outline-none max-w-2xl border-x border-secondary/5"
       >
@@ -1188,6 +1235,17 @@ const Page = () => {
           </div>
         )}
 
+        {/* Scroll to bottom — hidden while at the bottom */}
+        {showScrollToBottom && (
+          <div
+            onClick={scrollToBottom}
+            style={{ bottom: `calc(var(--chat-footer-height))` }}
+            className="fixed right-4 z-[55] border border-secondary/5 p-1 rounded-full backdrop-blur-sm cursor-pointer hover:bg-secondary/3 text-foreground/80"
+          >
+            <ChevronDownIcon className="size-6 stroke-1 text-foreground/60" />
+          </div>
+        )}
+
         {/* Footer */}
         <div ref={footerRef} className="fixed bottom-0 max-w-2xl w-full z-50">
           {/* Editing post bar */}
@@ -1228,6 +1286,7 @@ const Page = () => {
                       key={`${item.file.name}-${index}`}
                       item={item}
                       onRemove={() => handleRemoveFile(index)}
+                      onRetry={() => retryFile(index)}
                     />
                   ))}
                 </div>

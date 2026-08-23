@@ -33,7 +33,7 @@ export const PresignResultSchema = z.object({
  * @body PresignBody
  * @response PresignResultSchema
  * @examples request: {"filename": "story.mp4", "mimeType": "video/mp4"}
- * @examples response: {"uploadUrl": "https://ktbjawdgcckqqcslfwed.storage.supabase.co/storage/v1/s3/dastyare-social-cs/media/video/0931725d-aedb-4e27-aac6-aae46f3a2872.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=3600&...", "key": "media/video/0931725d-aedb-4e27-aac6-aae46f3a2872.mp4", "kind": "video", "mimeType": "video/mp4"}
+ * @examples response: {"uploadUrl": "https://s3.amazonaws.com/dastyare-social-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20260823%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260823T000000Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=3a7bd35c9e1f4b8a2c6d5e7f90ab1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b", "key": "media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4", "kind": "video", "mimeType": "video/mp4"}
  * @openapi
  */
 export async function POST(request: NextRequest) {

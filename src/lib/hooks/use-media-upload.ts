@@ -240,9 +240,11 @@ export function useMediaUpload(transport: UploadTransport = defaultTransport) {
 
   const updateItem = useCallback(
     (index: number, updater: (item: MediaUploadItem) => MediaUploadItem) => {
-      setItems((prev) =>
-        prev.map((item, i) => (i === index ? updater(item) : item))
-      );
+      setItems((prev) => {
+        const next = prev.map((item, i) => (i === index ? updater(item) : item));
+        itemsRef.current = next;
+        return next;
+      });
     },
     []
   );
@@ -317,6 +319,38 @@ export function useMediaUpload(transport: UploadTransport = defaultTransport) {
     });
   }, []);
 
+  const retryFile = useCallback(
+    (index: number) => {
+      const item = itemsRef.current[index];
+      if (!item || item.error === null || item.media !== null) return;
+
+      const { file } = item;
+      updateItem(index, (it) => ({
+        ...it,
+        error: null,
+        progress: 0,
+        media: null,
+      }));
+      beginUpload();
+      void (async () => {
+        const result = await transport(file, (percent) =>
+          updateItem(index, (it) => ({ ...it, progress: percent }))
+        );
+        if (result.ok) {
+          updateItem(index, (it) => ({
+            ...it,
+            progress: 100,
+            media: result.media,
+          }));
+        } else {
+          updateItem(index, (it) => ({ ...it, error: result.error }));
+        }
+        endUpload();
+      })();
+    },
+    [beginUpload, endUpload, transport, updateItem]
+  );
+
   const clear = useCallback(() => {
     setItems([]);
     itemsRef.current = [];
@@ -338,6 +372,7 @@ export function useMediaUpload(transport: UploadTransport = defaultTransport) {
     hasError,
     selectFiles,
     removeFile,
+    retryFile,
     clear,
   };
 }

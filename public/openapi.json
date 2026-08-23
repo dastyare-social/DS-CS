@@ -294,6 +294,31 @@
       "patchStoriesSchema": {
         "type": "object"
       },
+      "PostActionBody": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "reaction",
+              "view"
+            ]
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "inc",
+              "dec"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
       "postBatchViewInput": {
         "type": "object",
         "properties": {
@@ -777,6 +802,28 @@
           }
         ]
       },
+      "StoryActionBody": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "view",
+              "like"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "inc",
+              "dec"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
       "storyIdInput": {
         "type": "object",
         "properties": {
@@ -1018,11 +1065,11 @@
                 "examples": {
                   "example": {
                     "value": {
-                      "url": "https://cdn.example.com/media/image/abc.jpg",
-                      "key": "media/image/abc.jpg",
+                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                      "key": "media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
                       "kind": "image",
                       "mimeType": "image/jpeg",
-                      "size": 12345,
+                      "size": 1234567,
                       "width": 1080,
                       "height": 1920,
                       "duration": 0,
@@ -1054,7 +1101,7 @@
               "examples": {
                 "example": {
                   "value": {
-                    "key": "media/video/0931725d-aedb-4e27-aac6-aae46f3a2872.mp4",
+                    "key": "media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
                     "mimeType": "video/mp4",
                     "filename": "story.mp4",
                     "size": 6041570,
@@ -1078,8 +1125,8 @@
                 "examples": {
                   "example": {
                     "value": {
-                      "url": "https://ktbjawdgcckqqcslfwed.supabase.co/storage/v1/object/public/dastyare-social-cs/media/video/0931725d-aedb-4e27-aac6-aae46f3a2872.mp4",
-                      "key": "media/video/0931725d-aedb-4e27-aac6-aae46f3a2872.mp4",
+                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
+                      "key": "media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
                       "kind": "video",
                       "mimeType": "video/mp4",
                       "size": 6041570,
@@ -1133,8 +1180,8 @@
                 "examples": {
                   "example": {
                     "value": {
-                      "uploadUrl": "https://ktbjawdgcckqqcslfwed.storage.supabase.co/storage/v1/s3/dastyare-social-cs/media/video/0931725d-aedb-4e27-aac6-aae46f3a2872.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=3600&...",
-                      "key": "media/video/0931725d-aedb-4e27-aac6-aae46f3a2872.mp4",
+                      "uploadUrl": "https://s3.amazonaws.com/dastyare-social-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20260823%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260823T000000Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=3a7bd35c9e1f4b8a2c6d5e7f90ab1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+                      "key": "media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
                       "kind": "video",
                       "mimeType": "video/mp4"
                     }
@@ -1199,6 +1246,40 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PostsResponse"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "items": [
+                        {
+                          "id": "b1a2c3d4-e5f6-4789-a012-3456789abcde",
+                          "type": "list",
+                          "content": "Just shipped a new behind-the-scenes clip from the studio 🎬",
+                          "media": [
+                            {
+                              "kind": "image",
+                              "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                              "width": 1080,
+                              "height": 1920
+                            }
+                          ],
+                          "reactions": [
+                            {
+                              "emoji": "❤️",
+                              "count": 12
+                            }
+                          ],
+                          "views": 342,
+                          "pinnedAt": null,
+                          "postStatus": "sent",
+                          "createdAt": "2026-08-23T10:15:00.000Z"
+                        }
+                      ],
+                      "page": 1,
+                      "limit": 20,
+                      "total": 1
+                    }
+                  }
                 }
               }
             }
@@ -1222,10 +1303,10 @@
               "examples": {
                 "example": {
                   "value": {
-                    "content": "Hello",
+                    "content": "Just shipped a new behind-the-scenes clip from the studio 🎬",
                     "media": [
                       {
-                        "url": "https://cdn.example.com/media/image/abc.jpg",
+                        "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
                         "type": "image",
                         "width": 1080,
                         "height": 1920
@@ -1244,6 +1325,33 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PostWithReactionsSchema"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "id": "b1a2c3d4-e5f6-4789-a012-3456789abcde",
+                      "type": "list",
+                      "content": "Just shipped a new behind-the-scenes clip from the studio 🎬",
+                      "media": [
+                        {
+                          "kind": "image",
+                          "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                          "width": 1080,
+                          "height": 1920
+                        }
+                      ],
+                      "reactions": [
+                        {
+                          "emoji": "❤️",
+                          "count": 12
+                        }
+                      ],
+                      "views": 342,
+                      "pinnedAt": null,
+                      "postStatus": "sent",
+                      "createdAt": "2026-08-23T10:15:00.000Z"
+                    }
+                  }
                 }
               }
             }
@@ -1280,6 +1388,33 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PostWithReactionsSchema"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "id": "b1a2c3d4-e5f6-4789-a012-3456789abcde",
+                      "type": "list",
+                      "content": "Just shipped a new behind-the-scenes clip from the studio 🎬",
+                      "media": [
+                        {
+                          "kind": "image",
+                          "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                          "width": 1080,
+                          "height": 1920
+                        }
+                      ],
+                      "reactions": [
+                        {
+                          "emoji": "❤️",
+                          "count": 12
+                        }
+                      ],
+                      "views": 342,
+                      "pinnedAt": null,
+                      "postStatus": "sent",
+                      "createdAt": "2026-08-23T10:15:00.000Z"
+                    }
+                  }
                 }
               }
             }
@@ -1304,6 +1439,23 @@
             "example": "123"
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostActionBody"
+              },
+              "examples": {
+                "example": {
+                  "value": {
+                    "action": "reaction",
+                    "emoji": "❤️"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful response",
@@ -1311,6 +1463,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PostWithReactionsSchema"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "id": "b1a2c3d4-e5f6-4789-a012-3456789abcde",
+                      "reactions": [
+                        {
+                          "emoji": "❤️",
+                          "count": 13
+                        }
+                      ],
+                      "views": 343,
+                      "message": "Reaction added"
+                    }
+                  }
                 }
               }
             }
@@ -1343,6 +1510,14 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/patchPostsSchema"
+              },
+              "examples": {
+                "example": {
+                  "value": {
+                    "content": "Updated caption — full vlog drops Friday 🎥",
+                    "pinnedAt": "2026-08-23T08:00:00.000Z"
+                  }
+                }
               }
             }
           }
@@ -1354,6 +1529,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PostWithReactionsSchema"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "id": "b1a2c3d4-e5f6-4789-a012-3456789abcde",
+                      "type": "list",
+                      "content": "Updated caption — full vlog drops Friday 🎥",
+                      "media": [],
+                      "reactions": [],
+                      "views": 342,
+                      "pinnedAt": "2026-08-23T08:00:00.000Z",
+                      "postStatus": "sent",
+                      "createdAt": "2026-08-23T10:15:00.000Z"
+                    }
+                  }
                 }
               }
             }
@@ -1385,6 +1575,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PostSuccessResponse"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "success": true,
+                      "message": "Post deleted",
+                      "id": "b1a2c3d4-e5f6-4789-a012-3456789abcde"
+                    }
+                  }
                 }
               }
             }
@@ -1454,6 +1653,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StoriesResponse"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "items": [
+                        {
+                          "id": "c2d3e4f5-a6b7-4890-b123-456789abcdef",
+                          "type": "image",
+                          "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                          "width": 1080,
+                          "height": 1920,
+                          "likes": 24,
+                          "views": 510,
+                          "createdAt": "2026-08-23T09:30:00.000Z"
+                        }
+                      ],
+                      "page": 1,
+                      "limit": 20,
+                      "total": 1
+                    }
+                  }
                 }
               }
             }
@@ -1479,7 +1699,7 @@
                   "value": {
                     "type": "image",
                     "media": {
-                      "url": "https://cdn.example.com/media/image/abc.jpg",
+                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
                       "width": 1080,
                       "height": 1920
                     }
@@ -1496,6 +1716,20 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StoryItemSchema"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "id": "c2d3e4f5-a6b7-4890-b123-456789abcdef",
+                      "type": "image",
+                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                      "width": 1080,
+                      "height": 1920,
+                      "likes": 0,
+                      "views": 0,
+                      "createdAt": "2026-08-23T09:30:00.000Z"
+                    }
+                  }
                 }
               }
             }
@@ -1532,6 +1766,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/200 StoryItemSchema"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "id": "c2d3e4f5-a6b7-4890-b123-456789abcdef",
+                      "type": "video",
+                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
+                      "width": 1080,
+                      "height": 1920,
+                      "duration": 35533,
+                      "likes": 24,
+                      "views": 510,
+                      "createdAt": "2026-08-23T09:30:00.000Z"
+                    }
+                  }
                 }
               }
             }
@@ -1556,6 +1805,23 @@
             "example": "123"
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoryActionBody"
+              },
+              "examples": {
+                "example": {
+                  "value": {
+                    "action": "like",
+                    "direction": "inc"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful response",
@@ -1563,6 +1829,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/201 StoryItemSchema"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "id": "c2d3e4f5-a6b7-4890-b123-456789abcdef",
+                      "likes": 25,
+                      "views": 510,
+                      "message": "Story liked"
+                    }
+                  }
                 }
               }
             }
@@ -1595,6 +1871,14 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/patchStoriesSchema"
+              },
+              "examples": {
+                "example": {
+                  "value": {
+                    "likes": 25,
+                    "views": 512
+                  }
+                }
               }
             }
           }
@@ -1606,6 +1890,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/200 StoryItemSchema"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "id": "c2d3e4f5-a6b7-4890-b123-456789abcdef",
+                      "type": "video",
+                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
+                      "width": 1080,
+                      "height": 1920,
+                      "duration": 35533,
+                      "likes": 25,
+                      "views": 512,
+                      "createdAt": "2026-08-23T09:30:00.000Z"
+                    }
+                  }
                 }
               }
             }
@@ -1637,6 +1936,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/z.object({ success"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "success": true,
+                      "message": "Story deleted",
+                      "id": "c2d3e4f5-a6b7-4890-b123-456789abcdef"
+                    }
+                  }
                 }
               }
             }

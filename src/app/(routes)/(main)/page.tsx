@@ -8,6 +8,7 @@ import NewsletterModal from "@/components/modals/notifications";
 import Loader from "@/components/loader";
 import { usePosts } from "@/lib/hooks/use-posts";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronDownIcon } from "lucide-react";
 import Header from "@/components/header";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -41,6 +42,21 @@ const Page = () => {
   }, []);
 
   const pageRef = useRef<HTMLDivElement | null>(null);
+
+  // scroll-to-bottom chevron — hidden while at (or near) the visual bottom
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+
+  const handleListScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    // column-reverse: scrollTop is 0 at the visual bottom
+    setShowScrollToBottom(Math.abs(target.scrollTop) > 80);
+  };
+
+  const scrollToBottom = () => {
+    if (!pageRef.current) return;
+    pageRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    setShowScrollToBottom(false);
+  };
 
   const updateHeaderFooterOffsets = () => {
     requestAnimationFrame(() => {
@@ -300,6 +316,7 @@ const Page = () => {
 
       <div
         ref={pageRef}
+        onScroll={handleListScroll}
         style={{ height: `${pageHeight}px` }}
         className="flex flex-col-reverse overflow-y-scroll none-scroll-bar w-full outline-none max-w-2xl border-x border-secondary/5"
       >
@@ -362,6 +379,17 @@ const Page = () => {
             <div ref={sentinelRef} />
           </div>
         </div>
+
+        {/* Scroll to bottom — hidden while at the bottom */}
+        {showScrollToBottom && (
+          <div
+            onClick={scrollToBottom}
+            style={{ bottom: `calc(var(--chat-footer-height))` }}
+            className="fixed right-4 z-[55] border border-secondary/5 p-1 rounded-full backdrop-blur-sm cursor-pointer hover:bg-secondary/3 text-foreground/80"
+          >
+            <ChevronDownIcon className="size-6 stroke-1 text-foreground/60" />
+          </div>
+        )}
 
         <div ref={footerRef} className="fixed bottom-0 max-w-2xl w-full z-50">
           <div className="flex w-full gap-x-1.5 sm:gap-x-2 px-4 pb-3 lg:pb-5 justify-center items-center">

@@ -72,6 +72,7 @@ export const CreateStoryBody = z.object({
  * @example GET /api/stories?type=count
  * @example GET /api/stories?kind=image
  * @example GET /api/stories?kind=video
+ * @examples response: {"items":[{"id":"c2d3e4f5-a6b7-4890-b123-456789abcdef","type":"image","url":"https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg","width":1080,"height":1920,"likes":24,"views":510,"createdAt":"2026-08-23T09:30:00.000Z"}],"page":1,"limit":20,"total":1}
  * @openapi
  */
 export async function GET(req: NextRequest) {
@@ -132,7 +133,8 @@ export async function GET(req: NextRequest) {
  * @body CreateStoryBody
  * @response StoryItemSchema
  * @response StorySuccessResponse
- * @examples request: {"type":"image","media":{"url":"https://cdn.example.com/media/image/abc.jpg","width":1080,"height":1920}}
+ * @examples request: {"type":"image","media":{"url":"https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg","width":1080,"height":1920}}
+ * @examples response: {"id":"c2d3e4f5-a6b7-4890-b123-456789abcdef","type":"image","url":"https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg","width":1080,"height":1920,"likes":0,"views":0,"createdAt":"2026-08-23T09:30:00.000Z"}
  * @openapi
  */
 export async function POST(req: NextRequest) {

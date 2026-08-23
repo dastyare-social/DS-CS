@@ -199,12 +199,31 @@ export const ContextMenuContent = React.forwardRef<
 
     const handleClick = (event: MouseEvent) => {
       if (!contentRef.current) return;
-      if (!contentRef.current.contains(event.target as Node)) {
-        setOpen(false);
+      const target = event.target as Node;
+      if (contentRef.current.contains(target)) {
+        return;
       }
+      // ignore clicks on sibling floating parts (e.g. the emoji strip)
+      if (
+        target instanceof Element &&
+        target.closest("[data-context-menu-floating]")
+      ) {
+        return;
+      }
+      setOpen(false);
     };
 
-    const handleScroll = () => setOpen(false);
+    const handleScroll = (event: Event) => {
+      // scrolling inside a floating part (e.g. the emoji strip) keeps the
+      // menu open — only page scrolls dismiss it
+      if (
+        event.target instanceof Element &&
+        event.target.closest("[data-context-menu-floating]")
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
     const handleResize = () => setOpen(false);
 
     document.addEventListener("mousedown", handleClick);
@@ -579,3 +598,64 @@ export const ContextMenuSubContent = React.forwardRef<
     />
   );
 });
+
+// Quick-reaction emoji strip — a fully rounded floating part rendered on TOP
+// of the menu content (25px gap). Horizontally scrollable, same glassy style.
+const MENU_GAP_PX = 25;
+const EMOJI_BAR_HEIGHT_PX = 40;
+
+interface ContextMenuEmojiBarProps {
+  emojis?: readonly string[];
+  onSelect: (emoji: string) => void;
+  /** width of the menu content this bar floats above (default: w-36 = 144px) */
+  menuWidth?: number;
+  className?: string;
+}
+
+export function ContextMenuEmojiBar({
+  emojis,
+  onSelect,
+  menuWidth = 144,
+  className,
+}: ContextMenuEmojiBarProps) {
+  const { open, cursorPosition, setOpen } = useContextMenuContext();
+
+  if (!open || !cursorPosition || !emojis?.length) return null;
+
+  const barWidth = Math.round(menuWidth * 1.25);
+
+  return (
+    <Portal>
+      <div
+        data-context-menu-floating=""
+        style={{
+          position: "fixed",
+          left: Math.max(8, cursorPosition.x + (menuWidth - barWidth) / 2),
+          top: cursorPosition.y - MENU_GAP_PX - EMOJI_BAR_HEIGHT_PX,
+          width: barWidth,
+        }}
+        className={cn(
+          "z-50 rounded-full border border-secondary/5 bg-background/80 backdrop-blur-3xl p-1 text-foreground",
+          "flex items-center overflow-x-auto none-scroll-bar select-none",
+          "animate-in fade-in-0 zoom-in-95 duration-500 transition-all",
+          className
+        )}
+      >
+        {emojis.map((emoji) => (
+          <button
+            key={emoji}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(emoji);
+              setOpen(false);
+            }}
+            className="shrink-0 px-1.5 text-lg leading-none outline-none cursor-pointer transition-transform duration-150 hover:scale-125 active:scale-95"
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+    </Portal>
+  );
+}

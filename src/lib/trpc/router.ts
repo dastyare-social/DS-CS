@@ -19,6 +19,7 @@ import {
   incrementStoryViews,
   toggleStoryLike,
   createStory,
+  deleteStoryById,
   StoryMediaInput,
 } from "@/lib/api/stories";
 
@@ -262,6 +263,14 @@ export const storiesRouter = router({
       throw new Error("Story not found");
     }
     return result;
+  }),
+
+  delete: publicProcedure.input(storyIdInput).mutation(async ({ input }) => {
+    const ok = await deleteStoryById(input.id);
+    if (!ok) {
+      throw new Error("Story not found");
+    }
+    return ok;
   }),
 
   create: publicProcedure

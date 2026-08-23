@@ -73,6 +73,7 @@ export const CreatePostBody = z.object({
  * @example GET /api/posts?type=count
  * @example GET /api/posts?type=shorts
  * @example GET /api/posts?search=keyword
+ * @examples response: {"items":[{"id":"b1a2c3d4-e5f6-4789-a012-3456789abcde","type":"list","content":"Just shipped a new behind-the-scenes clip from the studio 🎬","media":[{"kind":"image","url":"https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg","width":1080,"height":1920}],"reactions":[{"emoji":"❤️","count":12}],"views":342,"pinnedAt":null,"postStatus":"sent","createdAt":"2026-08-23T10:15:00.000Z"}],"page":1,"limit":20,"total":1}
  * @openapi
  */
 export async function GET(req: NextRequest) {
@@ -149,7 +150,8 @@ export async function GET(req: NextRequest) {
  * @body CreatePostBody
  * @response PostWithReactionsSchema
  * @response PostSuccessResponse
- * @examples request: {"content":"Hello","media":[{"url":"https://cdn.example.com/media/image/abc.jpg","type":"image","width":1080,"height":1920}]}
+ * @examples request: {"content":"Just shipped a new behind-the-scenes clip from the studio 🎬","media":[{"url":"https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg","type":"image","width":1080,"height":1920}]}
+ * @examples response: {"id":"b1a2c3d4-e5f6-4789-a012-3456789abcde","type":"list","content":"Just shipped a new behind-the-scenes clip from the studio 🎬","media":[{"kind":"image","url":"https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg","width":1080,"height":1920}],"reactions":[{"emoji":"❤️","count":12}],"views":342,"pinnedAt":null,"postStatus":"sent","createdAt":"2026-08-23T10:15:00.000Z"}
  * @openapi
  */
 export async function POST(req: NextRequest) {

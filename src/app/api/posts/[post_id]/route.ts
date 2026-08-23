@@ -23,6 +23,13 @@ export const PostParams = z.object({
   post_id: z.string(),
 });
 
+/** @id PostActionBody */
+export const PostActionBody = z.object({
+  action: z.enum(["reaction", "view"]),
+  emoji: z.string().optional(),
+  direction: z.enum(["inc", "dec"]).optional(),
+});
+
 export const dynamic = "force-dynamic";
 
 /** @id PostWithReactionsSchema */
@@ -50,6 +57,7 @@ export const PostWithReactionsSchema = z.object({
  * @tag Posts
  * @pathParams PostParams
 * @response PostWithReactionsSchema
+ * @examples response: {"id":"b1a2c3d4-e5f6-4789-a012-3456789abcde","type":"list","content":"Just shipped a new behind-the-scenes clip from the studio 🎬","media":[{"kind":"image","url":"https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg","width":1080,"height":1920}],"reactions":[{"emoji":"❤️","count":12}],"views":342,"pinnedAt":null,"postStatus":"sent","createdAt":"2026-08-23T10:15:00.000Z"}
  * @openapi
  */
 export async function GET(req: NextRequest, context: RouteParams) {
@@ -72,8 +80,9 @@ export async function GET(req: NextRequest, context: RouteParams) {
  * @description Partial update of post fields (content, views, pinnedAt, media, type).
  * @tag Posts
  * @pathParams PostParams
- * @body patchPostsSchema
+ * @examples request: {"content":"Updated caption — full vlog drops Friday 🎥","pinnedAt":"2026-08-23T08:00:00.000Z"}
 * @response PostWithReactionsSchema
+ * @examples response: {"id":"b1a2c3d4-e5f6-4789-a012-3456789abcde","type":"list","content":"Updated caption — full vlog drops Friday 🎥","media":[],"reactions":[],"views":342,"pinnedAt":"2026-08-23T08:00:00.000Z","postStatus":"sent","createdAt":"2026-08-23T10:15:00.000Z"}
  * @openapi
  */
 export async function PATCH(req: NextRequest, context: RouteParams) {
@@ -117,8 +126,11 @@ export async function PATCH(req: NextRequest, context: RouteParams) {
  * @description Perform actions on a post. action=reaction requires emoji string. action=view increments the view count.
  * @tag Posts
  * @pathParams PostParams
+ * @body PostActionBody
+ * @examples request: {"action":"reaction","emoji":"❤️"}
 * @response PostWithReactionsSchema
 * @response PostSuccessResponse
+ * @examples response: {"id":"b1a2c3d4-e5f6-4789-a012-3456789abcde","reactions":[{"emoji":"❤️","count":13}],"views":343,"message":"Reaction added"}
  * @openapi
  */
 export async function POST(req: NextRequest, context: RouteParams) {
@@ -177,6 +189,7 @@ export async function POST(req: NextRequest, context: RouteParams) {
  * @tag Posts
  * @pathParams PostParams
 * @response PostSuccessResponse
+ * @examples response: {"success":true,"message":"Post deleted","id":"b1a2c3d4-e5f6-4789-a012-3456789abcde"}
  * @openapi
  */
 export async function DELETE(req: NextRequest, context: RouteParams) {

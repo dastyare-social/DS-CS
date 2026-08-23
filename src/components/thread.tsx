@@ -9,7 +9,6 @@ import {
 import Stories from "@/components/stories";
 import Reaction from "@/components/reaction";
 import { app_config } from "@/config/app";
-import { reactionEmojis } from "@/config/constants";
 import { Locale } from "@/config/locale";
 import { pally } from "@/lib/fonts";
 import { renderSimpleMarkdown } from "@/lib/render-post-markdown";
@@ -20,7 +19,6 @@ import SafeImage from "./safe-image";
 import { useLocale } from "next-intl";
 
 import type { PostWithReactions } from "@/lib/api/posts";
-
 export interface ThreadItemProps {
   thread: PostWithReactions;
   index: number;
@@ -113,24 +111,20 @@ export default function ThreadItem({
 
             <div className="flex flex-col sm:flex-row gap-x-1.5 gap-y-1.5 sm:items-end mt-2">
               <div className="flex-1 flex text-[12px] ml-[-1px] gap-x-1">
-                {reactionEmojis.map((emoji) => {
-                  const rCount =
-                    thread.reactions?.find(
-                      (r: any) => r.emoji === emoji
-                    )?.count || 0;
-                  return (
+                {(thread.reactions ?? [])
+                  .filter((r: any) => (r.count || 0) > 0)
+                  .map((r: any) => (
                     <div
-                      key={emoji}
+                      key={r.emoji}
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        onThreadReact(thread.id, emoji);
+                        onThreadReact(thread.id, r.emoji);
                       }}
                     >
-                      <Reaction emoji={emoji} count={rCount} />
+                      <Reaction emoji={r.emoji} count={r.count} />
                     </div>
-                  );
-                })}
+                  ))}
               </div>
 
               <div className="opacity-60 flex gap-x-1 whitespace-nowrap">

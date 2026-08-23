@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  * @tag Media
  * @contentType multipart/form-data
  * @response MediaUploadResponse
- * @examples response: {"url":"https://cdn.example.com/media/image/abc.jpg","key":"media/image/abc.jpg","kind":"image","mimeType":"image/jpeg","size":12345,"width":1080,"height":1920,"duration":0,"filename":"photo.jpg"}
+ * @examples response: {"url":"https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg","key":"media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg","kind":"image","mimeType":"image/jpeg","size":1234567,"width":1080,"height":1920,"duration":0,"filename":"photo.jpg"}
  * @openapi
  */
 export async function POST(request: NextRequest) {

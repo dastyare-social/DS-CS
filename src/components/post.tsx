@@ -5,11 +5,13 @@ import SafeImage from "./safe-image";
 import {
   ContextMenu,
   ContextMenuContent,
+  ContextMenuEmojiBar,
   ContextMenuItem,
   ContextMenuTrigger,
 } from "./context-menu";
 import Stories from "./stories";
 import Reaction from "./reaction";
+import Loader from "./loader";
 import ImageSlider from "./image-slider";
 import type { PostWithReactions } from "@/lib/api/posts";
 import { Dialog, DialogContent, DialogTrigger } from "./dialog";
@@ -26,7 +28,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
-import { reactionEmojis } from "@/config/constants";
+import { quickReactionEmojis } from "@/config/constants";
+import ConfirmDialog from "./confirm-dialog";
 import { pally } from "@/lib/fonts";
 import { renderSimpleMarkdown } from "@/lib/render-post-markdown";
 
@@ -594,7 +597,9 @@ const Post = memo(
 
     // For video thumbnail
     const [videoThumb, setVideoThumb] = useState<string | null>(null);
+    const [dialogVideoReady, setDialogVideoReady] = useState(false);
     const hiddenVideoRef = useRef<HTMLVideoElement | null>(null);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
     const getCount = (emoji: string) =>
       (localReactions ?? []).find((r: any) => r.emoji === emoji)?.count ?? 0;
@@ -699,10 +704,9 @@ const Post = memo(
       };
     }, [hasMedia, media, type]);
 
-    const normalizedReactions = reactionEmojis.map((emoji) => ({
-      emoji,
-      count: getCount(emoji),
-    }));
+    const normalizedReactions = (localReactions ?? []).filter(
+      (r: any) => getCount(r.emoji) > 0
+    );
 
     const renderMedia = () => {
       if (!hasMedia || !media) return null;
@@ -772,12 +776,21 @@ const Post = memo(
             : 16 / 9;
 
         return (
-          <Dialog>
+          <Dialog
+            onOpenChange={(o) => {
+              if (!o) setDialogVideoReady(false);
+            }}
+          >
             <DialogTrigger className="outline-none">
               <div
                 className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer"
                 style={{ aspectRatio }}
               >
+                {!videoThumb && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader className="size-10 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
+                  </div>
+                )}
                 {videoThumb && (
                   <>
                     <SafeImage
@@ -797,12 +810,21 @@ const Post = memo(
             </DialogTrigger>
             {videoThumb && (
               <DialogContent>
-                <div className="w-fit max-w-full overflow-hidden backdrop-blur-3xl border border-secondary/5 bg-white/50">
+                <div className="relative w-fit max-w-full overflow-hidden backdrop-blur-3xl border border-secondary/5 bg-white/50">
+                  {!dialogVideoReady && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
+                    </div>
+                  )}
                   <video
                     src={src}
                     controls
                     autoPlay
-                    className="block max-h-[85vh] max-w-full p-1"
+                    onCanPlay={() => setDialogVideoReady(true)}
+                    className={cn(
+                      "block max-h-[85vh] max-w-full p-1",
+                      !dialogVideoReady && "opacity-0",
+                    )}
                   />
                 </div>
               </DialogContent>
@@ -850,7 +872,8 @@ const Post = memo(
     };
 
     return (
-      <ContextMenu>
+      <>
+        <ContextMenu>
         <ContextMenuTrigger>
           <div className="flex gap-x-2 items-end cursor-pointer mt-5">
             <Stories size={35} />
@@ -873,16 +896,18 @@ const Post = memo(
               <div className="rounded-2xl border border-secondary/5 bg-secondary/1 px-3.5 py-2 max-w-2xs min-w-[220px] backdrop-blur-sm bg-white/10">
                 {renderSimpleMarkdown(content)}
 
-                <div className="flex text-[12px] mt-2.5 ml-[-1px] gap-x-1">
-                  {normalizedReactions.map((r) => (
-                    <Reaction
-                      key={r.emoji}
-                      emoji={r.emoji}
-                      count={r.count}
-                      onClick={() => handleReact(r.emoji)}
-                    />
-                  ))}
-                </div>
+                {normalizedReactions.length > 0 && (
+                  <div className="flex flex-wrap text-[12px] mt-2.5 ml-[-1px] gap-x-1 gap-y-1">
+                    {normalizedReactions.map((r) => (
+                      <Reaction
+                        key={r.emoji}
+                        emoji={r.emoji}
+                        count={r.count}
+                        onClick={() => handleReact(r.emoji)}
+                      />
+                    ))}
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center opacity-60 mt-1.5">
                   <div className="text-[12px]">
@@ -987,7 +1012,7 @@ const Post = memo(
           {can_delete_post && (
             <ContextMenuItem
               className="flex gap-x-2 py-1.5"
-              onClick={handleDelete}
+              onClick={() => setConfirmDeleteOpen(true)}
             >
               <div className="flex-1">{t("general.delete_post")} —</div>
               <EraserIcon className="stroke-[1.5px] size-4" />
@@ -1004,7 +1029,24 @@ const Post = memo(
             </ContextMenuItem>
           )}
         </ContextMenuContent>
+
+        {/* quick reactions — rounded strip floating on top of the menu */}
+        <ContextMenuEmojiBar
+          emojis={quickReactionEmojis}
+          onSelect={(emoji) => handleReact(emoji)}
+        />
       </ContextMenu>
+
+        <ConfirmDialog
+          open={confirmDeleteOpen}
+          onOpenChange={setConfirmDeleteOpen}
+          description="This post will be permanently deleted."
+          destructive
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={() => void handleDelete()}
+        />
+      </>
     );
   },
 );

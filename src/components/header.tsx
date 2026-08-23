@@ -9,6 +9,7 @@ import { CircleDashedIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
 import { RefObject, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "./button";
 import Link from "next/link";
 import { routes } from "@/config/routes";
@@ -64,8 +65,12 @@ const Header = ({
     let cancelled = false;
     const check = () =>
       fetch("/favicon.ico", { method: "HEAD", cache: "no-store" })
-        .then(() => { if (!cancelled) setIsOffline(false); })
-        .catch(() => { if (!cancelled) setIsOffline(true); });
+        .then(() => {
+          if (!cancelled) setIsOffline(false);
+        })
+        .catch(() => {
+          if (!cancelled) setIsOffline(true);
+        });
 
     check();
     window.addEventListener("online", check);
@@ -247,13 +252,21 @@ const Header = ({
         onStoryCreated={() => setStoryRefreshKey((k) => k + 1)}
       />
 
-      {storyError && (
-        <div className="fixed left-1/2 -translate-x-1/2 z-[60] px-4 w-full max-w-2xl pointer-events-none" style={{ top: `calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) + 8px)` }}>
-          <div className="w-full rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-md px-4 py-3 text-center text-sm text-red-500">
-            {storyError}
-          </div>
-        </div>
-      )}
+      {storyError &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed left-1/2 -translate-x-1/2 z-[60] px-4 w-full max-w-2xl pointer-events-none backdrop-blur-md"
+            style={{
+              top: `calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) + 8px)`,
+            }}
+          >
+            <div className="w-full rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center text-sm text-red-500">
+              {storyError}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

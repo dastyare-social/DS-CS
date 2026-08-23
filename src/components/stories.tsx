@@ -2,19 +2,28 @@
 
 import SafeImage from "./safe-image";
 import { Dialog, DialogContent, DialogTrigger } from "./dialog";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import { cn, formatCount, formatTimeAgo } from "@/lib/utils";
-import { HeartIcon } from "lucide-react";
+import {
+  EllipsisVerticalIcon,
+  HeartIcon,
+  Trash2Icon,
+} from "lucide-react";
 import Loader from "./loader";
 import ProfileModal from "./modals/profile";
+import ConfirmDialog from "./confirm-dialog";
 import { useLocale, useTranslations } from "next-intl";
 import { LangDir } from "@/lib/fonts";
 import { app_config } from "@/config/app";
 import { Locale } from "@/config/locale";
+import { useSession } from "@/lib/auth/client";
 import {
   getStories,
   incrementStoryViews,
   toggleStoryLike,
+  deleteStoryAction,
 } from "@/lib/actions/stories";
 
 type StoryItem = {
@@ -70,39 +79,66 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
   // media loading state (after delay – real image/video load)
   const [mediaLoading, setMediaLoading] = useState<boolean>(false);
 
-  // --- Fetch stories from API on mount ---
-  useEffect(() => {
-    const fetchStories = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // story management (ellipsis menu → delete), only on /os for logged-in session
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  const canManage =
+    (pathname === "/os" || pathname?.startsWith("/os/")) && !!session?.user;
 
-        const data = await getStories({ page: 1, limit: 20 });
-        const items = data.items || [];
+  const [menuPos, setMenuPos] = useState<{
+    x: number;
+    y: number;
+    storyIndex: number;
+  } | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const ellipsisRef = useRef<HTMLButtonElement | null>(null);
 
-        const mapped: StoryItem[] = items.map((item: any) => ({
-          id: item.id,
-          type: item.type,
-          url: normalizeMediaUrl(item.media?.url ?? item.url),
-          duration: item.media?.duration ?? item.duration,
-          likes: Number(item.likes ?? 0),
-          views: Number(item.views ?? 0),
-          createdAt: new Date(item.createdAt),
-        }));
+  const MENU_WIDTH = 176; // w-44
 
-        setStories(mapped);
-        setLikedStates(mapped.map(() => false));
-        setLikeCounts(mapped.map((s) => s.likes));
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message || "Failed to load stories");
-      } finally {
-        setLoading(false);
+  // --- Fetch stories from API ---
+  const loadStories = useCallback(async (silent = false) => {
+    try {
+      if (!silent) setLoading(true);
+      setError(null);
+
+      const data = await getStories({ page: 1, limit: 20 });
+      const items = data.items || [];
+
+      const mapped: StoryItem[] = items.map((item: any) => ({
+        id: item.id,
+        type: item.type,
+        url: normalizeMediaUrl(item.media?.url ?? item.url),
+        duration: item.media?.duration ?? item.duration,
+        likes: Number(item.likes ?? 0),
+        views: Number(item.views ?? 0),
+        createdAt: new Date(item.createdAt),
+      }));
+
+      setStories(mapped);
+      setLikedStates(mapped.map(() => false));
+      setLikeCounts(mapped.map((s) => s.likes));
+
+      if (!mapped.length) {
+        setOpen(false);
+        setCurrentIndex(0);
+        resetStoryState();
+      } else {
+        setCurrentIndex((prev) => Math.min(prev, mapped.length - 1));
       }
-    };
-
-    fetchStories();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to load stories");
+    } finally {
+      if (!silent) setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    void loadStories();
+  }, [loadStories]);
 
   const clearPreloadingTimeout = () => {
     if (preloadingTimeoutRef.current) {
@@ -357,6 +393,33 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
     setMediaLoading(false);
   };
 
+  // close manage menu on outside click
+  useEffect(() => {
+    if (!menuPos) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (menuRef.current?.contains(target)) return;
+      if (ellipsisRef.current?.contains(target)) return;
+      setMenuPos(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [menuPos]);
+
+  const handleDeleteStory = async () => {
+    if (!currentStory || deleting) return;
+    setDeleting(true);
+    try {
+      await deleteStoryAction(currentStory.id);
+      // refresh the whole stories list so the deleted story is gone
+      await loadStories(true);
+    } catch (err) {
+      console.error("Error deleting story", err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleVideoCanPlay = () => {
     // video is ready, stop showing loader
     setMediaLoading(false);
@@ -375,7 +438,8 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
   const hasStories = stories.length > 0;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <SafeImage
           src="/profile-image.png"
@@ -388,7 +452,15 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
       </DialogTrigger>
 
       {(!opened || hasStories) && (
-        <DialogContent dir="ltr" className="py-5">
+        <DialogContent
+          dir="ltr"
+          className="py-5"
+          onInteractOutside={(e) => {
+            // keep the story dialog stable while the manage menu or the
+            // delete confirmation (both portaled to body) are being used
+            if (menuPos || confirmOpen) e.preventDefault();
+          }}
+        >
           {loading && <ProfileModal opened={true} />}
 
           {!loading && error && (
@@ -508,6 +580,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                 />
                 <div
                   className={cn(
+                    "flex-1 min-w-0",
                     isPreloading || mediaLoading
                       ? "text-secondary"
                       : "text-white",
@@ -523,6 +596,36 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                     })()}
                   </span>
                 </div>
+                {canManage && (
+                  <button
+                    ref={ellipsisRef}
+                    type="button"
+                    aria-label="Story options"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setMenuPos(
+                        menuPos
+                          ? null
+                          : {
+                              x: rect.right,
+                              y: rect.bottom + 4,
+                              storyIndex: currentIndex,
+                            },
+                      );
+                    }}
+                    className="shrink-0 p-1.5 rounded-full cursor-pointer transition-colors hover:bg-white/20"
+                  >
+                    <EllipsisVerticalIcon
+                      className={cn(
+                        "size-4 stroke-[1.5]",
+                        isPreloading || mediaLoading
+                          ? "text-secondary"
+                          : "text-white",
+                      )}
+                    />
+                  </button>
+                )}
               </div>
 
               {/* bottom right stats */}
@@ -565,7 +668,53 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
           )}
         </DialogContent>
       )}
-    </Dialog>
+      </Dialog>
+
+      {/* story manage menu — anchored exactly at bottom-right of the ellipsis icon */}
+      {canManage &&
+        menuPos &&
+        menuPos.storyIndex === currentIndex &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            dir={dir}
+            ref={menuRef}
+            onClick={(e) => e.stopPropagation()}
+            className="fixed z-[60] w-44 rounded-2xl border border-primary/10 bg-white/50 backdrop-blur-3xl shadow-xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150"
+            style={{
+              top: menuPos.y,
+              left: Math.max(8, menuPos.x - MENU_WIDTH),
+            }}
+          >
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => {
+                setMenuPos(null);
+                setConfirmOpen(true);
+              }}
+              className="w-full flex items-center gap-x-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 cursor-pointer transition-colors disabled:opacity-60"
+            >
+              <Trash2Icon className="size-4 stroke-[1.5]" />
+              Delete Story
+            </button>
+          </div>,
+          document.body,
+        )}
+
+      {/* delete confirmation */}
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={(o) => {
+          if (!deleting) setConfirmOpen(o);
+        }}
+        description="This story will be permanently deleted."
+        destructive
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={() => void handleDeleteStory()}
+      />
+    </>
   );
 };
 
