@@ -80,6 +80,7 @@ const Header = ({
   const [storyModalOpen, setStoryModalOpen] = useState(false);
   const [storyFile, setStoryFile] = useState<File | null>(null);
   const [storyError, setStoryError] = useState<string | null>(null);
+  const [storyRefreshKey, setStoryRefreshKey] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -91,7 +92,7 @@ const Header = ({
       )}
     >
       <div className="flex flex-1 items-center gap-x-2.5">
-        <Stories size={50} />
+        <Stories size={50} key={storyRefreshKey} />
 
         <Dialog>
           <DialogTrigger asChild>
@@ -243,6 +244,7 @@ const Header = ({
         open={storyModalOpen}
         onOpenChange={setStoryModalOpen}
         file={storyFile}
+        onStoryCreated={() => setStoryRefreshKey((k) => k + 1)}
       />
 
       {storyError && (

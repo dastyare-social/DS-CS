@@ -38,6 +38,7 @@ export const StoryItemSchema = z.object({
 
 /**
  * Get story by ID
+ * @summary Read Story — Get by ID
  * @description Returns a single story.
  * @tag Stories
  * @pathParams StoryParams
@@ -60,6 +61,7 @@ export async function GET(req: NextRequest, context: RouteParams) {
 
 /**
  * Update story
+ * @summary Update Story — Edit Fields
  * @description Partial update of story fields (type, views, likes, media).
  * @tag Stories
  * @pathParams StoryParams
@@ -104,6 +106,7 @@ export async function PATCH(req: NextRequest, context: RouteParams) {
 
 /**
  * Story actions
+ * @summary Story Actions — View or Like
  * @description Perform actions on a story. action=view increments views. action=like with direction=inc or dec toggles likes.
  * @tag Stories
  * @pathParams StoryParams
@@ -155,6 +158,7 @@ export async function POST(req: NextRequest, context: RouteParams) {
 
 /**
  * Delete story
+ * @summary Delete Story — Remove by ID
  * @description Permanently deletes a story by ID.
  * @tag Stories
  * @pathParams StoryParams

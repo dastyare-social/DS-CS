@@ -24,12 +24,13 @@ const PushNotificationSendResponse = z.object({
 
 /**
  * Send browser push notifications to active subscribers
+ * @summary Send — Broadcast Push Notification
  * @description Broadcast a web push notification to all active subscriptions. Requires API key auth.
  * @tag Push
  * @body pushNotificationRequestSchema
  * @response PushNotificationSendResponse
  * @contentType application/json
- * @openapi
+ * @ignore
  */
 export async function POST(req: NextRequest) {
   const authResponse = requireApiKeyAuth(req);

@@ -64,6 +64,7 @@ export const CreatePostBody = z.object({
 
 /**
  * List or count posts
+ * @summary List Posts — Paginated Feed
  * @description Returns paginated posts with reactions. Use query type=count for total count, type=shorts for vertical videos (1080x1920). Default type=list.
  * @tag Posts
  * @queryParams PostsQueryParams
@@ -141,6 +142,7 @@ export async function GET(req: NextRequest) {
 
 /**
  * Create a post or batch-increment views
+ * @summary Create Post — Upload Media Via URL
  * @description Create a post from a JSON body. Media must be referenced by URL — upload files to `/api/upload` or `/api/upload-stream` first, then map the returned `url`, `kind` (as `type`), `width`, `height`, and `duration` into the `media` array below. JSON body with action=batch-view and ids array increments views for multiple posts.
  * @tag Posts
  * @contentType application/json

@@ -63,6 +63,7 @@ export const CreateStoryBody = z.object({
 
 /**
  * List or count stories
+ * @summary List Stories — Paginated Feed
  * @description Returns paginated stories. Use query type=count for total. Filter by kind=image or kind=video.
  * @tag Stories
  * @queryParams StoriesQueryParams
@@ -124,6 +125,7 @@ export async function GET(req: NextRequest) {
 
 /**
  * Create a story
+ * @summary Create Story — Upload Media Via URL
  * @description Create a story from a JSON body. Media must be referenced by URL — upload files to `/api/upload` or `/api/upload-stream` first, then map the returned `url`, `kind` (as `type`), `width`, `height`, and `duration` into the `media` field below. Types: image, video. An array of media items creates one story per item.
  * @tag Stories
  * @contentType application/json

@@ -3,7 +3,7 @@
   "info": {
     "title": "Dastyare Social — CS",
     "version": "1.0.0",
-    "description": "REST API for Dastyare Social Creator Studio. Manage posts (threads, shorts, media) and stories. Supports JSON and multipart uploads, reactions, views, and likes. Authentication via Your API key. See /llms.txt for LLM-oriented documentation."
+    "description": "REST API for Dastyare Social — Creator Studio. Manage posts (threads, shorts, media) and stories. Supports JSON and multipart uploads, reactions, views, and likes. Authentication via Your API key. See /llms.txt for LLM-oriented documentation."
   },
   "components": {
     "securitySchemes": {
@@ -90,9 +90,6 @@
             ]
           }
         }
-      },
-      "endpoint": {
-        "type": "object"
       },
       "insertPostsSchema": {
         "type": "object"
@@ -201,6 +198,15 @@
         },
         "required": [
           "url"
+        ]
+      },
+      "MediaKind": {
+        "type": "string",
+        "enum": [
+          "image",
+          "video",
+          "audio",
+          "file"
         ]
       },
       "MediaUploadResponse": {},
@@ -473,6 +479,35 @@
           "createdAt",
           "updatedAt",
           "reactions"
+        ]
+      },
+      "PresignResult": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video",
+              "audio",
+              "file"
+            ]
+          },
+          "mimeType": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "key",
+          "kind",
+          "mimeType"
         ]
       },
       "pushNotificationRequestSchema": {
@@ -848,8 +883,8 @@
     "/upload": {
       "post": {
         "operationId": "post-upload",
-        "summary": "Upload a single media file",
-        "description": "Single-file upload endpoint (multipart/form-data with a `file` field). Returns media metadata. Use the returned `url`, `kind`, `width`, `height`, and `duration` when creating a post or story. For real-time upload progress, use `/api/upload-stream` instead.",
+        "summary": "Upload Media — Single File",
+        "description": "Single-file upload endpoint (multipart/form-data with a `file` field). Server-side upload — buffers the file then uploads to S3. Returns media metadata. For real upload progress, use `/api/upload/presign` + `/api/upload/confirm` (direct browser-to-S3) instead.",
         "tags": [
           "Media"
         ],
@@ -907,7 +942,7 @@
     "/upload-stream": {
       "post": {
         "operationId": "post-upload-stream",
-        "summary": "Streaming upload with real-time progress via SSE",
+        "summary": "Upload Media — Streaming with Progress",
         "description": "Upload a single media file with server-side progress tracking.",
         "tags": [
           "Media"
@@ -934,13 +969,227 @@
           "description": "Multipart form data containing a file upload.",
           "required": true
         },
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/200 - SSE stream with progress/done/error events"
+                }
+              }
+            }
+          },
+          "400 - Invalid request": {
+            "$ref": "#/components/responses/400 - Invalid request"
+          },
+          "403 - Demo mode active": {
+            "$ref": "#/components/responses/403 - Demo mode active"
+          },
+          "500 - Server error": {
+            "$ref": "#/components/responses/500 - Server error"
+          }
+        }
+      }
+    },
+    "/upload/confirm": {
+      "post": {
+        "operationId": "post-upload-confirm",
+        "summary": "Upload Media — Confirm Direct Upload",
+        "description": "After the browser uploads directly to S3 via presigned URL, call this with { key, mimeType, filename, size, width, height, duration } to get the public URL and full media object.",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string"
+                    },
+                    "mimeType": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "number"
+                    },
+                    "width": {
+                      "type": "number"
+                    },
+                    "height": {
+                      "type": "number"
+                    },
+                    "duration": {
+                      "type": "number"
+                    },
+                    "filename": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "key",
+                    "kind",
+                    "mimeType",
+                    "size",
+                    "width",
+                    "height",
+                    "duration",
+                    "filename"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/upload/presign": {
+      "post": {
+        "operationId": "post-upload-presign",
+        "summary": "Upload Media — Presign URL",
+        "description": "Returns a presigned URL the browser can PUT to directly, giving real upload progress. Send { filename, mimeType } in the JSON body.",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresignResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/posts": {
       "get": {
         "operationId": "get-posts",
-        "summary": "List or count posts",
+        "summary": "List Posts — Paginated Feed",
         "description": "Returns paginated posts with reactions. Use query type=count for total count, type=shorts for vertical videos (1080x1920). Default type=list.",
         "tags": [
           "Posts"
@@ -998,7 +1247,7 @@
       },
       "post": {
         "operationId": "post-posts",
-        "summary": "Create a post or batch-increment views",
+        "summary": "Create Post — Upload Media Via URL",
         "description": "Create a post from a JSON body. Media must be referenced by URL — upload files to `/api/upload` or `/api/upload-stream` first, then map the returned `url`, `kind` (as `type`), `width`, `height`, and `duration` into the `media` array below. JSON body with action=batch-view and ids array increments views for multiple posts.",
         "tags": [
           "Posts"
@@ -1048,7 +1297,7 @@
     "/posts/{post_id}": {
       "get": {
         "operationId": "get-posts-{post_id}",
-        "summary": "Get post by ID",
+        "summary": "Read Post — Get by ID",
         "description": "Returns a single post with reactions.",
         "tags": [
           "Posts"
@@ -1079,7 +1328,7 @@
       },
       "post": {
         "operationId": "post-posts-{post_id}",
-        "summary": "Post actions",
+        "summary": "Post Actions — React or View",
         "description": "Perform actions on a post. action=reaction requires emoji string. action=view increments the view count.",
         "tags": [
           "Posts"
@@ -1113,7 +1362,7 @@
       },
       "patch": {
         "operationId": "patch-posts-{post_id}",
-        "summary": "Update post",
+        "summary": "Update Post — Edit Fields",
         "description": "Partial update of post fields (content, views, pinnedAt, media, type).",
         "tags": [
           "Posts"
@@ -1153,7 +1402,7 @@
       },
       "delete": {
         "operationId": "delete-posts-{post_id}",
-        "summary": "Delete post",
+        "summary": "Delete Post — Remove by ID",
         "description": "Permanently deletes a post by ID.",
         "tags": [
           "Posts"
@@ -1183,155 +1432,10 @@
         }
       }
     },
-    "/push": {
-      "post": {
-        "operationId": "post-push",
-        "summary": "Save a browser push subscription",
-        "description": "Register or update a push subscription for the current browser. Requires `endpoint` and `keys.p256dh` / `keys.auth`.",
-        "tags": [
-          "Push"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/pushSubscriptionRequestSchema"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PushSubscriptionResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/push/check": {
-      "get": {
-        "operationId": "get-push-check",
-        "summary": "Check if a push subscription is active",
-        "description": "Check the status of a push subscription by endpoint",
-        "tags": [
-          "Push"
-        ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "endpoint",
-            "required": false,
-            "schema": {
-              "type": "string"
-            },
-            "example": "example"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "active": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": [
-                    "active"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/push/send": {
-      "post": {
-        "operationId": "post-push-send",
-        "summary": "Send browser push notifications to active subscribers",
-        "description": "Broadcast a web push notification to all active subscriptions. Requires API key auth.",
-        "tags": [
-          "Push"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/pushNotificationRequestSchema"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PushNotificationSendResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/push/unsubscribe": {
-      "post": {
-        "operationId": "post-push-unsubscribe",
-        "summary": "Mark a push subscription as inactive",
-        "description": "Unsubscribe from push notifications by marking subscription as inactive",
-        "tags": [
-          "Push"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/unsubscribeRequestSchema"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": [
-                    "success"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/stories": {
       "get": {
         "operationId": "get-stories",
-        "summary": "List or count stories",
+        "summary": "List Stories — Paginated Feed",
         "description": "Returns paginated stories. Use query type=count for total. Filter by kind=image or kind=video.",
         "tags": [
           "Stories"
@@ -1398,7 +1502,7 @@
       },
       "post": {
         "operationId": "post-stories",
-        "summary": "Create a story",
+        "summary": "Create Story — Upload Media Via URL",
         "description": "Create a story from a JSON body. Media must be referenced by URL — upload files to `/api/upload` or `/api/upload-stream` first, then map the returned `url`, `kind` (as `type`), `width`, `height`, and `duration` into the `media` field below. Types: image, video. An array of media items creates one story per item.",
         "tags": [
           "Stories"
@@ -1445,7 +1549,7 @@
     "/stories/{story_id}": {
       "get": {
         "operationId": "get-stories-{story_id}",
-        "summary": "Get story by ID",
+        "summary": "Read Story — Get by ID",
         "description": "Returns a single story.",
         "tags": [
           "Stories"
@@ -1476,7 +1580,7 @@
       },
       "post": {
         "operationId": "post-stories-{story_id}",
-        "summary": "Story actions",
+        "summary": "Story Actions — View or Like",
         "description": "Perform actions on a story. action=view increments views. action=like with direction=inc or dec toggles likes.",
         "tags": [
           "Stories"
@@ -1510,7 +1614,7 @@
       },
       "patch": {
         "operationId": "patch-stories-{story_id}",
-        "summary": "Update story",
+        "summary": "Update Story — Edit Fields",
         "description": "Partial update of story fields (type, views, likes, media).",
         "tags": [
           "Stories"
@@ -1550,7 +1654,7 @@
       },
       "delete": {
         "operationId": "delete-stories-{story_id}",
-        "summary": "Delete story",
+        "summary": "Delete Story — Remove by ID",
         "description": "Permanently deletes a story by ID.",
         "tags": [
           "Stories"
@@ -1587,9 +1691,6 @@
     },
     {
       "name": "Posts"
-    },
-    {
-      "name": "Push"
     },
     {
       "name": "Stories"

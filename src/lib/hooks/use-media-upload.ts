@@ -135,6 +135,102 @@ export const streamingTransport: UploadTransport = (file, onProgress) =>
     }
   });
 
+function getClientDimensions(file: File): Promise<{ width: number; height: number; duration: number }> {
+  return new Promise((resolve) => {
+    if (file.type.startsWith("video/")) {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(video.src);
+        resolve({ width: video.videoWidth, height: video.videoHeight, duration: Math.round(video.duration * 1000) });
+      };
+      video.onerror = () => resolve({ width: 0, height: 0, duration: 0 });
+      video.src = URL.createObjectURL(file);
+    } else if (file.type.startsWith("image/")) {
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(img.src);
+        resolve({ width: img.naturalWidth, height: img.naturalHeight, duration: 0 });
+      };
+      img.onerror = () => resolve({ width: 0, height: 0, duration: 0 });
+      img.src = URL.createObjectURL(file);
+    } else {
+      resolve({ width: 0, height: 0, duration: 0 });
+    }
+  });
+}
+
+export const presignedTransport: UploadTransport = (file, onProgress) =>
+  new Promise<UploadResult>(async (resolve) => {
+    try {
+      onProgress(0);
+
+      const presignRes = await fetch("/api/upload/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, mimeType: file.type }),
+      });
+
+      if (!presignRes.ok) {
+        const err = await presignRes.json().catch(() => ({ error: "Presign failed" }));
+        resolve({ ok: false, error: err.error || `Presign failed: ${presignRes.status}` });
+        return;
+      }
+
+      const { uploadUrl, key, kind, mimeType } = await presignRes.json();
+
+      const dims = await getClientDimensions(file);
+
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      });
+
+      const s3Result = await new Promise<boolean>((res) => {
+        xhr.addEventListener("load", () => res(xhr.status >= 200 && xhr.status < 300));
+        xhr.addEventListener("error", () => res(false));
+        xhr.addEventListener("abort", () => res(false));
+        xhr.open("PUT", uploadUrl);
+        xhr.setRequestHeader("Content-Type", mimeType);
+        xhr.send(file);
+      });
+
+      if (!s3Result) {
+        resolve({ ok: false, error: "S3 upload failed" });
+        return;
+      }
+
+      onProgress(100);
+
+      const confirmRes = await fetch("/api/upload/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key,
+          mimeType,
+          filename: file.name,
+          size: file.size,
+          width: dims.width,
+          height: dims.height,
+          duration: dims.duration,
+        }),
+      });
+
+      if (!confirmRes.ok) {
+        const err = await confirmRes.json().catch(() => ({ error: "Confirm failed" }));
+        resolve({ ok: false, error: err.error || `Confirm failed: ${confirmRes.status}` });
+        return;
+      }
+
+      const media = await confirmRes.json();
+      resolve({ ok: true, media: media as UploadedMedia });
+    } catch {
+      resolve({ ok: false, error: "Network error" });
+    }
+  });
+
 export function mediaKindToPostType(kind: MediaKind): PostType {
   switch (kind) {
     case "image":

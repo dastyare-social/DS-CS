@@ -1,8 +1,8 @@
 "use client";
 
 import { Dialog, DialogContent } from "@/components/dialog";
-import { streamingTransport } from "@/lib/hooks/use-media-upload";
 import { createStoryAction } from "@/lib/actions/stories";
+import { presignedTransport } from "@/lib/hooks/use-media-upload";
 import { ArrowRightIcon, XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -13,12 +13,14 @@ interface UploadStoryModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   file?: File | null;
+  onStoryCreated?: () => void;
 }
 
 export default function UploadStoryModal({
   open,
   onOpenChange,
   file,
+  onStoryCreated,
 }: UploadStoryModalProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [mediaLoading, setMediaLoading] = useState(false);
@@ -76,7 +78,7 @@ export default function UploadStoryModal({
     setPhase("uploading");
     setProgress(0);
 
-    const result = await streamingTransport(file, (percent) => {
+    const result = await presignedTransport(file, (percent) => {
       if (!cancelledRef.current) setProgress(percent);
     });
 
@@ -100,13 +102,14 @@ export default function UploadStoryModal({
       if (cancelledRef.current) return;
 
       setPhase("done");
+      onStoryCreated?.();
       closeTimerRef.current = setTimeout(() => {
         onOpenChange(false);
       }, 2000);
     } else {
       setPhase("idle");
     }
-  }, [file, phase, onOpenChange]);
+  }, [file, phase, onOpenChange, onStoryCreated]);
 
   const handleClose = useCallback(() => {
     cancelledRef.current = true;

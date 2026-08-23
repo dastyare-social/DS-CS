@@ -21,12 +21,13 @@ const PushSubscriptionResponse = z.object({
 
 /**
  * Save a browser push subscription
+ * @summary Subscribe — Register Push Endpoint
  * @description Register or update a push subscription for the current browser. Requires `endpoint` and `keys.p256dh` / `keys.auth`.
  * @tag Push
  * @body pushSubscriptionRequestSchema
  * @response PushSubscriptionResponse
  * @contentType application/json
- * @openapi
+ * @ignore
  */
 export async function POST(req: NextRequest) {
   try {

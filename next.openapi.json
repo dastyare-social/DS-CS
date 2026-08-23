@@ -3,7 +3,7 @@
   "info": {
     "title": "Dastyare Social — CS",
     "version": "1.0.0",
-    "description": "REST API for Dastyare Social Creator Studio. Manage posts (threads, shorts, media) and stories. Supports JSON and multipart uploads, reactions, views, and likes. Authentication via Your API key. See /llms.txt for LLM-oriented documentation."
+    "description": "REST API for Dastyare Social — Creator Studio. Manage posts (threads, shorts, media) and stories. Supports JSON and multipart uploads, reactions, views, and likes. Authentication via Your API key. See /llms.txt for LLM-oriented documentation."
   },
   "components": {
     "securitySchemes": {

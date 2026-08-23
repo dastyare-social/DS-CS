@@ -37,21 +37,28 @@ Admin bootstrap: set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`; `bun run boot
 
 Upload files first, then reference the returned URL when creating posts or stories.
 
-- **`POST /api/upload`** — multipart/form-data with `file` field. Validates MIME and size limits, uploads to S3 under `media/<kind>/<uuid>.<ext>`, and returns:
+### Presigned Upload (Recommended — Real Progress)
+
+Browser uploads directly to S3, giving real upload progress via XHR.
+
+1. **`POST /api/upload/presign`** — JSON body `{ filename, mimeType }`. Returns:
 
 ```json
 {
-  "url": "https://cdn.example.com/media/image/abc.jpg",
+  "uploadUrl": "https://s3.../media/image/abc.jpg?X-Amz-...",
   "key": "media/image/abc.jpg",
   "kind": "image",
-  "mimeType": "image/jpeg",
-  "size": 12345,
-  "width": 1080,
-  "height": 1920,
-  "duration": 0,
-  "filename": "photo.jpg"
+  "mimeType": "image/jpeg"
 }
 ```
+
+2. **PUT file directly to `uploadUrl`** — browser sends file straight to S3 via XHR PUT with `Content-Type: mimeType`. Real `xhr.upload.progress` tracking.
+
+3. **`POST /api/upload/confirm`** — JSON body `{ key, mimeType, filename, size, width, height, duration }`. Returns the full media object with public URL.
+
+### Server-Side Upload (Legacy)
+
+- **`POST /api/upload`** — multipart/form-data with `file` field. Server buffers file then uploads to S3. Returns the full media object.
 
 - **`POST /api/upload-stream`** — same as `/api/upload` but returns Server-Sent Events for real-time progress tracking. Events: `progress` (with `percent` 0–100), `done` (with full media object), `error` (with `error` message).
 

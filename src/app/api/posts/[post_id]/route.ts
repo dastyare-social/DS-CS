@@ -45,6 +45,7 @@ export const PostWithReactionsSchema = z.object({
 
 /**
  * Get post by ID
+ * @summary Read Post — Get by ID
  * @description Returns a single post with reactions.
  * @tag Posts
  * @pathParams PostParams
@@ -67,6 +68,7 @@ export async function GET(req: NextRequest, context: RouteParams) {
 
 /**
  * Update post
+ * @summary Update Post — Edit Fields
  * @description Partial update of post fields (content, views, pinnedAt, media, type).
  * @tag Posts
  * @pathParams PostParams
@@ -111,6 +113,7 @@ export async function PATCH(req: NextRequest, context: RouteParams) {
 
 /**
  * Post actions
+ * @summary Post Actions — React or View
  * @description Perform actions on a post. action=reaction requires emoji string. action=view increments the view count.
  * @tag Posts
  * @pathParams PostParams
@@ -169,6 +172,7 @@ export async function POST(req: NextRequest, context: RouteParams) {
 
 /**
  * Delete post
+ * @summary Delete Post — Remove by ID
  * @description Permanently deletes a post by ID.
  * @tag Posts
  * @pathParams PostParams

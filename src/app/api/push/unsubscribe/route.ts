@@ -11,12 +11,13 @@ const unsubscribeRequestSchema = z.object({
 
 /**
  * Mark a push subscription as inactive
+ * @summary Unsubscribe — Mark Inactive
  * @description Unsubscribe from push notifications by marking subscription as inactive
  * @tag Push
  * @body unsubscribeRequestSchema
  * @response { success: boolean }
  * @contentType application/json
- * @openapi
+ * @ignore
  */
 export async function POST(req: NextRequest) {
   try {

@@ -6,11 +6,12 @@ import { captureServerEvent } from "@/lib/analytics/server";
 
 /**
  * Check if a push subscription is active
+ * @summary Check — Subscription Status
  * @description Check the status of a push subscription by endpoint
  * @tag Push
  * @query endpoint - The subscription endpoint to check
  * @response { active: boolean }
- * @openapi
+ * @ignore
  */
 export async function GET(req: NextRequest) {
   try {

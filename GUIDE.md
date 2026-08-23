@@ -216,7 +216,8 @@ AI agents ───► MCP tools ────────┘
 
 ### 10.1 Media Upload — Upload Files For Posts And Stories
 
-- `POST /api/upload` accepts multipart `file`; `POST /api/upload-stream` is the same but streams real-time progress via SSE.
+- **Presigned upload (recommended)**: `POST /api/upload/presign` returns a presigned S3 PUT URL. Browser uploads directly to S3 via XHR PUT, giving real upload progress. Then `POST /api/upload/confirm` with `{ key, mimeType, filename, size, width, height, duration }` returns the full media object.
+- **Server-side upload (legacy)**: `POST /api/upload` accepts multipart `file`; `POST /api/upload-stream` streams real-time progress via SSE.
 - `src/lib/media/upload.ts` validates size/MIME (see `MEDIA_*` env), probes dimensions (sharp / ffmpeg-probe), uploads to the S3-compatible bucket, and returns `{ url, key, kind, mimeType, size, width, height, duration }`.
 - Use the returned `url` as `media` when creating posts/stories. `src/lib/media/config.ts` builds the bucket client; `src/lib/media/auth.ts` guards access where needed.
 

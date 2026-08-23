@@ -10,11 +10,16 @@ export const dynamic = "force-dynamic";
 
 /**
  * Streaming upload with real-time progress via SSE
+ * @summary Upload Media — Streaming with Progress
  * @description Upload a single media file with server-side progress tracking.
  * Returns Server-Sent Events: `progress` events (0-100) during S3 upload,
  * then a final `done` event with the uploaded media metadata, or `error` event.
  * @tag Media
  * @contentType multipart/form-data
+ * @response 200 - SSE stream with progress/done/error events
+ * @response 400 - Invalid request
+ * @response 403 - Demo mode active
+ * @response 500 - Server error
  * @openapi
  */
 export async function POST(request: NextRequest) {
