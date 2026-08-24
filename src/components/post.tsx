@@ -705,7 +705,7 @@ const Post = memo(
     }, [hasMedia, media, type]);
 
     const normalizedReactions = (localReactions ?? []).filter(
-      (r: any) => getCount(r.emoji) > 0
+      (r: any) => getCount(r.emoji) > 0,
     );
 
     const renderMedia = () => {
@@ -874,101 +874,77 @@ const Post = memo(
     return (
       <>
         <ContextMenu>
-        <ContextMenuTrigger>
-          <div className="flex gap-x-2 items-end cursor-pointer mt-5">
-            <Stories size={35} />
+          <ContextMenuTrigger>
+            <div className="flex gap-x-2 items-end cursor-pointer mt-5">
+              <Stories size={35} />
 
-            <div
-              className={cn(
-                "flex flex-col gap-y-2.5",
-                postStatus === "sending" && "animate-pulse opacity-60",
-              )}
-            >
-              {pinned && (
-                <div className="flex items-center gap-x-1.5 text-[11px] opacity-60 pl-1">
-                  <PinIcon className="size-3.5 stroke-[1.5px] rotate-45" />
-                  <span>{t("general.pinned_to_top")}</span>
-                </div>
-              )}
-
-              {renderMedia()}
-
-              <div className="rounded-2xl border border-secondary/5 bg-secondary/1 px-3.5 py-2 max-w-2xs min-w-[220px] backdrop-blur-sm bg-white/10">
-                {renderSimpleMarkdown(content)}
-
-                {normalizedReactions.length > 0 && (
-                  <div className="flex flex-wrap text-[12px] mt-2.5 ml-[-1px] gap-x-1 gap-y-1">
-                    {normalizedReactions.map((r) => (
-                      <Reaction
-                        key={r.emoji}
-                        emoji={r.emoji}
-                        count={r.count}
-                        onClick={() => handleReact(r.emoji)}
-                      />
-                    ))}
+              <div
+                className={cn(
+                  "flex flex-col gap-y-2.5",
+                  postStatus === "sending" && "animate-pulse opacity-60",
+                )}
+              >
+                {pinned && (
+                  <div className="flex items-center gap-x-1.5 text-[11px] opacity-60 pl-1">
+                    <PinIcon className="size-3.5 stroke-[1.5px] rotate-45" />
+                    <span>{t("general.pinned_to_top")}</span>
                   </div>
                 )}
 
-                <div className="flex justify-between items-center opacity-60 mt-1.5">
-                  <div className="text-[12px]">
-                    {postStatus === "sending" ? (
-                      <Clock8Icon className="size-2.5 animate-spin inline" />
-                    ) : (
-                      <>
-                        {localViews.toLocaleString()} {t("general.views")}
-                      </>
-                    )}
-                  </div>
-                  <div className={cn(pally.className, "text-[12px]")} dir="ltr">
-                    {formatTime(createdAt)}
+                {renderMedia()}
+
+                <div className="rounded-2xl border border-secondary/5 bg-secondary/1 px-3.5 py-2 max-w-2xs min-w-[220px] backdrop-blur-sm bg-white/10">
+                  {renderSimpleMarkdown(content)}
+
+                  {normalizedReactions.length > 0 && (
+                    <div className="flex flex-wrap text-[12px] mt-2.5 ml-[-1px] gap-x-1 gap-y-1">
+                      {normalizedReactions.map((r) => (
+                        <Reaction
+                          key={r.emoji}
+                          emoji={r.emoji}
+                          count={r.count}
+                          onClick={() => handleReact(r.emoji)}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center opacity-60 mt-1.5">
+                    <div className="text-[12px]">
+                      {postStatus === "sending" ? (
+                        <Clock8Icon className="size-2.5 animate-spin inline" />
+                      ) : (
+                        <>
+                          {localViews.toLocaleString()} {t("general.views")}
+                        </>
+                      )}
+                    </div>
+                    <div
+                      className={cn(pally.className, "text-[12px]")}
+                      dir="ltr"
+                    >
+                      {formatTime(createdAt)}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </ContextMenuTrigger>
+          </ContextMenuTrigger>
 
-        <ContextMenuContent className="w-36">
-          <ContextMenuItem
-            className="flex gap-x-2 py-1.5"
-            onClick={() => {
-              if (typeof window === "undefined") return;
-              const url = new URL(window.location.href);
-              url.pathname = `/posts/${id}`;
-              const full = url.toString();
-
-              if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(full).catch(() => {});
-              } else {
-                const textarea = document.createElement("textarea");
-                textarea.value = full;
-                textarea.style.position = "fixed";
-                textarea.style.left = "-9999px";
-                document.body.appendChild(textarea);
-                textarea.select();
-                try {
-                  document.execCommand("copy");
-                } catch {
-                } finally {
-                  document.body.removeChild(textarea);
-                }
-              }
-            }}
-          >
-            <div className="flex-1">{t("general.copy_post_link")} —</div>
-            <BoxIcon className="stroke-[1.5px] size-4" />
-          </ContextMenuItem>
-
-          {can_copy_text && content && (
+          <ContextMenuContent className="w-36">
             <ContextMenuItem
               className="flex gap-x-2 py-1.5"
               onClick={() => {
-                if (!content) return;
+                if (typeof window === "undefined") return;
+                const url = new URL(window.location.href);
+                url.pathname = `/posts/${id}`;
+                const full = url.toString();
+
                 if (navigator.clipboard && navigator.clipboard.writeText) {
-                  navigator.clipboard.writeText(content).catch(() => {});
+                  navigator.clipboard.writeText(full).catch(() => {});
                 } else {
                   const textarea = document.createElement("textarea");
-                  textarea.value = content;
+                  textarea.value = full;
                   textarea.style.position = "fixed";
                   textarea.style.left = "-9999px";
                   document.body.appendChild(textarea);
@@ -982,68 +958,94 @@ const Post = memo(
                 }
               }}
             >
-              <div className="flex-1">{t("general.copy_text")} —</div>
-              <CopyIcon className="stroke-[1.5px] size-4" />
-            </ContextMenuItem>
-          )}
-
-          {can_pin_post && (
-            <ContextMenuItem
-              className="flex gap-x-2 py-1.5"
-              onClick={() => onPin?.(post)}
-            >
-              <div className="flex-1">
-                {pinned ? t("general.unpin") : t("general.pin_to_top")} —
-              </div>
-              <PinIcon className="stroke-[1.5px] size-4 rotate-45" />
-            </ContextMenuItem>
-          )}
-
-          {can_edit_post && (
-            <ContextMenuItem
-              className="flex gap-x-2 py-1.5"
-              onClick={() => onEdit?.(post)}
-            >
-              <div className="flex-1">{t("general.edit_post")} —</div>
+              <div className="flex-1">{t("general.copy_post_link")} —</div>
               <BoxIcon className="stroke-[1.5px] size-4" />
             </ContextMenuItem>
-          )}
 
-          {can_delete_post && (
-            <ContextMenuItem
-              className="flex gap-x-2 py-1.5"
-              onClick={() => setConfirmDeleteOpen(true)}
-            >
-              <div className="flex-1">{t("general.delete_post")} —</div>
-              <EraserIcon className="stroke-[1.5px] size-4" />
-            </ContextMenuItem>
-          )}
+            {can_copy_text && content && (
+              <ContextMenuItem
+                className="flex gap-x-2 py-1.5"
+                onClick={() => {
+                  if (!content) return;
+                  if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(content).catch(() => {});
+                  } else {
+                    const textarea = document.createElement("textarea");
+                    textarea.value = content;
+                    textarea.style.position = "fixed";
+                    textarea.style.left = "-9999px";
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    try {
+                      document.execCommand("copy");
+                    } catch {
+                    } finally {
+                      document.body.removeChild(textarea);
+                    }
+                  }
+                }}
+              >
+                <div className="flex-1">{t("general.copy_text")} —</div>
+                <CopyIcon className="stroke-[1.5px] size-4" />
+              </ContextMenuItem>
+            )}
 
-          {postStatus === "error" && onRetry && (
-            <ContextMenuItem
-              className="flex gap-x-2 py-1.5"
-              onClick={() => onRetry(post)}
-            >
-              <div className="flex-1">{t("general.try_again")} —</div>
-              <BoxIcon className="stroke-[1.5px] size-4" />
-            </ContextMenuItem>
-          )}
-        </ContextMenuContent>
+            {can_pin_post && (
+              <ContextMenuItem
+                className="flex gap-x-2 py-1.5"
+                onClick={() => onPin?.(post)}
+              >
+                <div className="flex-1">
+                  {pinned ? t("general.unpin") : t("general.pin_to_top")} —
+                </div>
+                <PinIcon className="stroke-[1.5px] size-4 rotate-45" />
+              </ContextMenuItem>
+            )}
 
-        {/* quick reactions — rounded strip floating on top of the menu */}
-        <ContextMenuEmojiBar
-          emojis={quickReactionEmojis}
-          onSelect={(emoji) => handleReact(emoji)}
-        />
-      </ContextMenu>
+            {can_edit_post && (
+              <ContextMenuItem
+                className="flex gap-x-2 py-1.5"
+                onClick={() => onEdit?.(post)}
+              >
+                <div className="flex-1">{t("general.edit_post")} —</div>
+                <BoxIcon className="stroke-[1.5px] size-4" />
+              </ContextMenuItem>
+            )}
+
+            {can_delete_post && (
+              <ContextMenuItem
+                className="flex gap-x-2 py-1.5"
+                onClick={() => setConfirmDeleteOpen(true)}
+              >
+                <div className="flex-1">{t("general.delete_post")} —</div>
+                <EraserIcon className="stroke-[1.5px] size-4" />
+              </ContextMenuItem>
+            )}
+
+            {postStatus === "error" && onRetry && (
+              <ContextMenuItem
+                className="flex gap-x-2 py-1.5"
+                onClick={() => onRetry(post)}
+              >
+                <div className="flex-1">{t("general.try_again")} —</div>
+                <BoxIcon className="stroke-[1.5px] size-4" />
+              </ContextMenuItem>
+            )}
+          </ContextMenuContent>
+
+          {/* quick reactions — rounded strip floating on top of the menu */}
+          <ContextMenuEmojiBar
+            emojis={quickReactionEmojis}
+            onSelect={(emoji) => handleReact(emoji)}
+          />
+        </ContextMenu>
 
         <ConfirmDialog
           open={confirmDeleteOpen}
           onOpenChange={setConfirmDeleteOpen}
-          description="This post will be permanently deleted."
-          destructive
-          confirmLabel="Delete"
-          cancelLabel="Cancel"
+          description="This Post will be Permanently deleted"
+          confirmLabel="Yes, Delete It"
+          cancelLabel="No, Keep It"
           onConfirm={() => void handleDelete()}
         />
       </>

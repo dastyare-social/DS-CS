@@ -4,6 +4,9 @@ A complete, hands-on guide to the **Dastyare Social CS** project: a production-r
 
 This guide complements `README.md` (quick start + self-hosting) and `AGENTS.md` (agent-facing API reference). It focuses on how the code is organized and how the pieces work together.
 
+> [!WARNING]
+> **SEO & LLM discovery is experimental.** The sitemap, robots.txt, `llms.txt`, structured data, and MCP endpoints follow current best practices, but search engines and AI assistants may index, rank, cite, or surface your content unpredictably — or not at all. Don't treat discovery as a guarantee.
+
 ---
 
 ## 1. Overview
@@ -251,6 +254,9 @@ AI agents ───► MCP tools ────────┘
 - `src/components/seo.tsx` and `next.config.ts` `headers()` control `X-Robots-Tag`. Indexing is blocked unless `NEXT_PUBLIC_ALLOW_INDEXING=true`.
 - PostHog captures client events (`src/lib/analytics/client.ts`) and server events (`src/lib/analytics/server.ts`), wired through `src/components/analytics.tsx`.
 - OG images: `src/app/api/og/*` generate home/explore/post cards via `ImageResponse`.
+
+> [!WARNING]
+> SEO & LLM discovery is **experimental** — this machinery improves findability but can't guarantee indexing, ranking, or agent surfacing.
 
 ### 10.7 MCP — AI Agent Integration
 

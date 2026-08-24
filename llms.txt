@@ -2,6 +2,8 @@
 
 > Self-hosted, open-source creator studio. Publish text, image, video, voice, or file posts on your own server. No license required, built for both humans and AI agents.
 
+> WARNING: SEO & LLM discovery is experimental. This site provides llms.txt, sitemaps, structured data, and MCP endpoints per current best practices, but whether search engines or AI assistants discover, cite, or surface its content can't be fully relied on.
+
 Dastyare Social CS lets creators publish threads, shorts (vertical video), media posts, and ephemeral stories. External AI agents and LLMs should use the REST API documented below.
 
 ## Documentation

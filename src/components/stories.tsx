@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { cn, formatCount, formatTimeAgo } from "@/lib/utils";
 import {
   EllipsisVerticalIcon,
+  EraserIcon,
   HeartIcon,
   Trash2Icon,
 } from "lucide-react";
@@ -91,11 +92,16 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
     storyIndex: number;
   } | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // story id captured the moment "Delete Story" is chosen — immune to any
+  // index drift between menu interaction and confirmation
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // story interaction frozen while the manage menu / confirm dialog is open
+  const menuOpen = !!menuPos || confirmOpen || deleting || !!pendingDeleteId;
   const menuRef = useRef<HTMLDivElement | null>(null);
   const ellipsisRef = useRef<HTMLButtonElement | null>(null);
 
-  const MENU_WIDTH = 176; // w-44
+  const MENU_WIDTH = 144; // w-36 — must match the menu container width so it stays flush with the ellipsis
 
   // --- Fetch stories from API ---
   const loadStories = useCallback(async (silent = false) => {
@@ -191,6 +197,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
 
   // Autoplay effect for images
   // IMPORTANT: only run when story is visible (not preloading, not mediaLoading)
+  // and frozen while the manage menu / confirm dialog is open
   useEffect(() => {
     if (
       !open ||
@@ -198,7 +205,8 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
       !currentStory ||
       currentStory.type !== "image" ||
       isPreloading ||
-      mediaLoading
+      mediaLoading ||
+      menuOpen
     ) {
       // stop any running animation if dialog closed or media not ready
       if (animationRef.current) {
@@ -245,9 +253,24 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
     isPreloading,
     mediaLoading,
     currentStory?.duration,
+    menuOpen,
   ]);
 
+  // freeze/resume video playback while the manage menu / confirm is open
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !open) return;
+    if (menuOpen) {
+      video.pause();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    } else if (!isPreloading && !mediaLoading) {
+      video.play().catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menuOpen, open]);
+
   const handleVideoTimeUpdate = () => {
+    if (menuOpen) return;
     const video = videoRef.current;
     if (!video || !video.duration) return;
 
@@ -256,6 +279,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
   };
 
   const handleVideoEnded = () => {
+    if (menuOpen) return; // never auto-advance under the menu
     goToNext();
   };
 
@@ -269,6 +293,9 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
   };
 
   const handleStoryClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // never navigate while the manage menu / confirm dialog is open —
+    // a click meant for the menu must never advance the story
+    if (menuOpen) return;
     if (!stories.length) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
@@ -288,6 +315,9 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
         // dialog closed: reset everything
         resetStoryState();
         setCurrentIndex(0);
+        setMenuPos(null);
+        setConfirmOpen(false);
+        if (!deleting) setPendingDeleteId(null);
       }
       return;
     }
@@ -393,6 +423,12 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
     setMediaLoading(false);
   };
 
+  const handleImageError = () => {
+    // broken asset: never freeze the reel on it — skip the story
+    setMediaLoading(false);
+    goToNext();
+  };
+
   // close manage menu on outside click
   useEffect(() => {
     if (!menuPos) return;
@@ -407,16 +443,17 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
   }, [menuPos]);
 
   const handleDeleteStory = async () => {
-    if (!currentStory || deleting) return;
+    if (!pendingDeleteId || deleting) return;
     setDeleting(true);
     try {
-      await deleteStoryAction(currentStory.id);
+      await deleteStoryAction(pendingDeleteId);
       // refresh the whole stories list so the deleted story is gone
       await loadStories(true);
     } catch (err) {
       console.error("Error deleting story", err);
     } finally {
       setDeleting(false);
+      setPendingDeleteId(null);
     }
   };
 
@@ -440,234 +477,243 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <SafeImage
-          src="/profile-image.png"
-          alt=""
-          width={size}
-          height={size}
-          loading="lazy"
-          className="rounded-full border border-secondary/15 p-[2px] aspect-square cursor-pointer object-cover"
-        />
-      </DialogTrigger>
+        <DialogTrigger asChild>
+          <SafeImage
+            src="/profile-image.png"
+            alt=""
+            width={size}
+            height={size}
+            loading="lazy"
+            className="rounded-full border border-secondary/15 p-[2px] aspect-square cursor-pointer object-cover"
+          />
+        </DialogTrigger>
 
-      {(!opened || hasStories) && (
-        <DialogContent
-          dir="ltr"
-          className="py-5"
-          onInteractOutside={(e) => {
-            // keep the story dialog stable while the manage menu or the
-            // delete confirmation (both portaled to body) are being used
-            if (menuPos || confirmOpen) e.preventDefault();
-          }}
-        >
-          {loading && <ProfileModal opened={true} />}
+        {(!opened || hasStories) && (
+          <DialogContent
+            dir="ltr"
+            className="py-5"
+            onInteractOutside={(e) => {
+              // keep the story dialog stable while the manage menu or the
+              // delete confirmation (both portaled to body) are being used
+              if (menuPos || confirmOpen) e.preventDefault();
+            }}
+          >
+            {loading && <ProfileModal opened={true} />}
 
-          {!loading && error && (
-            <div className="relative w-full aspect-9/16 flex items-center justify-center border border-secondary/5 bg-white/50 text-sm text-primary">
-              {error}
-            </div>
-          )}
+            {!loading && error && (
+              <div className="relative w-full aspect-9/16 flex items-center justify-center border border-secondary/5 bg-white/50 text-sm text-primary">
+                {error}
+              </div>
+            )}
 
-          {!loading && !error && !hasStories && <ProfileModal opened={true} />}
+            {!loading && !error && !hasStories && (
+              <ProfileModal opened={true} />
+            )}
 
-          {!loading && !error && hasStories && currentStory && (
-            <div
-              onClick={handleStoryClick}
-              className="relative w-full cursor-pointer overflow-hidden flex flex-col border border-secondary/5 backdrop-blur-3xl bg-white/50 aspect-9/16 min-w-xs"
-            >
-              {/* media area */}
-              <div className="p-1 absolute inset-0">
-                {/* Only render media after pre-load delay */}
-                {!isPreloading && (
+            {!loading && !error && hasStories && currentStory && (
+              <div
+                onClick={handleStoryClick}
+                className="relative w-full cursor-pointer overflow-hidden flex flex-col border border-secondary/5 backdrop-blur-3xl bg-white/50 aspect-9/16 min-w-xs"
+              >
+                {/* media area */}
+                <div className="p-1 absolute inset-0">
+                  {/* Only render media after pre-load delay */}
+                  {!isPreloading && (
+                    <>
+                      {currentStory.type === "image" ? (
+                        <SafeImage
+                          src={currentStory.url}
+                          alt=""
+                          fill
+                          unoptimized
+                          sizes="(max-width: 768px) 80vw, 320px"
+                          className="p-1 object-cover"
+                          loading="lazy"
+                          onLoad={handleImageLoaded}
+                          onError={handleImageError}
+                        />
+                      ) : (
+                        <video
+                          ref={videoRef}
+                          src={currentStory.url}
+                          className="h-full w-full object-cover"
+                          autoPlay
+                          playsInline
+                          onTimeUpdate={handleVideoTimeUpdate}
+                          onEnded={handleVideoEnded}
+                          onLoadedMetadata={handleVideoLoadedMetadata}
+                          onCanPlay={handleVideoCanPlay}
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Loader: during pre-load delay OR while media is loading */}
+                {(isPreloading || mediaLoading) && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader className="size-12 border-1 border-primary/5 text-primary/50 p-2 rounded-full" />
+                  </div>
+                )}
+
+                {/* overlays should NOT show during pre-load or media load */}
+                {!isPreloading && !mediaLoading && (
                   <>
-                    {currentStory.type === "image" ? (
-                      <SafeImage
-                        src={currentStory.url}
-                        alt=""
-                        fill
-                        unoptimized
-                        sizes="(max-width: 768px) 80vw, 320px"
-                        className="p-1 object-cover"
-                        loading="lazy"
-                        onLoad={handleImageLoaded}
-                      />
-                    ) : (
-                      <video
-                        ref={videoRef}
-                        src={currentStory.url}
-                        className="h-full w-full object-cover"
-                        autoPlay
-                        playsInline
-                        onTimeUpdate={handleVideoTimeUpdate}
-                        onEnded={handleVideoEnded}
-                        onLoadedMetadata={handleVideoLoadedMetadata}
-                        onCanPlay={handleVideoCanPlay}
-                      />
-                    )}
+                    {/* top gradient */}
+                    <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/60 via-black/30 to-transparent z-5" />
+                    {/* bottom gradient */}
+                    <div className="absolute inset-x-0 bottom-0 h-80 sm:mx-1 sm:mb-1 bg-gradient-to-t from-black/30 via-black/20 to-transparent z-[5]" />
                   </>
                 )}
-              </div>
 
-              {/* Loader: during pre-load delay OR while media is loading */}
-              {(isPreloading || mediaLoading) && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Loader className="size-12 border-1 border-primary/5 text-primary/50 p-2 rounded-full" />
-                </div>
-              )}
+                {/* progress bars */}
+                <div className="relative z-10 w-full pt-3 px-3.5">
+                  <div className="h-0.5 w-full flex gap-x-1">
+                    {stories.map((story, index) => {
+                      let width = "0%";
+                      if (index < currentIndex) width = "100%";
+                      else if (index === currentIndex) width = `${progress}%`;
 
-              {/* overlays should NOT show during pre-load or media load */}
-              {!isPreloading && !mediaLoading && (
-                <>
-                  {/* top gradient */}
-                  <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/60 via-black/30 to-transparent z-5" />
-                  {/* bottom gradient */}
-                  <div className="absolute inset-x-0 bottom-0 h-80 sm:mx-1 sm:mb-1 bg-gradient-to-t from-black/30 via-black/20 to-transparent z-[5]" />
-                </>
-              )}
-
-              {/* progress bars */}
-              <div className="relative z-10 w-full pt-3 px-3.5">
-                <div className="h-0.5 w-full flex gap-x-1">
-                  {stories.map((story, index) => {
-                    let width = "0%";
-                    if (index < currentIndex) width = "100%";
-                    else if (index === currentIndex) width = `${progress}%`;
-
-                    return (
-                      <div
-                        key={story.id}
-                        className={cn(
-                          "rounded-full bg-secondary/5 flex-1 backdrop-blur-3xl",
-                          isPreloading || mediaLoading
-                            ? "bg-secondary/5"
-                            : "bg-white/50",
-                        )}
-                      >
+                      return (
                         <div
+                          key={story.id}
                           className={cn(
-                            "h-full bg-white transition-all duration-100 linear rounded-full",
+                            "rounded-full bg-secondary/5 flex-1 backdrop-blur-3xl",
                             isPreloading || mediaLoading
-                              ? "bg-secondary/10"
-                              : "bg-white",
+                              ? "bg-secondary/5"
+                              : "bg-white/50",
                           )}
-                          style={{ width }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* header */}
-              <div
-                dir={dir}
-                className="relative z-10 flex gap-x-1.5 px-3 py-2 items-center"
-              >
-                <SafeImage
-                  src="/profile-image.png"
-                  unoptimized
-                  alt=""
-                  width={35}
-                  height={35}
-                  loading="lazy"
-                  className={cn(
-                    "rounded-full border p-[2px] aspect-square cursor-pointer",
-                    isPreloading || mediaLoading
-                      ? "border-secondary/20"
-                      : "border-white/35",
-                  )}
-                />
-                <div
-                  className={cn(
-                    "flex-1 min-w-0",
-                    isPreloading || mediaLoading
-                      ? "text-secondary"
-                      : "text-white",
-                  )}
-                >
-                  {app_config[locale].name}&nbsp;—&nbsp;
-                  <span className="text-sm opacity-60">
-                    {(() => {
-                      const { key, values } = formatTimeAgo(
-                        new Date(currentStory.createdAt),
+                        >
+                          <div
+                            className={cn(
+                              "h-full bg-white transition-all duration-100 linear rounded-full",
+                              isPreloading || mediaLoading
+                                ? "bg-secondary/10"
+                                : "bg-white",
+                            )}
+                            style={{ width }}
+                          />
+                        </div>
                       );
-                      return tLastTime(key, values);
-                    })()}
-                  </span>
-                </div>
-                {canManage && (
-                  <button
-                    ref={ellipsisRef}
-                    type="button"
-                    aria-label="Story options"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setMenuPos(
-                        menuPos
-                          ? null
-                          : {
-                              x: rect.right,
-                              y: rect.bottom + 4,
-                              storyIndex: currentIndex,
-                            },
-                      );
-                    }}
-                    className="shrink-0 p-1.5 rounded-full cursor-pointer transition-colors hover:bg-white/20"
-                  >
-                    <EllipsisVerticalIcon
-                      className={cn(
-                        "size-4 stroke-[1.5]",
-                        isPreloading || mediaLoading
-                          ? "text-secondary"
-                          : "text-white",
-                      )}
-                    />
-                  </button>
-                )}
-              </div>
-
-              {/* bottom right stats */}
-              {!(isPreloading || mediaLoading) && (
-                <div className="absolute flex bottom-0 text-white z-10 w-full px-5 py-4 items=end">
-                  <div className="flex-1" />
-                  <div className="flex flex-col gap-y-2.5 items-center">
-                    {/* LIKE */}
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleLike(currentIndex);
-                      }}
-                      className="text-sm flex flex-col items-center cursor-pointer"
-                    >
-                      {likedStates[currentIndex] ? (
-                        <HeartIcon className="size-6 fill-current text-primary/50 stroke-primary/50 stroke-[1.5]" />
-                      ) : (
-                        <HeartIcon className="size-6 stroke-1" />
-                      )}
-                      {likeCounts[currentIndex] > 0 ? (
-                        <div>{formatCount(likeCounts[currentIndex] ?? 0)}</div>
-                      ) : (
-                        "Like"
-                      )}
-                    </div>
-
-                    {/* VIEWS */}
-                    {currentStory.views > 0 && (
-                      <div className="text-[12px] leading-3 text-center opacity-60">
-                        {formatCount(currentStory.views)}
-                        <br />
-                        {t("general.views")}
-                      </div>
-                    )}
+                    })}
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      )}
+
+                {/* header */}
+                <div
+                  dir={dir}
+                  className="relative z-10 flex gap-x-1.5 px-3 py-2 items-center"
+                >
+                  <SafeImage
+                    src="/profile-image.png"
+                    unoptimized
+                    alt=""
+                    width={35}
+                    height={35}
+                    loading="lazy"
+                    className={cn(
+                      "rounded-full border p-[2px] aspect-square cursor-pointer",
+                      isPreloading || mediaLoading
+                        ? "border-secondary/20"
+                        : "border-white/35",
+                    )}
+                  />
+                  <div
+                    className={cn(
+                      "flex-1 min-w-0",
+                      isPreloading || mediaLoading
+                        ? "text-secondary"
+                        : "text-white",
+                    )}
+                  >
+                    {app_config[locale].name}&nbsp;—&nbsp;
+                    <span className="text-sm opacity-60">
+                      {(() => {
+                        const { key, values } = formatTimeAgo(
+                          new Date(currentStory.createdAt),
+                        );
+                        return tLastTime(key, values);
+                      })()}
+                    </span>
+                  </div>
+                  {canManage && (
+                    <button
+                      ref={ellipsisRef}
+                      type="button"
+                      aria-label="Story options"
+                      // keep Radix from auto-focusing this on dialog open
+                      // (it is the only focusable inside — its focus ring
+                      // would flash a blue circle on first open)
+                      tabIndex={-1}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setMenuPos(
+                          menuPos
+                            ? null
+                            : {
+                                x: rect.right,
+                                y: rect.bottom + 4,
+                                storyIndex: currentIndex,
+                              },
+                        );
+                      }}
+                      className="shrink-0 p-1.5 rounded-full cursor-pointer transition-colors border border-transparent hover:bg-white/5 hover:border-white/10 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
+                    >
+                      <EllipsisVerticalIcon
+                        className={cn(
+                          "size-4 stroke-[1.5]",
+                          isPreloading || mediaLoading
+                            ? "text-secondary"
+                            : "text-white",
+                        )}
+                      />
+                    </button>
+                  )}
+                </div>
+
+                {/* bottom right stats */}
+                {!(isPreloading || mediaLoading) && (
+                  <div className="absolute flex bottom-0 text-white z-10 w-full px-5 py-4 items=end">
+                    <div className="flex-1" />
+                    <div className="flex flex-col gap-y-2.5 items-center">
+                      {/* LIKE */}
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleLike(currentIndex);
+                        }}
+                        className="text-sm flex flex-col items-center cursor-pointer"
+                      >
+                        {likedStates[currentIndex] ? (
+                          <HeartIcon className="size-6 fill-current text-primary/50 stroke-primary/50 stroke-[1.5]" />
+                        ) : (
+                          <HeartIcon className="size-6 stroke-1" />
+                        )}
+                        {likeCounts[currentIndex] > 0 ? (
+                          <div>
+                            {formatCount(likeCounts[currentIndex] ?? 0)}
+                          </div>
+                        ) : (
+                          "Like"
+                        )}
+                      </div>
+
+                      {/* VIEWS */}
+                      {currentStory.views > 0 && (
+                        <div className="text-[12px] leading-3 text-center opacity-60">
+                          {formatCount(currentStory.views)}
+                          <br />
+                          {t("general.views")}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        )}
       </Dialog>
 
       {/* story manage menu — anchored exactly at bottom-right of the ellipsis icon */}
@@ -680,7 +726,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
             dir={dir}
             ref={menuRef}
             onClick={(e) => e.stopPropagation()}
-            className="fixed z-[60] w-44 rounded-2xl border border-primary/10 bg-white/50 backdrop-blur-3xl shadow-xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150"
+            className="fixed z-[60] w-36 px-1 py-1 rounded-xl border border-secondary/10 bg-white/80 backdrop-blur-3xl overflow-hidden pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-150 outline-0 ring-0"
             style={{
               top: menuPos.y,
               left: Math.max(8, menuPos.x - MENU_WIDTH),
@@ -690,13 +736,17 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
               type="button"
               disabled={deleting}
               onClick={() => {
+                // capture the exact story being viewed right now
+                setPendingDeleteId(
+                  stories[menuPos?.storyIndex ?? currentIndex]?.id ?? null,
+                );
                 setMenuPos(null);
                 setConfirmOpen(true);
               }}
-              className="w-full flex items-center gap-x-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 cursor-pointer transition-colors disabled:opacity-60"
+              className="w-full relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-none ring-0 focus:outline-0 focus:bg-secondary/5 border border-transparent hover:bg-secondary/3 hover:border-secondary/3 transition-all duration-500 disabled:opacity-60"
             >
-              <Trash2Icon className="size-4 stroke-[1.5]" />
-              Delete Story
+              <div className="flex-1 text-start">Delete Story —</div>
+              <EraserIcon className="stroke-[1.5px] size-4" />
             </button>
           </div>,
           document.body,
@@ -706,12 +756,15 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={(o) => {
-          if (!deleting) setConfirmOpen(o);
+          if (!deleting) {
+            setConfirmOpen(o);
+            // cancelled/dismissed: release the frozen story so playback resumes
+            if (!o) setPendingDeleteId(null);
+          }
         }}
         description="This story will be permanently deleted."
-        destructive
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        confirmLabel="Yes, Delete It"
+        cancelLabel="No, Keep It"
         onConfirm={() => void handleDeleteStory()}
       />
     </>

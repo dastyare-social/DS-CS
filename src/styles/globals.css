@@ -117,7 +117,6 @@ body {
   animation: pulse-text 2s ease-in-out infinite;
 }
 
-
 @property --ring-progress {
   syntax: "<percentage>";
   inherits: true;
@@ -148,4 +147,10 @@ body {
   mask-composite: exclude;
   pointer-events: none;
   transition: --ring-progress 300ms linear;
+}
+
+/* thinner ring variant — used on small post-media upload pills */
+.progress-ring.progress-ring-sm::before {
+  inset: -1.5px;
+  padding: 1.5px;
 }

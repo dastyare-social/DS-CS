@@ -382,9 +382,9 @@ const UploadPillOverlay = ({
   progress: number;
   uploading: boolean;
 }) => (
-  <div className="absolute inset-0 z-10 bg-black/50 flex items-center justify-center p-1 pointer-events-none">
+  <div className="absolute inset-0 z-10 bg-black/50 rounded-2xl flex items-center justify-center p-1 pointer-events-none">
     <div
-      className="progress-ring text-white bg-white/10 backdrop-blur-xs rounded-full px-1.5 py-0.5 text-[10px] leading-none whitespace-nowrap transition-all duration-300"
+      className="progress-ring progress-ring-sm text-white bg-white/10 backdrop-blur-xs rounded-full px-1.5 py-0.5 text-[10px] leading-none whitespace-nowrap transition-all duration-300"
       style={{ "--ring-progress": `${progress}%` } as React.CSSProperties}
     >
       {uploading ? `${Math.round(progress)} / 100` : "done"}
@@ -393,14 +393,14 @@ const UploadPillOverlay = ({
 );
 
 const ErrorOverlay = ({ onRetry }: { onRetry: () => void }) => (
-  <div className="absolute inset-0 z-10 bg-black/50 flex items-center justify-center p-1">
+  <div className="absolute inset-0 z-10 bg-black/50 rounded-2xl flex items-center justify-center p-1">
     <button
       type="button"
       onClick={(e) => {
         e.stopPropagation();
         onRetry();
       }}
-      className="progress-ring text-white bg-white/10 backdrop-blur-xs rounded-full px-1.5 py-0.5 text-[10px] leading-none whitespace-nowrap transition-all duration-300 flex items-center gap-x-1 cursor-pointer outline-none"
+      className="progress-ring progress-ring-sm text-white bg-white/10 backdrop-blur-xs rounded-full px-1.5 py-0.5 text-[10px] leading-none whitespace-nowrap transition-all duration-300 flex items-center gap-x-1 cursor-pointer outline-none"
       style={{ "--ring-progress": "0%" } as React.CSSProperties}
     >
       <RotateCcwIcon className="size-2.5 stroke-[1.5]" />
@@ -415,9 +415,9 @@ const RemoveBadge = ({ onClick }: { onClick: () => void }) => (
       e.stopPropagation();
       onClick();
     }}
-    className="absolute top-1 right-1 z-20 p-1 cursor-pointer rounded-full bg-black/10 backdrop-blur-xs border border-white/10 hover:bg-black/20 transition-colors text-white"
+    className="absolute -top-1 -right-1 z-20 p-0.5 cursor-pointer rounded-full bg-black/10 backdrop-blur-xs border border-white/10 hover:bg-black/20 transition-colors text-white"
   >
-    <XIcon className="size-2.5 stroke-[1.5px]" />
+    <XIcon className="size-3 stroke-[1.5px]" />
   </div>
 );
 
@@ -444,27 +444,29 @@ const MediaAttachment = ({
   const viewable = error === null && media !== null && objectUrl !== null;
 
   const thumbClasses =
-    "relative block w-20 h-20 overflow-hidden border border-primary/5 bg-primary/3";
+    "relative block w-20 h-20 border border-primary/5 bg-primary/3 flex justify-center items-center rounded-2xl";
 
   const thumb = (
     <>
-      {objectUrl &&
-        (isImage ? (
-          <img
-            src={objectUrl}
-            alt=""
-            draggable={false}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <video
-            src={objectUrl}
-            muted
-            playsInline
-            preload="metadata"
-            className="w-full h-full object-cover"
-          />
-        ))}
+      <div className="w-full h-full overflow-hidden rounded-2xl">
+        {objectUrl &&
+          (isImage ? (
+            <img
+              src={objectUrl}
+              alt=""
+              draggable={false}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <video
+              src={objectUrl}
+              muted
+              playsInline
+              preload="metadata"
+              className="w-full h-full object-cover"
+            />
+          ))}
+      </div>
 
       {showOverlay && (
         <UploadPillOverlay progress={progress} uploading={uploading} />
@@ -518,7 +520,9 @@ const MediaAttachmentThumb = ({
   const { file } = item;
   const isAudio = file.type.startsWith("audio/");
   if (isAudio) {
-    return <VoiceAttachment item={item} onRemove={onRemove} onRetry={onRetry} />;
+    return (
+      <VoiceAttachment item={item} onRemove={onRemove} onRetry={onRetry} />
+    );
   }
 
   const isImage = file.type.startsWith("image/");
@@ -1123,101 +1127,104 @@ const Page = () => {
         onUnpin={handleTogglePinPost}
       />
 
-      <div
-        ref={pageRef}
-        onScroll={handleListScroll}
-        style={{ height: `${pageHeight}px` }}
-        className="flex flex-col-reverse overflow-y-scroll none-scroll-bar w-full outline-none max-w-2xl border-x border-secondary/5"
-      >
-        {/* Header */}
-        <Header
-          new_story={true}
-          headerRef={headerRef}
-          container_className="max-w-2xl"
-        />
+      {/* Feed column — positioning context for overlays anchored to the posts feed */}
+      <div className="relative w-full max-w-2xl">
+        <div
+          ref={pageRef}
+          onScroll={handleListScroll}
+          style={{ height: `${pageHeight}px` }}
+          className="flex flex-col-reverse overflow-y-scroll none-scroll-bar w-full outline-none border-x border-secondary/5"
+        >
+          {/* Header */}
+          <Header
+            new_story={true}
+            headerRef={headerRef}
+            container_className="max-w-2xl"
+          />
 
-        {/* —— List —— */}
-        <div className="flex-1 px-2.5 w-full">
-          {/* Initial load */}
-          {isLoading && posts.length === 0 && (
-            <div className="w-full h-full flex justify-center items-center text-xl text-center">
-              <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
-            </div>
-          )}
-
-          {!isLoading && posts.length === 0 && (
-            <div className="w-full h-full flex justify-center items-center text-xl text-center">
-              {t.rich("general.wait_for_first_content", {
-                owner_name: app_config[locale].name,
-                highlight: (chunks) => (
-                  <span className="text-primary">&nbsp;{chunks}&nbsp;</span>
-                ),
-              })}
-            </div>
-          )}
-
-          {/* Error */}
-          {error && (
-            <div
-              className="fixed left-1/2 -translate-x-1/2 z-[60] px-4 w-full max-w-2xl pointer-events-none"
-              style={{
-                top: `calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) + 8px)`,
-              }}
-            >
-              <div className="w-full rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-md px-4 py-3 text-center text-sm text-red-500">
-                Failed to Load Posts — {error}
-              </div>
-            </div>
-          )}
-
-          {/* Posts */}
-          <div
-            ref={listRef}
-            className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height))] pb-[var(--chat-footer-height)]"
-          >
-            {posts.map((msg: PostWithReactions) => (
-              <div
-                key={msg.id}
-                id={`message-${msg.id}`}
-                data-message-id={msg.id}
-                className={cn(
-                  "rounded-2xl",
-                  highlightedPostId === msg.id &&
-                    "bg-primary/5 ring-2 ring-primary/40",
-                )}
-              >
-                <Message
-                  can_pin_post
-                  can_edit_post
-                  can_delete_post
-                  can_copy_text
-                  post={msg}
-                  pinned={msg.pinnedAt != null}
-                  onDelete={(id) => {
-                    const wasPinned = msg.pinnedAt != null;
-                    removePost(id);
-                    if (wasPinned) refreshPinnedPosts();
-                  }}
-                  onDeleteError={(err) => {
-                    showWriteError(err);
-                    addPost(msg);
-                  }}
-                  onPin={handleTogglePinPost}
-                  onEdit={handleEditPost}
-                  onRetry={handleRetryPost}
-                />
-              </div>
-            ))}
-
-            {/* Loading more (top infinite scroll) */}
-            {isLoadingMore && posts.length > 0 && (
-              <div className="grid place-items-center">
-                <Loader />
+          {/* —— List —— */}
+          <div className="flex-1 px-2.5 w-full">
+            {/* Initial load */}
+            {isLoading && posts.length === 0 && (
+              <div className="w-full h-full flex justify-center items-center text-xl text-center">
+                <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
               </div>
             )}
 
-            {/* Sentinel for infinite scroll at visual TOP (DOM bottom because of flex-col-reverse) */}
-            <div ref={sentinelRef} />
+            {!isLoading && posts.length === 0 && (
+              <div className="w-full h-full flex justify-center items-center text-xl text-center">
+                {t.rich("general.wait_for_first_content", {
+                  owner_name: app_config[locale].name,
+                  highlight: (chunks) => (
+                    <span className="text-primary">&nbsp;{chunks}&nbsp;</span>
+                  ),
+                })}
+              </div>
+            )}
+
+            {/* Error */}
+            {error && (
+              <div
+                className="fixed left-1/2 -translate-x-1/2 z-[60] px-4 w-full max-w-2xl pointer-events-none"
+                style={{
+                  top: `calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) + 8px)`,
+                }}
+              >
+                <div className="w-full rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-md px-4 py-3 text-center text-sm text-red-500">
+                  Failed to Load Posts — {error}
+                </div>
+              </div>
+            )}
+
+            {/* Posts */}
+            <div
+              ref={listRef}
+              className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height))] pb-[var(--chat-footer-height)]"
+            >
+              {posts.map((msg: PostWithReactions) => (
+                <div
+                  key={msg.id}
+                  id={`message-${msg.id}`}
+                  data-message-id={msg.id}
+                  className={cn(
+                    "rounded-2xl",
+                    highlightedPostId === msg.id &&
+                      "bg-primary/5 ring-2 ring-primary/40",
+                  )}
+                >
+                  <Message
+                    can_pin_post
+                    can_edit_post
+                    can_delete_post
+                    can_copy_text
+                    post={msg}
+                    pinned={msg.pinnedAt != null}
+                    onDelete={(id) => {
+                      const wasPinned = msg.pinnedAt != null;
+                      removePost(id);
+                      if (wasPinned) refreshPinnedPosts();
+                    }}
+                    onDeleteError={(err) => {
+                      showWriteError(err);
+                      addPost(msg);
+                    }}
+                    onPin={handleTogglePinPost}
+                    onEdit={handleEditPost}
+                    onRetry={handleRetryPost}
+                  />
+                </div>
+              ))}
+
+              {/* Loading more (top infinite scroll) */}
+              {isLoadingMore && posts.length > 0 && (
+                <div className="grid place-items-center">
+                  <Loader />
+                </div>
+              )}
+
+              {/* Sentinel for infinite scroll at visual TOP (DOM bottom because of flex-col-reverse) */}
+              <div ref={sentinelRef} />
+            </div>
           </div>
         </div>
 
@@ -1235,12 +1242,12 @@ const Page = () => {
           </div>
         )}
 
-        {/* Scroll to bottom — hidden while at the bottom */}
+        {/* Scroll to bottom — anchored to the feed column, hidden while at the bottom */}
         {showScrollToBottom && (
           <div
             onClick={scrollToBottom}
-            style={{ bottom: `calc(var(--chat-footer-height))` }}
-            className="fixed right-4 z-[55] border border-secondary/5 p-1 rounded-full backdrop-blur-sm cursor-pointer hover:bg-secondary/3 text-foreground/80"
+            style={{ bottom: `calc(var(--chat-footer-height) - 5px)` }}
+            className="absolute right-4 z-40 border border-secondary/5 p-1 rounded-full backdrop-blur-sm cursor-pointer hover:bg-secondary/3 text-foreground/80"
           >
             <ChevronDownIcon className="size-6 stroke-1 text-foreground/60" />
           </div>
@@ -1263,7 +1270,7 @@ const Page = () => {
                     </span>
                   </div>
                   <div
-                    className="p-2 -m-2"
+                    className="p-1 -m-2"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleCancelEdit();

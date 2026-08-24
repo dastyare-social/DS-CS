@@ -2,6 +2,9 @@
 
 This project supports Google Search Console verification via DNS (recommended), meta tag, or file. If you already use Cloudflare (or another DNS provider) to verify domain ownership via a DNS TXT record, you do not need to add meta tags or files to the app.
 
+> [!WARNING]
+> **SEO & LLM discovery is experimental.** Verification, sitemaps, and indexing setup follow best practices, but search engines may index, rank, or surface your content unpredictably — or not at all. Don't treat discovery as a guarantee.
+
 By default verification helpers in this repo are disabled — enable them with `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` when you want the app to serve the meta tag or verification file.
 
 1) Meta tag (recommended for URL-prefix properties)

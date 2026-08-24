@@ -274,8 +274,8 @@ export default function UploadStoryModal({
         open={confirmClose}
         onOpenChange={setConfirmClose}
         description="are you sure you wanna cancel the upload — changes wouldn't apply if you accept it"
-        confirmLabel="Accept"
-        cancelLabel="Keep Uploading"
+        confirmLabel="Yes, Cancel It"
+        cancelLabel="No, Keep Uploading"
         onConfirm={handleClose}
       />
     </>

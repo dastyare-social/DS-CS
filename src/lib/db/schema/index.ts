@@ -1,7 +1,6 @@
 export * from "./posts";
 export * from "./reactions";
 export * from "./stories";
-export * from "./subscribers";
 export * from "./push-subscriptions";
 export * from "./accounts";
 export * from "./users";

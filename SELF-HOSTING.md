@@ -66,7 +66,7 @@ WEBPUSH_SUBJECT="mailto:you@example.com"
 - `API_KEY_RATE_LIMIT_WINDOW_MS`: Set the rate limit window in milliseconds. Example: `60000` for one minute.
 - `BETTER_AUTH_URL`: Set to the same public domain that users will access.
 - `BETTER_AUTH_SECRET`: Generate a random secret string with `openssl rand -base64 32`.
-- `NEXT_PUBLIC_APP_URL`: Set to your live app URL for SEO, metadata, and client links.
+- `NEXT_PUBLIC_APP_URL`: Set to your live app URL for SEO, metadata, and client links. Note: SEO & LLM discovery is experimental and can't be fully relied on.
 - `S3_ENDPOINT`: Use the endpoint from your S3-compatible provider or local MinIO installation.
 - `S3_REGION`: Use the provider region.
 - `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY`: Use storage credentials from your storage provider.

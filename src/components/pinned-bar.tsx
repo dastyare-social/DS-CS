@@ -54,7 +54,7 @@ export default function PinnedBar({
   return (
     <div
       ref={barRef}
-      className="fixed top-[var(--chat-header-height)] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4"
+      className="fixed top-[calc(var(--chat-header-height)-5px)] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4"
     >
       <div
         onClick={onCycle}

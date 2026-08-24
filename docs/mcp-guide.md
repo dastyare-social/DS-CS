@@ -2,6 +2,9 @@
 
 A complete guide to connecting AI agents to your creator studio via the Model Context Protocol (MCP).
 
+> [!WARNING]
+> **SEO & LLM discovery is experimental.** MCP tool discovery and agent-facing endpoints follow current best practices, but whether AI assistants discover, cite, or surface your content can't be fully relied on.
+
 ---
 
 ## What is MCP and why should I care?

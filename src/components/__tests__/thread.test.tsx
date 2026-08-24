@@ -46,7 +46,7 @@ vi.mock('@/config/app', () => ({
 }))
 
 vi.mock('@/config/constants', () => ({
-  reactionEmojis: ['👍'],
+  quickReactionEmojis: ['👍'],
 }))
 
 vi.mock('@/lib/fonts', () => ({

@@ -314,78 +314,81 @@ const Page = () => {
         onUnpin={handleUnpin}
       />
 
-      <div
-        ref={pageRef}
-        onScroll={handleListScroll}
-        style={{ height: `${pageHeight}px` }}
-        className="flex flex-col-reverse overflow-y-scroll none-scroll-bar w-full outline-none max-w-2xl border-x border-secondary/5"
-      >
-        <Header
-          explore
-          headerRef={headerRef}
-          container_className="max-w-2xl"
-          postsData={posts}
-          totalCount={total}
-          loading={isLoading}
-        />
+      {/* Feed column — positioning context for overlays anchored to the posts feed */}
+      <div className="relative w-full max-w-2xl">
+        <div
+          ref={pageRef}
+          onScroll={handleListScroll}
+          style={{ height: `${pageHeight}px` }}
+          className="flex flex-col-reverse overflow-y-scroll none-scroll-bar w-full outline-none border-x border-secondary/5"
+        >
+          <Header
+            explore
+            headerRef={headerRef}
+            container_className="max-w-2xl"
+            postsData={posts}
+            totalCount={total}
+            loading={isLoading}
+          />
 
-        <div className="flex-1 px-2.5 w-full">
-          {isLoading && posts.length === 0 && (
-            <div className="w-full h-full flex justify-center items-center text-xl text-center">
-              <Loader />
-            </div>
-          )}
-
-          {!isLoading && posts.length === 0 && (
-            <div className="w-full h-full flex justify-center items-center text-xl text-center">
-              <div>
-                {t.rich("general.wait_for_first_content", {
-                  owner_name: app_config[locale].name,
-                  highlight: (chunks) => (
-                    <span className="text-primary">{chunks}</span>
-                  ),
-                })}
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="text-center text-sm text-red-500">
-              Failed to Load Posts — {error}
-            </div>
-          )}
-
-          <div
-            ref={listRef}
-            className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[var(--chat-footer-height)]"
-          >
-            {posts.map((msg, index) => (
-              <div
-                key={msg.id ?? index}
-                id={`message-${msg.id}`}
-                data-message-id={msg.id}
-                className={`message-wrapper rounded-2xl${highlightedPostId === msg.id ? " bg-primary/5 ring-2 ring-primary/40" : ""}`}
-              >
-                <Post post={msg} pinned={msg.pinnedAt != null} />
-              </div>
-            ))}
-
-            {isLoadingMore && posts.length > 0 && (
-              <div className="grid place-items-center">
+          <div className="flex-1 px-2.5 w-full">
+            {isLoading && posts.length === 0 && (
+              <div className="w-full h-full flex justify-center items-center text-xl text-center">
                 <Loader />
               </div>
             )}
 
-            <div ref={sentinelRef} />
+            {!isLoading && posts.length === 0 && (
+              <div className="w-full h-full flex justify-center items-center text-xl text-center">
+                <div>
+                  {t.rich("general.wait_for_first_content", {
+                    owner_name: app_config[locale].name,
+                    highlight: (chunks) => (
+                      <span className="text-primary">{chunks}</span>
+                    ),
+                  })}
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="text-center text-sm text-red-500">
+                Failed to Load Posts — {error}
+              </div>
+            )}
+
+            <div
+              ref={listRef}
+              className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[var(--chat-footer-height)]"
+            >
+              {posts.map((msg, index) => (
+                <div
+                  key={msg.id ?? index}
+                  id={`message-${msg.id}`}
+                  data-message-id={msg.id}
+                  className={`message-wrapper rounded-2xl${highlightedPostId === msg.id ? " bg-primary/5 ring-2 ring-primary/40" : ""}`}
+                >
+                  <Post post={msg} pinned={msg.pinnedAt != null} />
+                </div>
+              ))}
+
+              {isLoadingMore && posts.length > 0 && (
+                <div className="grid place-items-center">
+                  <Loader />
+                </div>
+              )}
+
+              <div ref={sentinelRef} />
+            </div>
           </div>
         </div>
 
-        {/* Scroll to bottom — hidden while at the bottom */}
+        {/* Scroll to bottom — anchored to the feed column, hidden while at the bottom */}
         {showScrollToBottom && (
           <div
             onClick={scrollToBottom}
-            style={{ bottom: `calc(var(--chat-footer-height))` }}
-            className="fixed right-4 z-[55] border border-secondary/5 p-1 rounded-full backdrop-blur-sm cursor-pointer hover:bg-secondary/3 text-foreground/80"
+            style={{ bottom: `calc(var(--chat-footer-height) - 5px)` }}
+            className="absolute right-4 z-40 border border-secondary/5 p-1 rounded-full backdrop-blur-sm cursor-pointer hover:bg-secondary/3 text-foreground/80"
           >
             <ChevronDownIcon className="size-6 stroke-1 text-foreground/60" />
           </div>

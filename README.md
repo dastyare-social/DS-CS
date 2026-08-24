@@ -47,6 +47,9 @@
 
 Every post you publish should work for you — not pad someone else's engagement numbers. DS-CS puts your content where real buyers and search engines actually find it, answering to you, not a feed algorithm.
 
+> [!WARNING]
+> **SEO & LLM discovery is experimental.** DS-CS follows current best practices (sitemap, robots.txt, `llms.txt`, structured data, MCP), but search engines and AI assistants may index, rank, cite, or surface your content unpredictably — or not at all. Don't treat discovery as a guarantee.
+
 - Get found by the people actually looking for what you do — not buried by an algorithm's mood swings
 - Nothing you post can be taken down, demonetized, or buried by a policy change overnight
 - Every post keeps working for you long after it's published — indexed, searchable, and referenceable, not gone in a day
@@ -292,6 +295,9 @@ Indexing is **disabled by default**. To enable:
    - **File:** set `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` — the app serves the verification file at `https://<your-host>/<filename>`
 3. Submit `/sitemap.xml` in Search Console
 
+> [!WARNING]
+> SEO & LLM discovery is **experimental** — sitemaps and `llms.txt` improve findability but can't guarantee indexing, ranking, or agent surfacing.
+
 Every post is indexed for search engines and includes an `llms.txt` site map for AI agents — built to be found, not just technically accessible.
 
 ---
@@ -382,7 +388,7 @@ Yes. The app exposes an MCP server at `/api/mcp` so AI agents can call posts and
 Next.js, React, Bun, PostgreSQL, Drizzle ORM — full details in the docs.
 
 **Is my content actually searchable, or just technically public?**
-Every post is indexed for search engines and includes an `llms.txt` site map for AI agents — built to be found, not just technically accessible.
+Every post is indexed for search engines and includes an `llms.txt` site map for AI agents — built to be found, not just technically accessible. Note that SEO & LLM discovery is experimental and can't be fully relied on.
 
 ---
 

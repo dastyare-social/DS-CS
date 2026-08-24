@@ -13,7 +13,7 @@ type ContextMenuContextValue = {
 };
 
 const ContextMenuContext = React.createContext<ContextMenuContextValue | null>(
-  null
+  null,
 );
 
 function useContextMenuContext() {
@@ -49,7 +49,7 @@ export function ContextMenu({ children }: ContextMenuProps) {
 
   const value = React.useMemo(
     () => ({ open, setOpen, cursorPosition, setCursorPosition }),
-    [open, cursorPosition]
+    [open, cursorPosition],
   );
 
   return (
@@ -73,7 +73,7 @@ export const ContextMenuTrigger = React.forwardRef<
   ContextMenuTriggerProps
 >(function ContextMenuTrigger(
   { asChild, children, onContextMenu, onTouchStart, onTouchEnd, ...props },
-  ref
+  ref,
 ) {
   const { setOpen, setCursorPosition } = useContextMenuContext();
   const touchTimeoutRef = React.useRef<number | null>(null);
@@ -177,7 +177,7 @@ export const ContextMenuContent = React.forwardRef<
   ContextMenuContentProps
 >(function ContextMenuContent(
   { className, style, closeOnSelect = false, ...props },
-  ref
+  ref,
 ) {
   const { open, setOpen, cursorPosition } = useContextMenuContext();
   const contentRef = React.useRef<HTMLDivElement | null>(null);
@@ -258,7 +258,7 @@ export const ContextMenuContent = React.forwardRef<
           "backdrop-blur-3xl z-50 max-h-[min(80vh,400px)] min-w-[8rem] transition-all duration-500 overflow-x-hidden overflow-y-auto rounded-xl border border-secondary/5 bg-background/80 p-1 text-foreground",
           // animations — using tw-animate-css / tailwind animate utils
           "animate-in fade-in-0 zoom-in-95",
-          className
+          className,
         )}
         {...props}
       />
@@ -280,7 +280,7 @@ export const ContextMenuItem = React.forwardRef<
   ContextMenuItemProps
 >(function ContextMenuItem(
   { className, inset, variant = "default", onClick, ...props },
-  ref
+  ref,
 ) {
   const { setOpen } = useContextMenuContext();
 
@@ -301,7 +301,7 @@ export const ContextMenuItem = React.forwardRef<
         "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-none",
         "data-[variant=destructive]:text-destructive",
         "data-[variant=destructive]:hover:bg-destructive/10 dark:data-[variant=destructive]:hover:bg-destructive/20",
-        className
+        className,
       )}
       {...props}
     />
@@ -322,9 +322,9 @@ export const ContextMenuLabel = React.forwardRef<
       ref={ref}
       data-inset={inset}
       className={cn(
-        "px-2 py-1.5 text-xs font-medium text-muted-foreground",
+        "px-2 py-1.5 text-xs text-muted-foreground",
         "data-[inset]:pl-8",
-        className
+        className,
       )}
       {...props}
     />
@@ -332,7 +332,8 @@ export const ContextMenuLabel = React.forwardRef<
 });
 
 // Separator
-interface ContextMenuSeparatorProps extends React.LiHTMLAttributes<HTMLHRElement> {}
+interface ContextMenuSeparatorProps
+  extends React.LiHTMLAttributes<HTMLHRElement> {}
 
 export const ContextMenuSeparator = React.forwardRef<
   HTMLHRElement,
@@ -348,7 +349,8 @@ export const ContextMenuSeparator = React.forwardRef<
 });
 
 // Checkbox Item
-interface ContextMenuCheckboxItemProps extends React.LiHTMLAttributes<HTMLLIElement> {
+interface ContextMenuCheckboxItemProps
+  extends React.LiHTMLAttributes<HTMLLIElement> {
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
 }
@@ -358,7 +360,7 @@ export const ContextMenuCheckboxItem = React.forwardRef<
   ContextMenuCheckboxItemProps
 >(function ContextMenuCheckboxItem(
   { className, children, checked = false, onCheckedChange, ...props },
-  ref
+  ref,
 ) {
   const { setOpen } = useContextMenuContext();
 
@@ -375,7 +377,7 @@ export const ContextMenuCheckboxItem = React.forwardRef<
       className={cn(
         "focus:bg-secondary/5 border border-transparent hover:bg-secondary/3 hover:border-secondary/3",
         "relative flex cursor-pointer select-none items-center gap-2 rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none",
-        className
+        className,
       )}
       {...props}
     >
@@ -426,7 +428,8 @@ export function ContextMenuRadioGroup({
   );
 }
 
-interface ContextMenuRadioItemProps extends React.LiHTMLAttributes<HTMLLIElement> {
+interface ContextMenuRadioItemProps
+  extends React.LiHTMLAttributes<HTMLLIElement> {
   value: string;
 }
 
@@ -439,7 +442,7 @@ export const ContextMenuRadioItem = React.forwardRef<
 
   if (!radioCtx) {
     throw new Error(
-      "ContextMenuRadioItem must be used within ContextMenuRadioGroup"
+      "ContextMenuRadioItem must be used within ContextMenuRadioGroup",
     );
   }
 
@@ -458,7 +461,7 @@ export const ContextMenuRadioItem = React.forwardRef<
       className={cn(
         "focus:bg-secondary/5 border border-transparent hover:bg-secondary/3 hover:border-secondary/3",
         "relative flex cursor-pointer select-none items-center gap-2 rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none",
-        className
+        className,
       )}
       {...props}
     >
@@ -499,7 +502,8 @@ export function ContextMenuSub({ children }: { children: React.ReactNode }) {
   );
 }
 
-interface ContextMenuSubTriggerProps extends React.LiHTMLAttributes<HTMLLIElement> {
+interface ContextMenuSubTriggerProps
+  extends React.LiHTMLAttributes<HTMLLIElement> {
   inset?: boolean;
 }
 
@@ -508,7 +512,7 @@ export const ContextMenuSubTrigger = React.forwardRef<
   ContextMenuSubTriggerProps
 >(function ContextMenuSubTrigger(
   { className, inset, children, ...props },
-  ref
+  ref,
 ) {
   const subCtx = React.useContext(ContextMenuSubContext);
   if (!subCtx) {
@@ -528,7 +532,7 @@ export const ContextMenuSubTrigger = React.forwardRef<
         "focus:bg-secondary/5 border border-transparent hover:bg-secondary/3 hover:border-secondary/3",
         "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-none",
         "data-[inset]:pl-8",
-        className
+        className,
       )}
       {...props}
     >
@@ -553,7 +557,8 @@ export const ContextMenuSubTrigger = React.forwardRef<
   );
 });
 
-interface ContextMenuSubContentProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface ContextMenuSubContentProps
+  extends React.HTMLAttributes<HTMLDivElement> {}
 
 export const ContextMenuSubContent = React.forwardRef<
   HTMLDivElement,
@@ -592,7 +597,7 @@ export const ContextMenuSubContent = React.forwardRef<
       className={cn(
         "backdrop-blur-3xl z-50 max-h-[min(80vh,400px)] min-w-[8rem] overflow-x-hidden overflow-y-auto rounded-xl border border-secondary/5 bg-background/80 p-1 text-foreground",
         "animate-in fade-in-0 zoom-in-95",
-        className
+        className,
       )}
       {...props}
     />
@@ -601,9 +606,7 @@ export const ContextMenuSubContent = React.forwardRef<
 
 // Quick-reaction emoji strip — a fully rounded floating part rendered on TOP
 // of the menu content (25px gap). Horizontally scrollable, same glassy style.
-const MENU_GAP_PX = 25;
-const EMOJI_BAR_HEIGHT_PX = 40;
-
+const MENU_GAP_PX = 8;
 interface ContextMenuEmojiBarProps {
   emojis?: readonly string[];
   onSelect: (emoji: string) => void;
@@ -630,15 +633,16 @@ export function ContextMenuEmojiBar({
         data-context-menu-floating=""
         style={{
           position: "fixed",
-          left: Math.max(8, cursorPosition.x + (menuWidth - barWidth) / 2),
-          top: cursorPosition.y - MENU_GAP_PX - EMOJI_BAR_HEIGHT_PX,
+          left: Math.max(8, cursorPosition.x),
+          top: cursorPosition.y - MENU_GAP_PX,
           width: barWidth,
+          transform: "translateY(-100%)",
         }}
         className={cn(
-          "z-50 rounded-full border border-secondary/5 bg-background/80 backdrop-blur-3xl p-1 text-foreground",
+          "z-50 rounded-full border border-secondary/5 bg-background/80 backdrop-blur-3xl px-1 pt-2.5 pb-2 text-foreground",
           "flex items-center overflow-x-auto none-scroll-bar select-none",
           "animate-in fade-in-0 zoom-in-95 duration-500 transition-all",
-          className
+          className,
         )}
       >
         {emojis.map((emoji) => (
@@ -650,7 +654,7 @@ export function ContextMenuEmojiBar({
               onSelect(emoji);
               setOpen(false);
             }}
-            className="shrink-0 px-1.5 text-lg leading-none outline-none cursor-pointer transition-transform duration-150 hover:scale-125 active:scale-95"
+            className="shrink-0 px-1.5 text-lg leading-none outline-none cursor-pointer origin-bottom transition-transform duration-150 hover:scale-125 active:scale-95"
           >
             {emoji}
           </button>

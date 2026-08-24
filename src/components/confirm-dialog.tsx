@@ -2,7 +2,6 @@
 
 import { Dialog, DialogContent } from "./dialog";
 import { Button } from "./button";
-import { cn } from "@/lib/utils";
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -13,19 +12,17 @@ type ConfirmDialogProps = {
   cancelLabel?: string;
   onConfirm: () => void;
   onCancel?: () => void;
-  destructive?: boolean;
 };
 
 export default function ConfirmDialog({
   open,
   onOpenChange,
-  title = "Are You Sure?",
+  title = "Are You Sure? —",
   description = "are you sure you wanna cancel — changes wouldn't apply if you accept it",
-  confirmLabel = "Accept",
-  cancelLabel = "Keep Editing",
+  confirmLabel = "Yes, Do It",
+  cancelLabel = "No, I Don't",
   onConfirm,
   onCancel,
-  destructive = false,
 }: ConfirmDialogProps) {
   const handleCancel = () => {
     onCancel?.();
@@ -40,36 +37,31 @@ export default function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={handleCancel}>
       <DialogContent
-        className="w-[85vw] max-w-[340px] bg-white/50 backdrop-blur-3xl border-primary/10 rounded-3xl p-0 overflow-hidden text-secondary/90"
+        className="w-[85vw] max-w-3xs bg-background/80 backdrop-blur-3xl border border-secondary/10 rounded-3xl p-0 overflow-hidden"
         showCloseButton={false}
       >
-        <div className="flex flex-col items-center gap-y-2 px-6 pt-6 pb-2 text-center">
-          <span className="text-[20px]">{title}</span>
-          <span className="text-[16px] text-secondary/70 leading-relaxed">
-            {description}
-          </span>
-        </div>
+        <div className="flex flex-col justify-center items-center gap-y-0.5 py-6 px-6 text-center">
+          <span className="text-xl">{title}</span>
+          <span className="opacity-80 leading-[1.25rem]">{description}</span>
 
-        <div className="flex gap-x-2.5 justify-end px-5 py-4 mt-2.5">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleCancel}
-            className="text-[18px] px-5"
-          >
-            {cancelLabel}
-          </Button>
-          <Button
-            type="button"
-            onClick={handleConfirm}
-            className={cn(
-              "text-[18px] px-5",
-              destructive &&
-                "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20",
-            )}
-          >
-            {confirmLabel}
-          </Button>
+          <div className="flex flex-col gap-y-2.5 w-full mt-4">
+            <Button
+              type="button"
+              variant="primary"
+              className="w-full text-md md:text-md"
+              onClick={handleConfirm}
+            >
+              {confirmLabel}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full text-md md:text-md"
+              onClick={handleCancel}
+            >
+              {cancelLabel}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

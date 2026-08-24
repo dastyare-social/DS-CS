@@ -110,7 +110,7 @@ export default function ThreadItem({
             )}
 
             <div className="flex flex-col sm:flex-row gap-x-1.5 gap-y-1.5 sm:items-end mt-2">
-              <div className="flex-1 flex text-[12px] ml-[-1px] gap-x-1">
+              <div className="flex-1 flex flex-wrap text-[12px] ml-[-1px] gap-x-1 gap-y-1">
                 {(thread.reactions ?? [])
                   .filter((r: any) => (r.count || 0) > 0)
                   .map((r: any) => (

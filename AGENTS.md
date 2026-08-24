@@ -2,6 +2,9 @@
 
 Guide for AI agents consuming or extending this project. **Primary audience: external LLMs and agents calling the REST API.**
 
+> [!WARNING]
+> **SEO & LLM discovery is experimental.** This app exposes `llms.txt`, sitemaps, structured data, and MCP endpoints per current best practices, but whether search engines or AI assistants discover, cite, or surface its content can't be fully relied on.
+
 ## Project summary
 
 Dastyare Social CS is a Next.js creator studio. It exposes a REST API for posts and stories, with Better Auth for authentication. The frontend uses tRPC internally; external agents should prefer the documented REST endpoints.

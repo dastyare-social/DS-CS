@@ -51,7 +51,7 @@ vi.mock('next-intl', () => ({
 }));
 
 vi.mock('@/config/constants', () => ({
-  reactionEmojis: ['👍', '❤️'],
+  quickReactionEmojis: ['👍', '❤️'],
 }));
 
 import { render } from '@testing-library/react';

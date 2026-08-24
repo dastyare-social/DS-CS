@@ -259,10 +259,9 @@ export default function StoryPreviewModal({
       onOpenChange={setConfirmDialogOpen}
       title="Cancel Upload?"
       description="An upload is in progress. Closing now will cancel it."
-      confirmLabel="Yes, Cancel"
-      cancelLabel="Keep Editing"
+      confirmLabel="Yes, Cancel It"
+      cancelLabel="No, Keep Editing"
       onConfirm={performClose}
-      destructive
     />
     </>
   );

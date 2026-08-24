@@ -22,9 +22,10 @@ export default function ImageSlider({ media, content }: ImageSliderProps) {
   const [mediaLoading, setMediaLoading] = useState(true);
 
   const currentMedia = media[currentIndex];
-  const aspectRatio = currentMedia?.width && currentMedia?.height
-    ? currentMedia.width / currentMedia.height
-    : 16 / 9;
+  const aspectRatio =
+    currentMedia?.width && currentMedia?.height
+      ? currentMedia.width / currentMedia.height
+      : 16 / 9;
 
   const handleNext = () => {
     setCurrentIndex((prev) => (prev + 1) % media.length);
@@ -88,9 +89,9 @@ export default function ImageSlider({ media, content }: ImageSliderProps) {
             </div>
           )}
 
-          {/* Slide counter — same style as "wait — creating story" pill, thinner border */}
+          {/* —— slide counter —— */}
           {media.length > 1 && (
-            <div className="absolute top-3 right-3 text-white bg-white/10 backdrop-blur-xs border border-white/40 rounded-full px-2.5 py-0.5 text-xs leading-none">
+            <div className="absolute top-3 right-3 text-white bg-white/10 backdrop-blur-xs border border-white/20 rounded-full px-1.5 py-0.5 text-xs leading-none">
               {currentIndex + 1} / {media.length}
             </div>
           )}
@@ -120,6 +121,13 @@ export default function ImageSlider({ media, content }: ImageSliderProps) {
             </div>
           )}
 
+          {/* Slide counter — same style as "wait — creating story" pill, thinner border */}
+          {media.length > 1 && (
+            <div className="absolute top-5 right-5 text-white bg-white/10 backdrop-blur-xs border border-white/20 rounded-full px-1.5 py-0.5 text-sm leading-none">
+              {currentIndex + 1} / {media.length}
+            </div>
+          )}
+
           {/* Bottom dots — glassy pills, no text */}
           {media.length > 1 && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-x-1.5 z-10">
@@ -127,7 +135,7 @@ export default function ImageSlider({ media, content }: ImageSliderProps) {
                 <div
                   key={index}
                   className={cn(
-                    "w-6 h-3 rounded-full border backdrop-blur-xs transition-all duration-200",
+                    "w-3 h-3 rounded-full border backdrop-blur-xs transition-all duration-200",
                     index === currentIndex
                       ? "bg-white/80 border-white/60"
                       : "bg-white/10 border-white/40",

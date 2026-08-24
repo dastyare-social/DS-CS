@@ -7,12 +7,15 @@ import Loader from "./loader";
 
 interface SafeImageProps extends Omit<ImageProps, "onError"> {
   fallbackClassName?: string;
+  /** called when the image fails to load, alongside the internal fallback */
+  onError?: () => void;
 }
 
 export default function SafeImage({
   src,
   fallbackClassName,
   className,
+  onError,
   ...props
 }: SafeImageProps) {
   const [error, setError] = useState(false);
@@ -37,7 +40,10 @@ export default function SafeImage({
       src={src}
       className={className}
       {...props}
-      onError={() => setError(true)}
+      onError={() => {
+        setError(true);
+        onError?.();
+      }}
     />
   );
 }

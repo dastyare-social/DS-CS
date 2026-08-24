@@ -15,6 +15,6 @@ export async function GET() {
     path: "/llms.txt",
   });
 
-  const content = readFileSync(join(process.cwd(), "public", "llms.txt"), "utf8");
+  const content = readFileSync(join(process.cwd(), "llms.txt"), "utf8");
   return new Response(content, { headers });
 }
