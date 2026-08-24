@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { app_config, app_url } from "../src/config/app";
+import { is_resume_enabled } from "../src/config/resume";
 import type { Locale } from "../src/config/locale";
 
 // ---------------------------------------------------------------------------
@@ -167,11 +168,19 @@ export function resumeMetadata(locale: Locale): Metadata {
   const title = `Resume — ${app_config[locale].name}`;
   const description = `Resume of ${app_config[locale].name}`;
 
+  // The resume page is indexable only when both the whole app is indexable
+  // (NEXT_PUBLIC_ALLOW_INDEXING) and the page itself is enabled in
+  // resume.config.yml.
+  const allowIndexing =
+    process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true" && is_resume_enabled;
+
   return {
     metadataBase: new URL(app_url),
     title,
     description,
-    robots: { index: false, follow: false },
+    robots: allowIndexing
+      ? { index: true, follow: true }
+      : { index: false, follow: false },
     alternates: {
       canonical: `${app_url}/resume`,
     },

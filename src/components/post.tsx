@@ -25,6 +25,7 @@ import {
   PinIcon,
   CopyIcon,
   Clock8Icon,
+  Edit3Icon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -1008,7 +1009,7 @@ const Post = memo(
                 onClick={() => onEdit?.(post)}
               >
                 <div className="flex-1">{t("general.edit_post")} —</div>
-                <BoxIcon className="stroke-[1.5px] size-4" />
+                <Edit3Icon className="stroke-[1.5px] size-4" />
               </ContextMenuItem>
             )}
 

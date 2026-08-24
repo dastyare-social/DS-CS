@@ -1,0 +1,42 @@
+# Resume page (/resume).
+# `enabled` must be the first key — true activates the page, false hides it
+# (visitors get the global not-found page and the route stays out of the sitemap).
+
+enabled: true
+
+general:
+  name: "Omid Shabab"
+  avatar: "/profile-image.png"
+  jobTitle: "Builder of Dastyare Social"
+  website: "https://omidshabab.com"
+  about: "Hey there! I'm Omid — I build things for the web and share the journey on my own channel."
+  contacts:
+    - label: "Email"
+      value: "hey@omidshabab.com"
+      href: "mailto:hey@omidshabab.com"
+    - label: "Github"
+      value: "omidshabab"
+      href: "https://github.com/omidshabab"
+    - label: "Twitter"
+      value: "omidshabab"
+      href: "https://twitter.com/omidshabab"
+
+# Add or remove whole sections freely — each becomes a block on the page.
+content:
+  - title: "Work Experience"
+    items:
+      - title: "Creator of Dastyare Social"
+        subTitle: "Self-hosted publishing platform"
+        date: "2024 - Present"
+        description: "Building an open-source, self-hosted channel for both humans and AI agents."
+      - title: "Freelance Developer"
+        subTitle: "Remote"
+        date: "2020 - 2024"
+        description: "Design and development for clients around the world."
+
+  - title: "Education"
+    items:
+      - title: "Bachelor's Degree"
+        subTitle: "University"
+        date: "2016 - 2020"
+        description: "Computer engineering."

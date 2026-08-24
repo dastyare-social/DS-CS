@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { app_url } from '@/config/app'
+import { is_resume_enabled } from '@/config/resume'
 import { getPostsWithReactions } from '@/lib/api/posts/queries'
 
 // The sitemap depends on live post data, so it must be generated at request
@@ -39,6 +40,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 1,
     },
+    // The resume page joins the sitemap only when it is enabled in
+    // resume.config.yml (global indexing is already checked above).
+    ...(is_resume_enabled
+      ? [
+          {
+            url: `${app_url}/resume`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly' as const,
+            priority: 0.6,
+          },
+        ]
+      : []),
     ...postEntries,
   ]
 }

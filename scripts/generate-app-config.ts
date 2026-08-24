@@ -3,8 +3,13 @@ import path from "path";
 import YAML from "yaml";
 
 const CONFIG_DIR = path.join(process.cwd(), "config");
-const YAML_FILE = path.join(CONFIG_DIR, "app.config.yml");
-const JSON_FILE = path.join(CONFIG_DIR, "app.config.json");
+
+// Each YAML file is the human-editable source; its JSON twin is what the app
+// imports. Keep resume.config.yml's `enabled` key first — order is preserved.
+const CONFIG_PAIRS: Array<{ yaml: string; json: string }> = [
+  { yaml: "app.config.yml", json: "app.config.json" },
+  { yaml: "resume.config.yml", json: "resume.config.json" },
+];
 
 function ensure_config_dir() {
   if (!fs.existsSync(CONFIG_DIR)) {
@@ -44,16 +49,20 @@ function write_json_file(file_path: string, data: unknown) {
 }
 
 function main() {
-  console.log("Generating app.config.json from app.config.yml...");
-
   ensure_config_dir();
 
-  const yamlContent = read_yaml_file(YAML_FILE);
-  const data = parse_yaml_to_json(yamlContent);
+  for (const { yaml, json } of CONFIG_PAIRS) {
+    const yamlFile = path.join(CONFIG_DIR, yaml);
+    const jsonFile = path.join(CONFIG_DIR, json);
 
-  write_json_file(JSON_FILE, data);
+    console.log(`Generating ${json} from ${yaml}...`);
 
-  console.log(`Successfully generated JSON config: ${JSON_FILE}`);
+    const yamlContent = read_yaml_file(yamlFile);
+    const data = parse_yaml_to_json(yamlContent);
+    write_json_file(jsonFile, data);
+
+    console.log(`Successfully generated JSON config: ${jsonFile}`);
+  }
 }
 
 try {
