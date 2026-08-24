@@ -42,7 +42,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const title = typeof body?.title === "string" ? body.title : "New update";
     const bodyText = typeof body?.body === "string" ? body.body : "A new update is available";
-    const url = typeof body?.url === "string" ? body.url : "/";
+    // Only allow relative URLs — the SW hands this to clients.openWindow()
+    const url =
+      typeof body?.url === "string" && body.url.startsWith("/") ? body.url : "/";
 
     const configured = configureWebPush();
     if (!configured) {

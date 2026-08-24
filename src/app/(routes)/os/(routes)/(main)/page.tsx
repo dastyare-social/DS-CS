@@ -1179,7 +1179,7 @@ const Page = () => {
             {/* Posts */}
             <div
               ref={listRef}
-              className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height))] pb-[var(--chat-footer-height)]"
+              className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[var(--chat-footer-height)]"
             >
               {posts.map((msg: PostWithReactions) => (
                 <div

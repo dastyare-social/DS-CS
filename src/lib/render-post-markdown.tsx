@@ -107,14 +107,8 @@ const renderInline = (text: string): React.ReactNode => {
   return codeSplit.map((segment, i) => {
     const codeMatch = segment.match(/^`([^`]+)`$/);
     if (codeMatch) {
-      return (
-        <code
-          key={`code-${i}`}
-          className="font-mono text-xs px-1 py-0.5 rounded bg-secondary/20"
-        >
-          {codeMatch[1]}
-        </code>
-      );
+      // backticks only shield content from formatting/linking — render as plain text
+      return <React.Fragment key={`code-${i}`}>{codeMatch[1]}</React.Fragment>;
     }
 
     // For non-code segments, apply formatting + links

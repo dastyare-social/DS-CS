@@ -1,5 +1,15 @@
 import React from 'react';
 
+// JSON.stringify leaves </script>, &, and line separators intact, letting
+// user-authored strings break out of the ld+json block into executable HTML.
+const toSafeJsonLd = (value: unknown): string =>
+  JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+
 interface WebSiteSchemaProps {
   name: string;
   url: string;
@@ -25,7 +35,7 @@ export function WebSiteSchema({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: toSafeJsonLd(schema) }}
     />
   );
 }
@@ -50,7 +60,7 @@ export function PersonSchema({ name, url, image, email }: PersonSchemaProps) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: toSafeJsonLd(schema) }}
     />
   );
 }
@@ -118,7 +128,7 @@ export function ArticleSchema({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: toSafeJsonLd(schema) }}
     />
   );
 }
@@ -148,7 +158,7 @@ export function ImageObjectSchema({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: toSafeJsonLd(schema) }}
     />
   );
 }
@@ -185,7 +195,7 @@ export function CollectionPageSchema({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: toSafeJsonLd(schema) }}
     />
   );
 }
