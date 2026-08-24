@@ -1,6 +1,9 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { is_resume_enabled, resume_config } from "@/config/resume";
+import { getResumeConfig } from "@/config/resume";
+
+// Read resume.config.yml per request so the enabled toggle applies live.
+export const dynamic = "force-dynamic";
 
 const Section = ({
   title,
@@ -38,7 +41,9 @@ const Section = ({
 );
 
 const Page = () => {
-  if (!is_resume_enabled) {
+  const resume_config = getResumeConfig();
+
+  if (resume_config.enabled !== true || !resume_config.general?.name) {
     notFound();
   }
 

@@ -5,10 +5,10 @@ import YAML from "yaml";
 const CONFIG_DIR = path.join(process.cwd(), "config");
 
 // Each YAML file is the human-editable source; its JSON twin is what the app
-// imports. Keep resume.config.yml's `enabled` key first — order is preserved.
+// imports. resume.config.yml is intentionally NOT pregenerated here — the
+// resume page reads it at request time so toggling `enabled` needs no rebuild.
 const CONFIG_PAIRS: Array<{ yaml: string; json: string }> = [
   { yaml: "app.config.yml", json: "app.config.json" },
-  { yaml: "resume.config.yml", json: "resume.config.json" },
 ];
 
 function ensure_config_dir() {

@@ -1,4 +1,6 @@
-import resume_config_json from "../../config/resume.config.json";
+import fs from "fs";
+import path from "path";
+import YAML from "yaml";
 
 export interface ResumeContact {
   label: string;
@@ -34,8 +36,29 @@ export interface ResumeConfig {
   content?: ResumeSection[];
 }
 
-export const resume_config: ResumeConfig = resume_config_json;
+const RESUME_CONFIG_PATH = path.join(process.cwd(), "config", "resume.config.yml");
+
+const DISABLED_FALLBACK: ResumeConfig = { enabled: false, general: { name: "" } };
+
+/**
+ * Reads resume.config.yml fresh on every call so flipping `enabled` takes
+ * effect on the next request — no rebuild or server restart required.
+ * A missing or invalid file disables the page rather than crashing the app.
+ */
+export const getResumeConfig = (): ResumeConfig => {
+  try {
+    const parsed = YAML.parse(fs.readFileSync(RESUME_CONFIG_PATH, "utf8"));
+    if (!parsed || typeof parsed !== "object" || !parsed.general?.name) {
+      return DISABLED_FALLBACK;
+    }
+    return parsed as ResumeConfig;
+  } catch {
+    return DISABLED_FALLBACK;
+  }
+};
 
 /** The page only exists when explicitly enabled and a name is configured. */
-export const is_resume_enabled =
-  resume_config.enabled === true && Boolean(resume_config.general?.name);
+export const isResumeEnabled = () => {
+  const config = getResumeConfig();
+  return config.enabled === true && Boolean(config.general?.name);
+};

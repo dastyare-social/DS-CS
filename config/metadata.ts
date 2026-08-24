@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { app_config, app_url } from "../src/config/app";
-import { is_resume_enabled } from "../src/config/resume";
+import { isResumeEnabled } from "../src/config/resume";
 import type { Locale } from "../src/config/locale";
 
 // ---------------------------------------------------------------------------
@@ -172,7 +172,7 @@ export function resumeMetadata(locale: Locale): Metadata {
   // (NEXT_PUBLIC_ALLOW_INDEXING) and the page itself is enabled in
   // resume.config.yml.
   const allowIndexing =
-    process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true" && is_resume_enabled;
+    process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true" && isResumeEnabled();
 
   return {
     metadataBase: new URL(app_url),
