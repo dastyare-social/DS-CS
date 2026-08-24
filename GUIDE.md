@@ -51,7 +51,7 @@ Design principles:
 ## 3. Repo layout
 
 ```
-config/                  # app.config.yml/.json (name, username, etc.)
+config/                  # app.config.yml/.json (name, username, etc.), resume.config.yml (/resume page)
 scripts/
   install.sh             # one-line server bootstrap (curl | bash)
   bootstrap-admin.ts     # create/update admin from env
@@ -167,6 +167,7 @@ All documented in `.env.example` with comments. Key groups:
 ## 7. Configuration & i18n
 
 - **App profile** lives in `config/app.config.yml` (name, username, description). `bun run generate:config` syncs it into `src/config/app.ts`, which the app reads everywhere (metadata, header, manifest, OG images).
+- **Resume page** (`/resume`) is driven by `config/resume.config.yml`, read at request time via `src/config/resume.ts` — flip its first `enabled` key to show/hide the page live (disabled renders the not-found page). It's indexable only when the page is enabled **and** `NEXT_PUBLIC_ALLOW_INDEXING=true`; otherwise `noindex` and excluded from the sitemap.
 - **Locale** is a single `en` locale (`src/config/locale.ts`). Messages are in `translations/en.json`, served via next-intl (`src/i18n.ts`). `src/services/locale.ts` resolves the current locale (persisted preference → default).
 
 ---

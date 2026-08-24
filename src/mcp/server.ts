@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerPostTools } from "./tools/posts";
 import { registerStoryTools } from "./tools/stories";
+import { registerResumeTools } from "./tools/resume";
 
 export interface McpServerOptions {
   canWrite?: () => boolean;
@@ -16,6 +17,7 @@ export function createMcpServer(options: McpServerOptions = {}): McpServer {
 
   registerPostTools(server, { canWrite });
   registerStoryTools(server, { canWrite });
+  registerResumeTools(server, { canWrite });
 
   return server;
 }

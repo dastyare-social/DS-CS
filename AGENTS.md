@@ -11,7 +11,7 @@ Dastyare Social CS is a Next.js creator studio. It exposes a REST API for posts 
 
 - **Runtime:** Bun, Node 20+, PostgreSQL, S3-compatible storage
 - **Dev port:** 8729
-- **Config:** `config/app.config.yml` → generated JSON at build time
+- **Config:** `config/app.config.yml` → generated JSON at build time; `config/resume.config.yml` → read at request time (no generation step)
 
 ## API entry points
 
@@ -190,7 +190,7 @@ Full schemas: `/openapi.json` → `components.schemas`
 - **API logic:** Keep in `src/lib/api/`, not in route handlers
 - **Schemas:** Drizzle schema → drizzle-zod → route validation
 - **OpenAPI:** Annotate route handlers with JSDoc; run `bun run openapi:generate`
-- **Config:** Edit YAML, never hand-edit `app.config.json`
+- **Config:** Edit YAML, never hand-edit `app.config.json`; `resume.config.yml` is parsed fresh on every request — keep its `enabled` key first
 - **Do not** refactor unrelated code; match existing patterns
 
 ## Environment variables
@@ -314,7 +314,7 @@ docker compose -f docker-compose.dev.yml up -d --build
 
 ## MCP integration
 
-The app ships a real MCP server exposing posts and stories as tools. Read tools (`list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories`) are public. Write tools (`create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story`) require API-key auth.
+The app ships a real MCP server exposing posts, stories, and the resume config as tools. Read tools (`list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories`, `get_resume_config`) are public. Write tools (`create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story`, `update_resume_config`, `set_resume_enabled`) require API-key auth. Resume tools read/edit `config/resume.config.yml` (the `/resume` page); its first key must be `enabled:`.
 
 Two transports are provided:
 

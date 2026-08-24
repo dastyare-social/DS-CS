@@ -283,6 +283,15 @@ Edit `config/app.config.yml` to set your name, description, and email, then rege
 bun run generate:config
 ```
 
+### Resume Page
+
+The optional `/resume` page is driven entirely by `config/resume.config.yml` — no rebuild or restart needed, changes apply on the next request:
+
+- **`enabled` must be the first key**: `true` activates the page, `false` (or a missing/invalid file) makes `/resume` render the not-found page
+- Below it, define `general` (name, avatar, jobTitle, website, about, contacts) and any number of `content` sections (e.g. Work Experience, Education) following the commented template in the file
+
+Indexing follows the global SEO switch: `/resume` is only indexable when `NEXT_PUBLIC_ALLOW_INDEXING=true` **and** `enabled: true`; otherwise it gets `noindex` and stays out of `sitemap.xml`.
+
 ---
 
 ## SEO & Search Console

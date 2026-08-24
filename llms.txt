@@ -59,7 +59,7 @@ This app exposes an MCP server so AI agents can call posts/stories as tools inst
 - Endpoint: `{APP_URL}/api/mcp` (Streamable HTTP, JSON responses)
 - Discovery: `{APP_URL}/.well-known/mcp` — returns an `mcpServers` manifest
 - Guide: `{APP_URL}/docs` includes MCP tool documentation
-- Tools: `list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories` (public); `create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story` (require `Authorization: Bearer <API_KEY>`)
+- Tools: `list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories`, `get_resume_config` (public); `create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story`, `update_resume_config`, `set_resume_enabled` (require `Authorization: Bearer <API_KEY>`). Resume tools read/edit `config/resume.config.yml` — the `/resume` page reflects changes on the next request.
 
 Connect a remote MCP client:
 
@@ -81,3 +81,4 @@ For a local stdio server against the database, run `bun run mcp` (write tools en
 - tRPC endpoint at `/api/trpc` is for internal frontend use; external agents should use REST
 - Content filtering (NSFW, HTML sanitization) applied on write paths
 - Media uploads stored in S3-compatible object storage
+- `/resume` — owner's resume page, active only when `enabled: true` in `config/resume.config.yml`; indexable only when global indexing is also enabled. Agents can read and modify it via the `get_resume_config`, `update_resume_config`, and `set_resume_enabled` MCP tools.
