@@ -16,15 +16,14 @@ async function registerServiceWorker() {
     return;
   }
 
-  // Dev: unregister and purge caches so stale bundles never survive a restart
+  // Dev: purge caches so stale bundles never survive a restart. The SW itself
+  // still registers — push subscribe() fails in Firefox when no SW was active
+  // before the click (see docs/pwa-guide.md, issue 13).
   if (isDev()) {
     try {
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (registration) await registration.unregister();
       const names = await caches.keys();
       await Promise.all(names.map((name) => caches.delete(name)));
     } catch (_) {}
-    return;
   }
 
   navigator.serviceWorker.register(SW_URL).catch((error) => {

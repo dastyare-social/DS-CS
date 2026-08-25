@@ -449,3 +449,23 @@ The `cache: "no-store"` bypasses the SW cache, ensuring a real network test. Rec
 **Fix**: Created `SafeImage` component (`src/components/safe-image.tsx`) that wraps `next/image` with an `onError` handler. On error, replaces the image with a `Loader2Icon` spinner (same one used in the app's loading states). Detects `fill` prop for correct positioning. No background color. All image usages across the app replaced with `SafeImage`. All `alt` attributes set to `""`.
 
 **Commit**: `04bf139`, `4f90a15`
+
+---
+
+### 13. Dev Bypass Broke Push (Firefox: "Error retrieving push subscription")
+
+**Symptom**: Enabling notifications on localhost fails with `DOMException: Error retrieving push subscription`. Safari/Chrome subscribe fine; only Firefox throws.
+
+**Root cause**: The dev bypass added to `register-pwa.tsx` (stale UI fix) unregistered the service worker and returned early on every page load. When the notifications modal then registered the SW on demand during the "Enable" click, Firefox rejected `pushManager.subscribe()` against the seconds-old registration — its push actor is not ready yet. This silently reverted half of the original push fix (`bcf3365`: SW always active from page load).
+
+**Fix**: Keep the dev cache purge (that is what actually fixes stale bundles — caches, not SW existence), but always register `/sw.js`, dev included. Never unregister on page load.
+
+```tsx
+if (isDev()) {
+  const names = await caches.keys();
+  await Promise.all(names.map((name) => caches.delete(name)));
+}
+navigator.serviceWorker.register(SW_URL);
+```
+
+**Recovery for affected browsers**: after deploying, unregister the site's service worker once (DevTools → Application → Service Workers → Unregister) and reload, then enable notifications again.
