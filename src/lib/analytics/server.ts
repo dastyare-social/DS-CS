@@ -2,9 +2,17 @@ import { PostHog } from "posthog-node";
 
 const apiKey = process.env.POSTHOG_API_KEY;
 // Accept both `POSTHOG_HOST` (dashboard naming) and `POSTHOG_API_HOST` (legacy repo name).
-const apiHost = process.env.POSTHOG_HOST || process.env.POSTHOG_API_HOST || "https://app.posthog.com";
+// Fall back to the client-side host (`NEXT_PUBLIC_POSTHOG_HOST`) so the server
+// POSTs to the same PostHog region as the browser. Defaults to US cloud.
+const apiHost =
+  process.env.POSTHOG_HOST ||
+  process.env.POSTHOG_API_HOST ||
+  process.env.NEXT_PUBLIC_POSTHOG_HOST ||
+  "https://us.i.posthog.com";
 
 let client: PostHog | null = null;
+
+export const getServerPostHogClient = () => getClient();
 
 const getClient = () => {
   if (!apiKey || !apiKey.trim()) return null;

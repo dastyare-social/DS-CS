@@ -35,6 +35,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1024.0",
     "@better-auth/api-key": "^1.6.23",
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "@posthog/mcp": "^0.12.0",
     "@radix-ui/react-context-menu": "^2.2.16",
     "@radix-ui/react-slot": "^1.2.4",
     "@scalar/api-reference-react": "^0.9.27",

@@ -25,9 +25,6 @@
   <a href="https://github.com/dastyare-social/DS-CS/issues">
     <img src="https://img.shields.io/github/issues/dastyare-social/DS-CS" alt="Issues" />
   </a>
-  <a href="https://github.com/dastyare-social/DS-CS/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/dastyare-social/DS-CS/ci.yml" alt="CI" />
-  </a>
 </p>
 
 <p align="center">
@@ -74,6 +71,85 @@ Every post you publish should work for you — not pad someone else's engagement
 
 ---
 
+## Pages
+
+| Route | Description |
+|-------|-------------|
+| **`/`** | **Home feed** — chronological post feed with infinite scroll, pinned post bar that cycles through pinned content, story avatar in the header, and a "Join My Channel" newsletter CTA at the bottom. |
+| **`/os`** | **Creator studio** — authenticated admin panel. Same feed but with full CRUD: create text/image/video/voice/file posts, edit, delete, pin/unpin, and upload media via presigned S3 URLs. Rich textarea composer with media attachment previews. |
+| **`/os/register`** | **Login** — two-step email/password sign-in via Better Auth. Email first, password fades in. |
+| **`/explore`** | **Explore** — dual-pane TikTok-style content explorer. Left: Shorts (vertical fullscreen video feed with double-tap like). Right: Threads (horizontal text+image/video feed with reactions). Auto-polls for new threads every 30s. |
+| **`/posts/[post_id]`** | **Single post** — permalink page for sharing individual posts. Tracks views, includes SEO ArticleSchema structured data, and generates a dynamic OG image for social media previews. |
+| **`/resume`** | **Resume / CV** — driven entirely by `config/resume.config.yml`. Toggle on/off without rebuild. Shows profile, experience, education, and contact sections. |
+| **`/docs`** | **API reference** — interactive Scalar UI for the REST API. |
+| **`/sitemap.xml`** | **Sitemap** — dynamic XML sitemap including all published posts. |
+| **`/robots.txt`** | **Robots** — allows public routes, blocks `/os/` and `/api/`. |
+| **`/llms.txt`** | **AI agent map** — structured content map for language models and crawlers. |
+
+---
+
+## Components
+
+### Post Context Menu
+
+<p align="center">
+  <img src="public/screenshots/context-menu.png" alt="Post context menu with emoji reactions" width="700" />
+</p>
+
+A fully custom-built right-click / long-press context menu — zero dependencies, built with React Context, Portals, and pointer event tracking.
+
+- **Right-click** (desktop) or **long-press** (mobile, 500ms hold) on any post opens a floating menu
+- **Emoji reaction bar** floats above the menu — tap any emoji to react instantly
+- **Menu items** adapt to context: public feed shows "Copy Post Link"; admin panel adds Pin, Edit, Delete, Copy Text, and retry for failed posts
+- Submenus, checkboxes, radio groups, and separators are built into the primitive system for extensibility
+
+### Stories
+
+<p align="center">
+  <img src="public/screenshots/story-viewer.png" alt="Story viewer with progress bars" width="350" />
+</p>
+
+Ephemeral image and video stories with a native-feeling viewer — not a horizontal avatar bar, but a full-screen vertical reel.
+
+- **Story viewer** opens as a 9:16 dialog with progress bars at the top (one per story, filling as it plays)
+- **Image stories**: 5-second fixed duration with `requestAnimationFrame` progress tracking
+- **Video stories**: progress driven by `onTimeUpdate`, auto-advances on end
+- **Navigation**: tap left/right halves of screen, or let it auto-advance
+- **Likes & views**: optimistic UI updates, heart button with count, view tracking per story
+- **Admin controls**: ellipsis menu with delete (confirm dialog) when logged in on `/os`
+- **Pre-load delay**: 500ms buffer before rendering media to prevent flash
+
+### Add Story Modal
+
+<p align="center">
+  <img src="public/screenshots/add-story-modal.png" alt="Add story modal with upload preview" width="700" />
+</p>
+
+Two-stage upload flow: file selection → 9:16 preview → direct-to-S3 upload → story creation.
+
+- **File selection**: native file input with `capture="environment"` for camera, aspect ratio validation (landscape/near-square rejected)
+- **Preview**: full-screen 9:16 dialog, videos auto-play with sound
+- **Upload**: direct browser-to-S3 via presigned URLs — no server round-trip for the file itself. Circular progress ring with percentage
+- **State machine**: `idle` → `uploading` → `creating` → `done` (auto-closes after 2s) or `failed` (retry button)
+- **Cancel protection**: warns before closing during active upload, aborts the in-flight request
+- **StoryPreviewModal**: alternative flow with dashed upload area, Change/Publish buttons, and local blob URL preview during upload
+
+### Dynamic OG Images
+
+<p align="center">
+  <img src="public/screenshots/og-image.png" alt="Dynamic OG image for social media previews" width="600" />
+</p>
+
+Every post gets a server-generated social media preview image — 2400×1260 PNG composed on-the-fly with `takumi-js`.
+
+- **Layout**: profile picture (325×325 circle) + channel name + publish date + post content (truncated to 200 chars) + view count + media type label
+- **Background**: textured `bg-image.png` with semi-transparent white overlay and subtle amber border
+- **Font**: Pally Regular loaded from disk
+- **Caching**: `Cache-Control: public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400`
+- **Endpoint**: `GET /api/og/posts/[postId]` — accessible to social media crawlers, explicitly allowed in `robots.txt`
+
+---
+
 ## The Problem
 
 Post on a platform you don't own, and the reach you build isn't really yours — one algorithm update, policy change, or suspension away from zero, no matter how good the content was.
@@ -89,6 +165,10 @@ DS-CS keeps that reach working for you instead: your content stays discoverable,
 | **Multi-format posts** | Text, image, video, voice, or file — each published in the format that reads best. |
 | **Shorts (vertical video)** | TikTok/Reels-style vertical video feed built in. |
 | **Stories** | Ephemeral image and video stories with view/like tracking. |
+| **Post context menu** | Custom right-click/long-press menu with emoji reactions, pin, edit, delete. |
+| **Dynamic OG images** | Server-generated 2400×1260 social preview for every post. |
+| **Explore page** | Dual-pane Shorts + Threads explorer with auto-polling. |
+| **Creator studio** | Full CRUD admin panel with rich composer and presigned S3 uploads. |
 | **AI-ready content** | Every post indexed for search engines, structured for AI agents, `llms.txt` sitemap included. |
 | **MCP server** | AI agents can call posts and stories as tools via `/api/mcp`. [Setup guide →](./docs/mcp-guide.md) |
 | **Push notifications** | Browser push notifications to subscribers when you publish. |
@@ -317,24 +397,35 @@ Every post is indexed for search engines and includes an `llms.txt` site map for
 src/
 ├── app/
 │   ├── (routes)/
-│   │   ├── (main)/           # OS — feed, pinned posts, stories, create post
-│   │   ├── explore/          # Public post listing
-│   │   └── register/         # Auth — sign up / sign in
+│   │   ├── (main)/           # / — home feed, pinned bar, story avatar, newsletter CTA
+│   │   ├── explore/          # /explore — dual-pane Shorts + Threads explorer
+│   │   ├── posts/[id]/       # /posts/:id — single post permalink + OG image metadata
+│   │   ├── resume/           # /resume — CV page from YAML config
+│   │   └── register/         # /register — auth (sign up / sign in)
 │   ├── api/
 │   │   ├── auth/             # Better Auth handler
 │   │   ├── mcp/              # MCP server (AI agent tool use)
-│   │   ├── og/               # Dynamic OpenGraph image generation
+│   │   ├── og/               # Dynamic OpenGraph image generation (takumi-js)
 │   │   ├── posts/            # REST API for posts (OpenAPI-documented)
 │   │   ├── stories/          # REST API for stories
 │   │   ├── push/             # Web push notification endpoints
+│   │   ├── upload/           # File upload + presigned S3 URLs
 │   │   └── trpc/             # Internal tRPC (used by dashboard)
 │   └── docs/                 # Scalar API reference UI
-├── components/               # React UI components
+├── components/
+│   ├── context-menu.tsx      # Custom right-click/long-press menu (Context + Portal + emoji bar)
+│   ├── stories.tsx           # Story viewer dialog (9:16 reel, progress bars, likes/views)
+│   ├── post.tsx              # Post card with context menu, reactions, media, safe-image
+│   ├── thread.tsx            # Explore page thread card (horizontal layout)
+│   ├── header.tsx            # App header with story avatar + admin controls
+│   ├── modals/               # Upload story, edit post, profile, newsletter modals
+│   ├── safe-image.tsx        # next/image wrapper with error fallback
+│   └── ...                   # Other UI components
 ├── lib/
 │   ├── actions/              # Server actions (post/story operations)
 │   ├── api/                  # Shared business logic (used by REST, tRPC, and actions)
 │   ├── auth/                 # Better Auth server + client + API key auth
-│   ├── db/                   # Drizzle schema + migrations
+│   ├── db/                   # Drizzle schema + migrations + seed
 │   ├── notifications/        # Web push notification logic
 │   └── trpc/                 # tRPC router (dashboard data layer)
 ├── store/                    # Zustand stores (posts, stories, etc.)

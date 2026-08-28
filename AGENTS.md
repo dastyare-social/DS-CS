@@ -20,6 +20,7 @@ Dastyare Social CS is a Next.js creator studio. It exposes a REST API for posts 
 | OpenAPI spec | `/openapi.json` | Machine-readable API contract |
 | Interactive docs | `/docs` | Scalar UI with MCP support |
 | LLM site map | `/llms.txt` | Curated links for LLM crawlers |
+| Project context | `/context.md` | Compact agent context — read first |
 | REST base | `/api` | All REST endpoints (see OpenAPI paths) |
 | Auth | `/api/auth/*` | Better Auth (sign-in, sessions, API keys) |
 | tRPC | `/api/trpc` | Internal frontend RPC — avoid for external integrations |
@@ -241,7 +242,7 @@ This project sends analytics to PostHog for both client and server events. Agent
 	- `NEXT_PUBLIC_POSTHOG_HOST` — custom host for self-hosted PostHog (defaults to `https://app.posthog.com`).
 
 - Event names emitted by the server (important for agent telemetry and audit):
-	- `llm_asset_requested` → properties: `{ asset: string, path: string }` (when `/openapi.json`, `/llms.txt`, or `/agents.md` are requested)
+	- `llm_asset_requested` → properties: `{ asset: string, path: string }` (when `/openapi.json`, `/llms.txt`, `/agents.md`, or `/context.md` are requested)
 	- `posts_list_requested` → `{ page, limit, has_search, type }` (GET `/api/posts` list)
 	- `post_requested` → `{ post_id }` (GET `/api/posts/{id}`)
 	- `post_created` → `{ post_id, post_type, has_media, content_length }`
@@ -257,10 +258,13 @@ This project sends analytics to PostHog for both client and server events. Agent
 	- `story_viewed` → `{ story_id, views }`
 	- `story_liked` → `{ story_id, direction, likes }`
 	- `story_deleted` → `{ story_id }`
-	- `push_subscription_saved` → `{ endpoint, active, user_agent }`
-	- `push_subscription_failed` → `{ error }`
-	- `push_notifications_sent` → `{ sent, failed, total }`
-	- `push_notifications_failed` → `{ error }`
+  - `push_subscription_saved` → `{ endpoint, active, user_agent }`
+  - `push_subscription_failed` → `{ error }`
+  - `push_notifications_sent` → `{ sent, failed, total }`
+  - `push_notifications_failed` → `{ error }`
+  - `mcp_tool_called` → `{ method, tool, authenticated, isError }` — MCP tool calls are captured after the response is available, so `tool` names and per-call `isError` (success/failure) are tracked for observability
+
+Client events (browser) include `client_error` → `{ message, stack, error_name, source, url }` emitted on uncaught exceptions / unhandled promise rejections via `setupClientErrorTracking()` in `src/lib/analytics/client.ts`.
 
 Guidance for agents:
 

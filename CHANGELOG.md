@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT license, security policy, code of conduct, issue/PR templates
 - Open-source readiness cleanup (neutralized default profile config, fixed
   placeholder URLs, fixed CI S3 env var name)
+- `CONTEXT.md` served at `/context.md` — compact agent context surfaced in `llms.txt`
+- MCP tool call error tracking — `mcp_tool_called` now carries `tool` + `isError`
+- Client error tracking — `window.onerror` / `unhandledrejection` → `client_error` event
 
 ## [0.1.0] - Initial release
 

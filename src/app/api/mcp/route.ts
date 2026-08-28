@@ -108,6 +108,22 @@ async function handle(req: NextRequest): Promise<Response> {
     parsedBody !== null &&
     (parsedBody as { method?: unknown }).method === "initialize";
 
+  // Detect MCP tool calls (some clients use `tools/call`, older ones use
+  // `tools/call/<name>`). Used to track per-tool success/failure in analytics.
+  const toolCallInfo = (() => {
+    if (typeof parsedBody !== "object" || parsedBody === null) return null;
+    const method = (parsedBody as { method?: string }).method;
+    if (typeof method === "string" && method.startsWith("tools/call")) {
+      const params = (parsedBody as { params?: { name?: unknown } }).params;
+      const name =
+        typeof params?.name === "string"
+          ? params.name
+          : method.replace("tools/call", "").replace(/^\//, "");
+      return { name };
+    }
+    return null;
+  })();
+
   let session: Session;
   if (sessionId && sessions.has(sessionId)) {
     session = sessions.get(sessionId)!;
@@ -129,10 +145,12 @@ async function handle(req: NextRequest): Promise<Response> {
   session.authenticated = isAuthenticated(req);
   await session.connected;
 
-  // Track MCP tool calls
+  // Track MCP tool calls (enriched with per-tool success/failure below, after
+  // the response is available). Non-tool methods (initialize, resources/list,
+  // tools/list, prompts/*) are tracked generically here.
   if (isInitialize) {
     // already tracked above
-  } else if (parsedBody && typeof parsedBody === "object") {
+  } else if (parsedBody && typeof parsedBody === "object" && !toolCallInfo) {
     const method = (parsedBody as { method?: string }).method;
     if (method) {
       captureServerEvent("mcp_tool_called", {
@@ -155,9 +173,43 @@ async function handle(req: NextRequest): Promise<Response> {
     request = req;
   }
 
-  const response = await session.transport.handleRequest(request, {
+  let response = await session.transport.handleRequest(request, {
     parsedBody,
   });
+
+  // Capture tool-call outcomes (isError) for observability. In JSON response
+  // mode the body is a fully buffered JSON-RPC message, so it is safe to read
+  // and re-emit identically.
+  if (toolCallInfo) {
+    try {
+      const raw = await response.text();
+      let errored = false;
+      try {
+        const parsed = JSON.parse(raw);
+        const result = Array.isArray(parsed) ? parsed[0]?.result : parsed?.result;
+        errored = Boolean(
+          result?.isError === true ||
+            // JSON-RPC error responses (result missing / error present)
+            (!Array.isArray(parsed) && parsed?.error)
+        );
+      } catch {
+        errored = false;
+      }
+      captureServerEvent("mcp_tool_called", {
+        method: "tools/call",
+        tool: toolCallInfo.name,
+        authenticated: session.authenticated,
+        isError: errored,
+      });
+      response = new Response(raw, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
+    } catch {
+      // If we can't inspect the body, leave the response untouched.
+    }
+  }
 
   if (req.method === "DELETE" && sessionId) {
     sessions.delete(sessionId);

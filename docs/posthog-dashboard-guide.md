@@ -55,6 +55,7 @@ POSTHOG_API_KEY="phx_..."
 | `push_subscription_enabled` | `endpoint` | Notifications enabled |
 | `push_subscription_disabled` | `endpoint` | Notifications disabled |
 | `push_subscription_failed` | `error` or `status` | Subscription error |
+| `client_error` | `message`, `stack`, `error_name`, `source`, `url` | Uncaught exception or unhandled rejection |
 
 ### Server Events (API)
 
@@ -82,7 +83,7 @@ POSTHOG_API_KEY="phx_..."
 | `push_notifications_skipped` | `reason` | Push skipped |
 | `llm_asset_requested` | `asset`, `path` | LLM/crawler hit endpoint |
 | `mcp_session_created` | `authenticated` | MCP session initialized |
-| `mcp_tool_called` | `method`, `authenticated` | MCP tool invoked |
+| `mcp_tool_called` | `method`, `tool`, `authenticated`, `isError` | MCP tool invoked (tool calls carry `tool` + `isError` for success/failure tracking) |
 
 ---
 
@@ -261,8 +262,9 @@ POSTHOG_API_KEY="phx_..."
    - Insight: Pie chart — `mcp_tool_called` where `authenticated = true` vs `false`
 
 5. **MCP Tool Call Success Rate**
-   - Insight: Trend — `mcp_tool_called` count vs error responses
-   - (Requires additional error tracking — future enhancement)
+   - Insight: Trend — `mcp_tool_called` where `isError = true` vs `false`
+   - Breakdown by: `tool`
+   - Success rate = `countIf(isError = false) / count()` — now implemented (see below)
 
 ---
 
@@ -503,6 +505,14 @@ When PostHog env vars are not set, all analytics silently no-op:
 - `disable_session_recording: true` — no session replay
 - No personally identifiable information in event properties (only `user.id`)
 - Server events default to `distinctId: "anonymous"`
+- `client_error` captures only error message/stack + current URL, never PII
+
+### Client Error Tracking
+
+`setupClientErrorTracking()` (called from the `Analytics` client component) installs
+`window.onerror` and `unhandledrejection` listeners that report to PostHog as
+`client_error` events. It is idempotent and no-ops gracefully when PostHog env is
+unset. See `src/lib/analytics/client.ts`.
 
 ---
 

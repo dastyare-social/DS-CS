@@ -11,6 +11,7 @@ Dastyare Social CS lets creators publish threads, shorts (vertical video), media
 - [Interactive API docs (Scalar + MCP)](/docs): Full OpenAPI reference with try-it-out and MCP tool discovery
 - [OpenAPI spec (JSON)](/openapi.json): Machine-readable API contract for tool use and code generation
 - [AGENTS.md](/agents.md): Detailed agent guide with endpoint examples and auth flow
+- [CONTEXT.md](/context.md): Compact project context — read this first for the quick answer
 
 ## API overview
 

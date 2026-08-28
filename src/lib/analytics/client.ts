@@ -76,3 +76,65 @@ export async function identifyClient(
     console.error("PostHog identify failed", error);
   }
 }
+
+/**
+ * Capture a client-side error (uncaught exception or unhandled promise
+ * rejection) to PostHog as a `client_error` event. Deliberately uses a custom
+ * event (not PostHog's `$exception` autocapture) to stay consistent with the
+ * rest of the app's manual event taxonomy and the `autocapture: false` config.
+ */
+let errorTrackingInstalled = false;
+
+export async function captureClientError(
+  error: unknown,
+  context?: { source?: string; info?: unknown }
+) {
+  const ph = await initPostHog();
+  if (!ph) return;
+
+  const message =
+    error instanceof Error ? error.message : typeof error === "string" ? error : "Unknown client error";
+  const stack = error instanceof Error ? error.stack : undefined;
+  const name = error instanceof Error ? error.name : undefined;
+
+  try {
+    ph.capture("client_error", {
+      message,
+      stack,
+      error_name: name,
+      source: context?.source ?? "throw",
+      url: typeof window !== "undefined" ? window.location.href : undefined,
+      ...(context?.info ? { info: context.info } : {}),
+    });
+  } catch (e) {
+    console.error("PostHog client error capture failed", e);
+  }
+}
+
+/**
+ * Install global listeners for uncaught exceptions (`window.onerror`) and
+ * unhandled promise rejections (`unhandledrejection`) and report them to
+ * PostHog. Idempotent — safe to call from a client component.
+ */
+export function setupClientErrorTracking() {
+  if (typeof window === "undefined" || errorTrackingInstalled) return;
+  errorTrackingInstalled = true;
+
+  window.addEventListener("error", (event) => {
+    void captureClientError(event.error ?? event.message, {
+      source: "window.onerror",
+      info: {
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+      },
+    });
+  });
+
+  window.addEventListener("unhandledrejection", (event) => {
+    const reason = event.reason;
+    void captureClientError(reason, {
+      source: "unhandledrejection",
+    });
+  });
+}

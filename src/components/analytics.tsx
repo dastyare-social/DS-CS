@@ -3,7 +3,11 @@
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
-import { captureClientEvent, identifyClient } from "@/lib/analytics/client";
+import {
+  captureClientEvent,
+  identifyClient,
+  setupClientErrorTracking,
+} from "@/lib/analytics/client";
 
 type AnalyticsUser = {
   id?: string;
@@ -34,6 +38,10 @@ export default function Analytics() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const session = useSession();
+
+  useEffect(() => {
+    setupClientErrorTracking();
+  }, []);
 
   useEffect(() => {
     const identity = getSessionIdentity(session.data);

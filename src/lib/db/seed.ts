@@ -10,6 +10,7 @@ type SeedPost = {
   media?: { url: string; width: number; height: number } | null;
   views: string;
   hoursAgo: number;
+  pinned?: boolean;
 };
 
 const POSTS: SeedPost[] = [
@@ -29,6 +30,7 @@ So I stopped building on land I don't control. DS-CS is where I post now — my 
 If your content is the asset, you should own the ground it sits on.`,
     views: "412",
     hoursAgo: 6 * 24,
+    pinned: true,
   },
   {
     id: "seed-post-2-compounding-content",
@@ -96,6 +98,7 @@ DS-CS is open source and free to use. No license fee, no seat limit, no "upgrade
 The pitch isn't "free forever." The pitch is: nobody can hold your audience over your head to raise the price later.`,
     views: "301",
     hoursAgo: 1 * 24,
+    pinned: true,
   },
   {
     id: "seed-post-7-stories",
@@ -138,10 +141,10 @@ async function main() {
   for (const post of POSTS) {
     const createdAt = new Date(Date.now() - post.hoursAgo * 60 * 60 * 1000);
     await connection`
-      INSERT INTO posts (id, type, content, views, media, created_at, updated_at)
+      INSERT INTO posts (id, type, content, views, media, pinned_at, created_at, updated_at)
       VALUES (${post.id}, ${post.type}, ${post.content}, ${post.views}, ${
         post.media ? JSON.stringify(post.media) : null
-      }, ${createdAt}, ${createdAt})
+      }, ${post.pinned ? createdAt : null}, ${createdAt}, ${createdAt})
       ON CONFLICT (id) DO NOTHING
     `;
 
