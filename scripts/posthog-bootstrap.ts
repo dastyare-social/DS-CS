@@ -15,11 +15,18 @@
  *   - PH_HOST                  (optional) defaults to https://us.i.posthog.com
  *   - PH_PROJECT_TOKEN         (optional) phc_ project token — used only to
  *                              sanity-check/report; NOT required to provision.
- *   - PH_DASHBOARD_LABEL       (optional) name of the project/repo this run
- *                              provisions for, e.g. "Workshop". When set, every
- *                              dashboard and insight name is suffixed with
- *                              " — {label}" so per-project suites can coexist in
- *                              one PostHog account (e.g. "Overview — Workshop").
+ *
+ * The dashboard label is a hardcoded constant (DASHBOARD_LABEL) below — every
+ * dashboard and insight name is suffixed with " — {label}" so per-project
+ * suites can coexist in one PostHog account (e.g. "Push Notifications — CS").
+ *
+ * It also:
+ *   - enables the session replay and heatmaps products for the project,
+ *   - prompts for your app's remote deployed URL (used for the saved heatmaps;
+ *     set PH_DEPLOYED_URL to skip the prompt),
+ *   - attempts to create the app's saved heatmaps (HEATMAPS below) targeting
+ *     that URL, via POST /api/projects/{id}/saved/ (supported on a personal API
+ *     key with the heatmaps:write scope).
  *
  * The script validates the env vars and the personal API key (user identity +
  * project access), then provisions idempotently. Re-running is safe: existing
@@ -29,8 +36,11 @@
  */
 
 import "dotenv/config";
+import { createInterface } from "readline";
 
 const DEFAULT_HOST = "https://us.i.posthog.com";
+
+const DASHBOARD_LABEL = "CS";
 
 // ---------------------------------------------------------------------------
 // Config / env validation
@@ -41,7 +51,7 @@ interface Env {
   personalApiKey: string;
   host: string;
   projectToken: string | undefined;
-  dashboardLabel: string | undefined;
+  dashboardLabel: string;
 }
 
 function loadEnv(): Env {
@@ -49,13 +59,13 @@ function loadEnv(): Env {
   const personalApiKey = (process.env.PH_PERSONAL_API_KEY ?? "").trim();
   const host = (process.env.PH_HOST ?? "").trim() || DEFAULT_HOST;
   const projectToken = (process.env.PH_PROJECT_TOKEN ?? "").trim() || undefined;
-  const dashboardLabel = (process.env.PH_DASHBOARD_LABEL ?? "").trim() || undefined;
+  const dashboardLabel = DASHBOARD_LABEL;
 
   return { projectId, personalApiKey, host, projectToken, dashboardLabel };
 }
 
 const MISSING_LABELS: Array<[keyof Env, string, string]> = [
-  ["personalApiKey", "PH_PERSONAL_API_KEY", "phx_ personal API key with admin scope"],
+  ["personalApiKey", "PH_PERSONAL_API_KEY", "phx_ personal API key with admin scope"]
 ];
 
 function validateEnv(env: Env): boolean {
@@ -472,6 +482,143 @@ const DASHBOARDS: DashboardSpec[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Heatmaps: enable the product and create the app's saved heatmaps
+// ---------------------------------------------------------------------------
+
+const PROMPT_MAX_ATTEMPTS = 3;
+
+function normalizeDeployedUrl(input: string): string | null {
+  const trimmed = (input ?? "").trim();
+  if (!trimmed) return null;
+  let url: URL;
+  try {
+    url = /^https?:\/\//i.test(trimmed) ? new URL(trimmed) : new URL("https://" + trimmed);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  return (url.origin + url.pathname).replace(/\/+$/, "");
+}
+
+function readLine(question: string): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolve) => {
+    rl.question(question + " ", (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+/**
+ * The saved heatmaps target your remote deployed app. Ask the operator for that
+ * URL up front (PH_DEPLOYED_URL skips the prompt for automation), then build the
+ * absolute heatmap URLs from it.
+ */
+async function promptDeployedUrl(defaultDomain: string): Promise<string> {
+  const fromEnv = (process.env.PH_DEPLOYED_URL ?? "").trim();
+  if (fromEnv) {
+    console.log("  deployed url   : " + fromEnv + "  (from PH_DEPLOYED_URL)");
+    return normalizeDeployedUrl(fromEnv) ?? fromEnv;
+  }
+  for (let attempt = 1; attempt <= PROMPT_MAX_ATTEMPTS; attempt++) {
+    const answer = await readLine("Enter your remote deployed project URL (e.g. https://" + defaultDomain + "):");
+    const normalized = normalizeDeployedUrl(answer);
+    if (normalized) return normalized;
+    console.error("✗ '" + answer + "' is not a valid http(s) URL — try again.");
+  }
+  console.error("✗ Aborting after " + PROMPT_MAX_ATTEMPTS + " invalid attempts — nothing was created.");
+  process.exit(1);
+}
+
+interface HeatmapSpec {
+  name: string;
+  path: string;
+}
+
+const HEATMAPS: HeatmapSpec[] = [
+  { name: "Feed", path: "/" },
+  { name: "Explore", path: "/explore" }
+];
+
+async function ensureHeatmaps(env: Env, label: string | undefined, baseUrl: string): Promise<void> {
+  try {
+    await api(env, "PATCH", "/api/environments/" + env.projectId + "/", { heatmaps_opt_in: true });
+    const check = await api<{ heatmaps_opt_in?: boolean }>(
+      env,
+      "GET",
+      "/api/environments/" + env.projectId + "/"
+    );
+    if (check.heatmaps_opt_in) {
+      console.log("  ✓ Heatmaps product enabled for project " + env.projectId + " (verified).");
+    } else {
+      console.warn("  ⚠ Heatmaps product flag did not persist — check the project settings UI.");
+    }
+  } catch (err) {
+    console.warn(
+      "  ⚠ Could not enable/verify the heatmaps product: " + (err instanceof Error ? err.message : String(err))
+    );
+    return;
+  }
+
+  const nameFor = (base: string) => (label ? base + " — " + label : base);
+  const manual: string[] = [];
+
+  for (const heatmap of HEATMAPS) {
+    const displayName = nameFor(heatmap.name);
+    const url = baseUrl + heatmap.path;
+    try {
+      await api(env, "POST", "/api/projects/" + env.projectId + "/saved/", {
+        name: displayName,
+        url: url,
+        data_url: url,
+        type: "screenshot",
+        block_consent_modals: true,
+      });
+      console.log("  + created heatmap: " + displayName + "  (" + url + ")");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if ((err as ApiError).status === 403 || /personal API key/i.test(msg) || /permission_denied/i.test(msg)) {
+        manual.push(url + "  (" + displayName + ")");
+      } else {
+        console.warn('  ⚠ Could not create heatmap "' + displayName + '" (' + url + "): " + msg);
+      }
+    }
+  }
+
+  if (manual.length) {
+    console.warn(
+      "\n  ⚠ Could not create some saved heatmaps via the personal API key.\n" +
+        "    The heatmaps product is enabled. Create these saved heatmaps from the UI:\n" +
+        "      https://us.posthog.com/project/" + env.projectId + "/heatmaps\n" +
+        manual.map((u) => "        - " + u).join("\n")
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Replay: enable the session replay product for the project
+// ---------------------------------------------------------------------------
+
+async function ensureReplay(env: Env): Promise<void> {
+  try {
+    await api(env, "PATCH", "/api/environments/" + env.projectId + "/", { session_recording_opt_in: true });
+    const check = await api<{ session_recording_opt_in?: boolean }>(
+      env,
+      "GET",
+      "/api/environments/" + env.projectId + "/"
+    );
+    if (check.session_recording_opt_in) {
+      console.log("  ✓ Session replay product enabled for project " + env.projectId + " (verified).");
+    } else {
+      console.warn("  ⚠ Session replay product flag did not persist — check the project settings UI.");
+    }
+  } catch (err) {
+    console.warn("  ⚠ Could not enable/verify session replay: " + (err instanceof Error ? err.message : String(err)));
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -493,6 +640,9 @@ async function main() {
     process.exit(1);
   }
 
+  const deployedUrl = await promptDeployedUrl("cs.dastyare.social");
+  console.log("  → heatmaps will target: " + deployedUrl);
+
   console.log("\nProvisioning …\n");
   console.log("Dashboards & insights\n");
 
@@ -506,6 +656,12 @@ async function main() {
       await ensureInsight(env, { name: nameFor(insight.name), query: insight.query }, dashboard.id);
     }
   }
+
+  console.log("\nReplay\n");
+  await ensureReplay(env);
+
+  console.log("\nHeatmaps\n");
+  await ensureHeatmaps(env, label, deployedUrl);
 
   console.log("\n✓ Bootstrap complete.");
   console.log("  Project: " + env.projectId + "  Host: " + env.host);
