@@ -10,18 +10,17 @@
 1. [Environment Variables](#environment-variables)
 2. [Event Taxonomy](#event-taxonomy)
 3. [Overview](#overview)
-4. [Onboarding & Conversion](#onboarding--conversion)
-5. [Content Engagement](#content-engagement)
-6. [User Growth](#user-growth)
-7. [Push Notifications](#push-notifications)
-8. [LLM & AI Visibility](#llm--ai-visibility)
-9. [MCP Usage](#mcp-usage)
-10. [Reliability](#reliability)
-11. [Funnels](#funnels)
-12. [Cohorts & Retention](#cohorts--retention)
-13. [Session Replay](#session-replay)
-14. [Alerts](#alerts)
-15. [PostHog MCP Integration](#posthog-mcp-integration)
+4. [Content Engagement](#content-engagement)
+5. [Push Notifications](#push-notifications)
+6. [LLM & AI Visibility](#llm--ai-visibility)
+7. [MCP Usage](#mcp-usage)
+8. [User Growth & Retention](#user-growth--retention)
+9. [Reliability](#reliability)
+10. [Funnels](#funnels)
+11. [Cohorts & Retention](#cohorts--retention)
+12. [Session Replay](#session-replay)
+13. [Alerts](#alerts)
+14. [PostHog MCP Integration](#posthog-mcp-integration)
 
 ---
 
@@ -103,35 +102,17 @@ client/founder captures.
 
 ## Overview
 
-**Purpose:** High-level site and product health — visitors, pageviews, performance and content creation. Provisioned by the [PostHog Bootstrap](#posthog-bootstrap) script.
+**Purpose:** High-level site and product health — visitors, pageviews and content creation. Provisioned by the [PostHog Bootstrap](#posthog-bootstrap) script.
 
 ### Widgets
 
-1. **Unique visitors (DAU)** — Trends, distinct `$pageview`
-2. **Weekly active users (WAU)** — Trends, weekly-active `$pageview`
-3. **Monthly active users (MAU)** — Trends, monthly-active `$pageview`
+1. **Unique Visitors (DAU)** — Trends, distinct `$pageview`
+2. **Weekly Active Users (WAU)** — Trends, weekly-active `$pageview`
+3. **Monthly Active Users (MAU)** — Trends, monthly-active `$pageview`
 4. **Pageviews** — Trends, total `$pageview`
-5. **Web vitals** — Trends, total `$web_vitals`
-6. **Pageviews by page type** — Trends, `$pageview` broken down by `page_type`
-7. **Top pages** — Trends, `$pageview` broken down by `path` (top 20)
-8. **Post creation rate** — Trends, total `post_created`
-9. **New visitors (first time)** — Trends, `$pageview` first-time-for-user math
-
----
-
-## Onboarding & Conversion
-
-**Purpose:** Funnels across the visitor → registration → content journey.
-
-### Widgets
-
-1. **Registration funnel** — `landing_page_viewed` → `registration_cta_clicked` → `registration_form_continue` → `registration_form_submit_success` → `confirmation_page_viewed`
-2. **Landing engagement** — `$pageview` → `scroll_depth_50` → `registration_cta_clicked`
-3. **CTA performance by section** — `registration_cta_clicked` → `registration_form_submit_success`, broken down by `cta_location`
-4. **Quiz & registration journey** — `landing_page_viewed` → `questions_page_viewed` → `score_result_viewed` → `registration_form_submit_success`
-5. **Visitor to subscriber** — `$pageview` → `push_subscription_enabled` (30-day window)
-6. **Visitor to creator** — `$pageview` → `post_created` (30-day window)
-7. **Post to engagement** — `post_created` → `post_viewed` → `post_reacted` (7-day window)
+5. **Top Pages** — Trends, `$pageview` broken down by `pathname` (top 20)
+6. **Post Creation Rate** — Trends, total `post_created`
+7. **Story Creation Rate** — Trends, total `story_created`
 
 ---
 
@@ -141,24 +122,12 @@ client/founder captures.
 
 ### Widgets
 
-1. **Posts by type** — Trends, `post_created` broken down by `post_type` (`text`, `image`, `video`, `voice`, `file`)
-2. **Post views over time** — Trends, total `post_viewed`
-3. **Reactions per post** — Trends, `post_reacted` broken down by `emoji`
-4. **Most reacted posts** — Trends, `post_reacted` broken down by `post_id` (top 20)
-5. **Media vs text-only posts** — Trends, `post_created` broken down by `has_media`
-6. **Story engagement** — Trends, `story_viewed` + `story_liked`
-
----
-
-## User Growth
-
-**Purpose:** Acquisition and retention.
-
-### Widgets
-
-1. **New visitors (first time)** — Trends, `$pageview` first-time-for-user math (reused from Overview)
-2. **Weekly retention** — Retention of `$pageview`, weekly, 8 intervals
-3. **Push opt-ins vs opt-outs** — Trends, `push_subscription_enabled` vs `push_subscription_disabled`
+1. **Posts by Type** — Trends, `post_created` broken down by `post_type` (`text`, `image`, `video`, `voice`, `file`)
+2. **Media vs Text-Only Posts** — Trends, `post_created` broken down by `has_media`
+3. **Post Views Over Time** — Trends, total `post_viewed`
+4. **Reactions Per Post** — Trends, `post_reacted` broken down by `emoji`
+5. **Most Reacted Posts** — Trends, `post_reacted` broken down by `post_id` (top 20)
+6. **Story Views & Likes** — Trends, `story_viewed` + `story_liked`
 
 ---
 
@@ -168,10 +137,11 @@ client/founder captures.
 
 ### Widgets
 
-1. **Push subscriptions over time** — Trends, `push_subscription_enabled` + `push_subscription_disabled`
-2. **Push send volume** — Trends, total `push_notifications_sent`
-3. **Push sends vs skipped** — Trends, `push_notifications_sent` vs `push_notifications_skipped`
-4. **Push subscription failures** — Trends, total `push_subscription_failed`
+1. **Push Send Volume** — Trends, total `push_notifications_sent`
+2. **Push Sends vs Skipped** — Trends, `push_notifications_sent` vs `push_notifications_skipped`
+3. **Push Notification Failures** — Trends, total `push_notifications_failed`
+4. **Push Subscriptions Opt-Ins vs Opt-Outs** — Trends, `push_subscription_saved` vs `push_subscription_disabled`
+5. **Push Subscription Failures** — Trends, total `push_subscription_failed`
 
 ---
 
@@ -181,10 +151,9 @@ client/founder captures.
 
 ### Widgets
 
-1. **LLM asset requests** — Trends, `llm_asset_requested` broken down by `asset` (`llms.txt`, `agents.md`)
-2. **LLM vs human traffic** — Trends, `$pageview` broken down by `page_type`
-3. **OpenAPI spec downloads** — Trends, `$pageview` where `path = /openapi.json`
-4. **MCP discovery (sessions by auth)** — Trends, `mcp_session_created` broken down by `authenticated`
+1. **LLM Asset Requests** — Trends, `llm_asset_requested` broken down by `asset` (`llms.txt`, `agents.md`, `context.md`)
+2. **MCP Sessions by Auth** — Trends, `mcp_session_created` broken down by `authenticated`
+3. **MCP Auth vs Anonymous** — Trends, `mcp_tool_called` broken down by `authenticated`
 
 ---
 
@@ -194,24 +163,31 @@ client/founder captures.
 
 ### Widgets
 
-1. **MCP sessions created** — Trends, total `mcp_session_created`
-2. **MCP tool calls** — Trends, total `mcp_tool_called`
-3. **Most used MCP tools** — Trends, `mcp_tool_called` broken down by `tool` (top 20)
-4. **MCP auth vs anonymous** — Trends, `mcp_tool_called` broken down by `authenticated`
-5. **MCP tool errors** — Trends, `mcp_tool_called` broken down by `isError`
-6. **Server key probes** — Trends, total `server_key_probe`
+1. **MCP Tool Calls Over Time** — Trends, total `mcp_tool_called`
+2. **Most Used MCP Tools** — Trends, `mcp_tool_called` broken down by `tool` (top 20)
+3. **MCP Tool Errors** — Trends, `mcp_tool_called` broken down by `isError`
+
+---
+
+## User Growth & Retention
+
+**Purpose:** Acquisition and retention.
+
+### Widgets
+
+1. **New Visitors (First Time)** — Trends, `$pageview` first-time-for-user math (reused from Overview)
+2. **Weekly Retention** — Retention of `$pageview`, weekly, 8 intervals
 
 ---
 
 ## Reliability
 
-**Purpose:** Performance and client / server errors.
+**Purpose:** Performance and client-side errors.
 
 ### Widgets
 
-1. **Web vitals** — Trends, total `$web_vitals` (reused from Overview)
-2. **Uncaught exceptions** — Trends, total `$exception`
-3. **Client errors** — Trends, total `client_error`
+1. **Web Vitals** — Trends, total `$web_vitals`
+2. **Client Errors** — Trends, total `client_error`
 
 ---
 
@@ -468,13 +444,20 @@ unset. See `src/lib/analytics/client.ts`.
 
 ## PostHog Bootstrap
 
-`scripts/posthog-bootstrap.ts` provisions **the same neutral dashboard suite on
-every account** via the public REST API — no audience-specific folders, no
-"client vs dev-team" split. This is the single source of truth for "the
-dashboards this product ships with": 8 dashboards and ~40 insights (see
-[Overview](#overview) through [Reliability](#reliability) above). Dashboard and
-insight names are reused across both the founder project (103916) and the
-internal product project (581705), so charts are identical everywhere.
+`scripts/posthog-bootstrap.ts` provisions **this product's dashboard suite** via
+the public REST API. It only references events the social app actually captures
+(`post_*`, `story_*`, `push_*`, `mcp_*`, `llm_asset_requested`, `$pageview`,
+`$web_vitals`, `client_error`) — no insight is created for features this app
+does not have. This is the single source of truth for "the dashboards this
+product ships with": 7 dashboards (see [Overview](#overview) through
+[Reliability](#reliability) above) plus their insights. Global metrics shared
+with other products (DAU, weekly retention, web vitals) keep the same insight
+names, but push/MCP/LLM dashboards exist only here.
+
+The suite is provisioned on both the founder project (103916) and the internal
+product project (581705). When several products share a PostHog account, run the
+bootstrap per product with `PH_DASHBOARD_LABEL` set so every dashboard and
+insight is suffixed ` — {product}` (e.g. `Push Notifications — CS`).
 
 Run it with:
 
@@ -489,6 +472,7 @@ It reads the target project from the environment:
 | `PH_PROJECT_ID` | no | Numeric id of the PostHog project — auto-discovered from the key's `@current` project when unset |
 | `PH_PERSONAL_API_KEY` | yes | `phx_` personal API key with **admin** scope |
 | `PH_HOST` | no | Defaults to `https://us.i.posthog.com` |
+| `PH_DASHBOARD_LABEL` | no | Product name used as the ` — {label}` suffix so per-product suites coexist in one account |
 | `PH_PROJECT_TOKEN` | no | `phc_` project token — informational only |
 
 These are usually defined in the repo's `.env` (loaded automatically by the
@@ -506,10 +490,11 @@ The script:
 2. Preflights the personal API key — verifies it resolves to a user and can
    access the target project. Fails without making changes if access is
    insufficient.
-3. Provisions idempotently: 8 dashboards plus each dashboard's insights.
-   Existing dashboards/insights are found by name and reused (and attached to
-   the right dashboards), never duplicated. Re-running is safe.
-4. Prints a summary of what was created or already present.
+3. Provisions idempotently: each dashboard plus its insights. Existing
+   dashboards/insights are found by name and reused (and attached to the right
+   dashboards), never duplicated. Re-running is safe.
+4. Retries transient 429/5xx responses with backoff instead of aborting.
+5. Prints a summary of what was created or already present.
 
 Example for the internal product project:
 
@@ -517,6 +502,7 @@ Example for the internal product project:
 PH_PROJECT_ID=581705 \
 PH_PERSONAL_API_KEY=phx_... \
 PH_HOST=https://us.i.posthog.com \
+PH_DASHBOARD_LABEL=CS \
 bun run bootstrap:posthog
 ```
 
