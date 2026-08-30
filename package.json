@@ -25,7 +25,8 @@
     "db:check": "drizzle-kit check",
     "openapi:generate": "bunx next-openapi-gen generate",
     "validate:sitemap": "node scripts/validate-sitemap.js",
-    "mcp": "tsx scripts/mcp-server.ts"
+    "mcp": "tsx scripts/mcp-server.ts",
+    "bootstrap:posthog": "tsx scripts/posthog-bootstrap.ts"
   },
   "overrides": {
     "strip-json-comments": "3.1.1"

@@ -129,7 +129,8 @@ All documented in `.env.example` with comments. Key groups:
 | Media/S3 | `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME`, `S3_FORCE_PATH_STYLE`, `S3_PUBLIC_BASE_URL`, `MEDIA_MAX_*_SIZE_MB`, `MEDIA_ALLOWED_MIME_TYPES`, `MEDIA_KEY_PREFIX` |
 | Push | `NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY`, `WEBPUSH_PRIVATE_KEY`, `WEBPUSH_SUBJECT` |
 | App | `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_ANIMATED_EMOJIES`, `DS_SH_URL`, `DS_SH_API_KEY` |
-| Analytics | `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`, `POSTHOG_API_KEY` |
+| Analytics | `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`, `POSTHOG_API_KEY`, optional `DISABLE_DEV_TEAM_PH` |
+| PostHog bootstrap (dev tooling) | `PH_PERSONAL_API_KEY` (`phx_` + admin scope); optional `PH_PROJECT_ID` (auto-discovered), `PH_HOST` — used by `bootstrap:posthog` |
 | SEO | `NEXT_PUBLIC_ALLOW_INDEXING`, `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE`, `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION*`, `NEXT_PUBLIC_ADDITIONAL_IMAGE_DOMAINS` |
 
 **Important conventions:**
@@ -157,6 +158,7 @@ All documented in `.env.example` with comments. Key groups:
 | `bun run openapi:generate` | Regenerate `public/openapi.json` from route JSDoc |
 | `bun run validate:sitemap` | Validate generated sitemap |
 | `bun run mcp` | Start the standalone stdio MCP server |
+| `bun run bootstrap:posthog` | Provision the standard PostHog dashboard suite (8 dashboards + ~40 insights) onto a project (see `docs/posthog-dashboard-guide.md` → PostHog Bootstrap) |
 | `bunx tsc --noEmit` | Type-check (no emit) |
 | `bunx playwright test` | Run Playwright e2e tests (if configured) |
 

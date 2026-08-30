@@ -21,6 +21,12 @@ const devRelay = getDevRelayConfig();
 const proxyUrl = devRelay?.url;
 const proxyToken = devRelay?.token;
 
+// Set DISABLE_DEV_TEAM_PH=true to stop relaying server events to the dev-team
+// PostHog project (the fan-out via our Cloudflare proxy). The direct
+// client/founder captures keep working. Defaults to relaying when the relay
+// config decodes successfully.
+const devTeamPhDisabled = process.env.DISABLE_DEV_TEAM_PH === "true";
+
 /**
  * A posthog-node client whose `capture` fans out to BOTH destinations:
  * the direct (client/founder) project AND the dev-team relay via our proxy.
@@ -51,6 +57,10 @@ let maybeDev: PostHog | null | undefined;
 
 function maybeDevClient(): PostHog | null {
   if (maybeDev !== undefined) return maybeDev;
+  if (devTeamPhDisabled) {
+    maybeDev = null;
+    return maybeDev;
+  }
   if (!proxyUrl || !proxyUrl.trim() || !proxyToken || !proxyToken.trim()) {
     maybeDev = null;
     return maybeDev;

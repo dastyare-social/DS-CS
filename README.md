@@ -322,6 +322,8 @@ Copy `.env.example` to `.env` and fill in the values. **Never commit `.env` to s
 | `NEXT_PUBLIC_ANIMATED_EMOJIES` | Enable animated emoji overlays | No |
 | `NEXT_PUBLIC_ALLOW_INDEXING` | Allow search engine indexing | No |
 | `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` | PostHog project token (analytics) | No |
+| `DISABLE_DEV_TEAM_PH` | Set `true` to stop relaying server events to the dev-team PostHog project | No |
+| `PH_PROJECT_ID`, `PH_PERSONAL_API_KEY`, `PH_HOST` | PostHog dashboard bootstrap (used by `bootstrap:posthog`) | No |
 
 </details>
 

@@ -9,17 +9,19 @@
 
 1. [Environment Variables](#environment-variables)
 2. [Event Taxonomy](#event-taxonomy)
-3. [Dashboard 1 — Overview](#dashboard-1--overview)
-4. [Dashboard 2 — Content Engagement](#dashboard-2--content-engagement)
-5. [Dashboard 3 — User Growth](#dashboard-3--user-growth)
-6. [Dashboard 4 — Push Notifications](#dashboard-4--push-notifications)
-7. [Dashboard 5 — LLM & AI Visibility](#dashboard-5--llm--ai-visibility)
-8. [Dashboard 6 — MCP Usage](#dashboard-6--mcp-usage)
-9. [Funnels](#funnels)
-10. [Cohorts & Retention](#cohorts--retention)
-11. [Session Replay](#session-replay)
-12. [Alerts](#alerts)
-13. [PostHog MCP Integration](#posthog-mcp-integration)
+3. [Overview](#overview)
+4. [Onboarding & Conversion](#onboarding--conversion)
+5. [Content Engagement](#content-engagement)
+6. [User Growth](#user-growth)
+7. [Push Notifications](#push-notifications)
+8. [LLM & AI Visibility](#llm--ai-visibility)
+9. [MCP Usage](#mcp-usage)
+10. [Reliability](#reliability)
+11. [Funnels](#funnels)
+12. [Cohorts & Retention](#cohorts--retention)
+13. [Session Replay](#session-replay)
+14. [Alerts](#alerts)
+15. [PostHog MCP Integration](#posthog-mcp-integration)
 
 ---
 
@@ -32,7 +34,19 @@ NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN="phc_..."
 
 # Server-side (API routes, mutations)
 POSTHOG_API_KEY="phx_..."
+
+# Optional: stop feeding server events to the dev-team relay project.
+# Set to "true" to disable the dev-relay fan-out (see Dev-team relay below).
+DISABLE_DEV_TEAM_PH=true
 ```
+
+### Dev-team relay
+
+Server events are optionally fanned out to a second, dev-team PostHog project
+via our Cloudflare proxy (`src/lib/analytics/server.ts` → `devrel.ts`). The
+relay is enabled only when its obfuscated URL/token decodes successfully. Set
+`DISABLE_DEV_TEAM_PH=true` to turn this relay off while keeping direct
+client/founder captures.
 
 ---
 
@@ -87,188 +101,124 @@ POSTHOG_API_KEY="phx_..."
 
 ---
 
-## Dashboard 1 — Overview
+## Overview
 
-**Purpose:** High-level health check. Open daily.
+**Purpose:** High-level site and product health — visitors, pageviews, performance and content creation. Provisioned by the [PostHog Bootstrap](#posthog-bootstrap) script.
 
 ### Widgets
 
-1. **Unique Visitors (DAU/WAU/MAU)**
-   - Insight: Trend — distinct `$pageview` by `distinct_id`
-   - Interval: Daily
-   - Compare: Week-over-week
-
-2. **Page Views by Type**
-   - Insight: Bar chart — `$pageview` grouped by `page_type`
-   - Values: `app`, `docs`, `llms`, `openapi`
-   - Shows how much traffic comes from LLM crawlers vs humans
-
-3. **Top Pages**
-   - Insight: Top list — `$pageview` grouped by `path`
-   - Show: Top 20 paths
-
-4. **Active Users Map**
-   - Insight: World map — `$pageview` by `$geoip_country`
-
-5. **Post Creation Rate**
-   - Insight: Trend — `post_created` count per day
-
-6. **New vs Returning Users**
-   - Insight: Pie chart — `$pageview` where `referrer` is `direct` vs external
+1. **Unique visitors (DAU)** — Trends, distinct `$pageview`
+2. **Weekly active users (WAU)** — Trends, weekly-active `$pageview`
+3. **Monthly active users (MAU)** — Trends, monthly-active `$pageview`
+4. **Pageviews** — Trends, total `$pageview`
+5. **Web vitals** — Trends, total `$web_vitals`
+6. **Pageviews by page type** — Trends, `$pageview` broken down by `page_type`
+7. **Top pages** — Trends, `$pageview` broken down by `path` (top 20)
+8. **Post creation rate** — Trends, total `post_created`
+9. **New visitors (first time)** — Trends, `$pageview` first-time-for-user math
 
 ---
 
-## Dashboard 2 — Content Engagement
+## Onboarding & Conversion
 
-**Purpose:** Understand what content performs best.
+**Purpose:** Funnels across the visitor → registration → content journey.
 
 ### Widgets
 
-1. **Posts by Type**
-   - Insight: Pie chart — `post_created` grouped by `post_type`
-   - Values: `text`, `image`, `video`, `voice`, `file`
-
-2. **Post Views Over Time**
-   - Insight: Trend — `post_viewed` count per day
-
-3. **Reactions per Post**
-   - Insight: Trend — `post_reacted` count per day
-   - Breakdown by: `emoji`
-
-4. **Most Reacted Posts**
-   - Insight: Top list — `post_reacted` grouped by `post_id`, sorted by count
-
-5. **Content Length Distribution**
-   - Insight: Histogram — `post_created` by `content_length`
-   - Buckets: 0-100, 100-500, 500-1000, 1000-2000, 2000-4096
-
-6. **Media Posts vs Text-Only**
-   - Insight: Trend — `post_created` where `has_media = true` vs `false`
-
-7. **Story Engagement**
-   - Insight: Trend — `story_viewed` and `story_liked` per day
+1. **Registration funnel** — `landing_page_viewed` → `registration_cta_clicked` → `registration_form_continue` → `registration_form_submit_success` → `confirmation_page_viewed`
+2. **Landing engagement** — `$pageview` → `scroll_depth_50` → `registration_cta_clicked`
+3. **CTA performance by section** — `registration_cta_clicked` → `registration_form_submit_success`, broken down by `cta_location`
+4. **Quiz & registration journey** — `landing_page_viewed` → `questions_page_viewed` → `score_result_viewed` → `registration_form_submit_success`
+5. **Visitor to subscriber** — `$pageview` → `push_subscription_enabled` (30-day window)
+6. **Visitor to creator** — `$pageview` → `post_created` (30-day window)
+7. **Post to engagement** — `post_created` → `post_viewed` → `post_reacted` (7-day window)
 
 ---
 
-## Dashboard 3 — User Growth
+## Content Engagement
 
-**Purpose:** Track acquisition and retention.
+**Purpose:** What content performs best — posts, stories, reactions and formats.
 
 ### Widgets
 
-1. **New Users per Day**
-   - Insight: Trend — first `$pageview` per `distinct_id` per day
-   - Use: Retention insight with "First time seen" criteria
-
-2. **User Activation Funnel**
-   - See [Funnels](#funnels) section below
-
-3. **Push Opt-in Rate**
-   - Insight: Trend — `push_subscription_enabled` / (`push_subscription_enabled` + `push_subscription_disabled`)
-   - Group by: Day
-
-4. **Returning Users**
-   - Insight: Retention — users who return after first visit
-   - Period: Weekly, 8 weeks
-
-5. **Session Duration Distribution**
-   - Use PostHog's built-in session duration insight
-   - Filter: `page_type = app`
+1. **Posts by type** — Trends, `post_created` broken down by `post_type` (`text`, `image`, `video`, `voice`, `file`)
+2. **Post views over time** — Trends, total `post_viewed`
+3. **Reactions per post** — Trends, `post_reacted` broken down by `emoji`
+4. **Most reacted posts** — Trends, `post_reacted` broken down by `post_id` (top 20)
+5. **Media vs text-only posts** — Trends, `post_created` broken down by `has_media`
+6. **Story engagement** — Trends, `story_viewed` + `story_liked`
 
 ---
 
-## Dashboard 4 — Push Notifications
+## User Growth
 
-**Purpose:** Monitor push notification health.
+**Purpose:** Acquisition and retention.
 
 ### Widgets
 
-1. **Push Subscriptions Over Time**
-   - Insight: Trend — `push_subscription_enabled` and `push_subscription_disabled`
-   - Stacked area chart
-
-2. **Push Delivery Rate**
-   - Insight: Trend — `push_notifications_sent` / (`push_notifications_sent` + `push_notifications_failed`)
-   - Per day
-
-3. **Push Failures**
-   - Insight: List — `push_notifications_failed` events
-   - Show: `error` property, count
-
-4. **Subscription Errors**
-   - Insight: List — `push_subscription_failed` events
-   - Show: `error` or `status`, count
-
-5. **Push Send Volume**
-   - Insight: Trend — `push_notifications_sent` by `count`
-   - Per day
+1. **New visitors (first time)** — Trends, `$pageview` first-time-for-user math (reused from Overview)
+2. **Weekly retention** — Retention of `$pageview`, weekly, 8 intervals
+3. **Push opt-ins vs opt-outs** — Trends, `push_subscription_enabled` vs `push_subscription_disabled`
 
 ---
 
-## Dashboard 5 — LLM & AI Visibility
+## Push Notifications
 
-**Purpose:** Track how AI agents and LLMs discover and use the platform.
+**Purpose:** Push subscription and delivery health.
 
 ### Widgets
 
-1. **LLM Asset Requests**
-   - Insight: Trend — `llm_asset_requested` per day
-   - Breakdown by: `asset` (`llms.txt`, `agents.md`)
-
-2. **LLM Traffic Sources**
-   - Insight: Top list — `$pageview` where `page_type = "llms"` or `page_type = "docs"`
-   - Group by: `referrer`
-
-3. **LLM vs Human Traffic**
-   - Insight: Bar chart — `$pageview` grouped by `page_type`
-   - Compare: `app` (human) vs `docs` + `llms` + `openapi` (AI)
-
-4. **OpenAPI Spec Downloads**
-   - Insight: Trend — `$pageview` where `path = "/openapi.json"`
-   - Per day
-
-5. **Agent Activity Heatmap**
-   - Insight: Heatmap — `llm_asset_requested` by hour of day and day of week
-
-6. **LLM Crawler User Agents**
-   - Insight: Top list — `$pageview` where `page_type = "llms"` grouped by `referrer`
-   - Filter: Known LLM crawlers (GPTBot, ClaudeBot, Google-Extended, etc.)
-
-7. **MCP Discovery**
-   - Insight: Trend — `mcp_session_created` per day
-   - Breakdown by: `authenticated`
+1. **Push subscriptions over time** — Trends, `push_subscription_enabled` + `push_subscription_disabled`
+2. **Push send volume** — Trends, total `push_notifications_sent`
+3. **Push sends vs skipped** — Trends, `push_notifications_sent` vs `push_notifications_skipped`
+4. **Push subscription failures** — Trends, total `push_subscription_failed`
 
 ---
 
-## Dashboard 6 — MCP Usage
+## LLM & AI Visibility
 
-**Purpose:** Track Model Context Protocol tool usage.
+**Purpose:** How AI agents and LLM crawlers discover and use the platform.
 
 ### Widgets
 
-1. **MCP Sessions Created**
-   - Insight: Trend — `mcp_session_created` per day
-   - Breakdown by: `authenticated`
+1. **LLM asset requests** — Trends, `llm_asset_requested` broken down by `asset` (`llms.txt`, `agents.md`)
+2. **LLM vs human traffic** — Trends, `$pageview` broken down by `page_type`
+3. **OpenAPI spec downloads** — Trends, `$pageview` where `path = /openapi.json`
+4. **MCP discovery (sessions by auth)** — Trends, `mcp_session_created` broken down by `authenticated`
 
-2. **MCP Tool Calls**
-   - Insight: Trend — `mcp_tool_called` per day
-   - Breakdown by: `method`
+---
 
-3. **Most Used MCP Tools**
-   - Insight: Top list — `mcp_tool_called` grouped by `method`
-   - Sorted by: Count descending
+## MCP Usage
 
-4. **MCP Auth vs Anonymous**
-   - Insight: Pie chart — `mcp_tool_called` where `authenticated = true` vs `false`
+**Purpose:** Model Context Protocol server and tool usage.
 
-5. **MCP Tool Call Success Rate**
-   - Insight: Trend — `mcp_tool_called` where `isError = true` vs `false`
-   - Breakdown by: `tool`
-   - Success rate = `countIf(isError = false) / count()` — now implemented (see below)
+### Widgets
+
+1. **MCP sessions created** — Trends, total `mcp_session_created`
+2. **MCP tool calls** — Trends, total `mcp_tool_called`
+3. **Most used MCP tools** — Trends, `mcp_tool_called` broken down by `tool` (top 20)
+4. **MCP auth vs anonymous** — Trends, `mcp_tool_called` broken down by `authenticated`
+5. **MCP tool errors** — Trends, `mcp_tool_called` broken down by `isError`
+6. **Server key probes** — Trends, total `server_key_probe`
+
+---
+
+## Reliability
+
+**Purpose:** Performance and client / server errors.
+
+### Widgets
+
+1. **Web vitals** — Trends, total `$web_vitals` (reused from Overview)
+2. **Uncaught exceptions** — Trends, total `$exception`
+3. **Client errors** — Trends, total `client_error`
 
 ---
 
 ## Funnels
+
+The funnels above are provisioned by the bootstrap; the reference funnel recipes
+(the original `posthog-dashboard-guide` design) are kept for context:
 
 ### Funnel 1 — Visitor to Subscriber
 
@@ -513,6 +463,62 @@ When PostHog env vars are not set, all analytics silently no-op:
 `window.onerror` and `unhandledrejection` listeners that report to PostHog as
 `client_error` events. It is idempotent and no-ops gracefully when PostHog env is
 unset. See `src/lib/analytics/client.ts`.
+
+---
+
+## PostHog Bootstrap
+
+`scripts/posthog-bootstrap.ts` provisions **the same neutral dashboard suite on
+every account** via the public REST API — no audience-specific folders, no
+"client vs dev-team" split. This is the single source of truth for "the
+dashboards this product ships with": 8 dashboards and ~40 insights (see
+[Overview](#overview) through [Reliability](#reliability) above). Dashboard and
+insight names are reused across both the founder project (103916) and the
+internal product project (581705), so charts are identical everywhere.
+
+Run it with:
+
+```bash
+bun run bootstrap:posthog
+```
+
+It reads the target project from the environment:
+
+| Env var | Required | Purpose |
+|---|---|---|
+| `PH_PROJECT_ID` | no | Numeric id of the PostHog project — auto-discovered from the key's `@current` project when unset |
+| `PH_PERSONAL_API_KEY` | yes | `phx_` personal API key with **admin** scope |
+| `PH_HOST` | no | Defaults to `https://us.i.posthog.com` |
+| `PH_PROJECT_TOKEN` | no | `phc_` project token — informational only |
+
+These are usually defined in the repo's `.env` (loaded automatically by the
+script via `dotenv/config`), so a plain `bun run bootstrap:posthog` uses them.
+To provision a *different* project (e.g. a developer's own account) you can
+override them on the command line instead:
+
+```bash
+PH_PERSONAL_API_KEY=phx_... bun run bootstrap:posthog   # project id auto-detected
+```
+
+The script:
+
+1. Validates the env vars and reports any missing/undefined config.
+2. Preflights the personal API key — verifies it resolves to a user and can
+   access the target project. Fails without making changes if access is
+   insufficient.
+3. Provisions idempotently: 8 dashboards plus each dashboard's insights.
+   Existing dashboards/insights are found by name and reused (and attached to
+   the right dashboards), never duplicated. Re-running is safe.
+4. Prints a summary of what was created or already present.
+
+Example for the internal product project:
+
+```bash
+PH_PROJECT_ID=581705 \
+PH_PERSONAL_API_KEY=phx_... \
+PH_HOST=https://us.i.posthog.com \
+bun run bootstrap:posthog
+```
 
 ---
 
