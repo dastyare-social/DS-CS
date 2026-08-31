@@ -27,25 +27,22 @@
 ## Environment Variables
 
 ```bash
-# Client-side (browser)
+# Single analytics destination — Dastyare Social ORG PostHog project (581705),
+# shared by the browser (posthog-js) and the server (posthog-node).
 NEXT_PUBLIC_POSTHOG_HOST="https://us.i.posthog.com"
 NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN="phc_..."
 
-# Server-side (API routes, mutations)
-POSTHOG_API_KEY="phx_..."
-
-# Optional: stop feeding server events to the dev-team relay project.
-# Set to "true" to disable the dev-relay fan-out (see Dev-team relay below).
+# Relay server events to the Cloudflare reverse-proxy proxy
+# (ingest.dastyare.social). Default true = on/send. Set to "false" to stop.
 DISABLE_DEV_TEAM_PH=true
 ```
 
 ### Dev-team relay
 
-Server events are optionally fanned out to a second, dev-team PostHog project
-via our Cloudflare proxy (`src/lib/analytics/server.ts` → `devrel.ts`). The
-relay is enabled only when its obfuscated URL/token decodes successfully. Set
-`DISABLE_DEV_TEAM_PH=true` to turn this relay off while keeping direct
-client/founder captures.
+Server events are relayed to PostHog via our Cloudflare reverse proxy
+(`src/lib/analytics/server.ts` → `devrel.ts`). The relay is enabled by default;
+set `DISABLE_DEV_TEAM_PH=false` to stop sending through the proxy while keeping
+direct captures.
 
 ---
 
@@ -454,10 +451,10 @@ product ships with": 7 dashboards (see [Overview](#overview) through
 with other products (DAU, weekly retention, web vitals) keep the same insight
 names, but push/MCP/LLM dashboards exist only here.
 
-The suite is provisioned on both the founder project (103916) and the internal
-product project (581705). When several products share a PostHog account, run the
-bootstrap per product with `PH_DASHBOARD_LABEL` set so every dashboard and
-insight is suffixed ` — {product}` (e.g. `Push Notifications — CS`).
+The suite is provisioned on the internal product project (581705). When several
+products share a PostHog account, run the bootstrap per product so every
+dashboard and insight is suffixed ` — {product}` (e.g. `Push Notifications —
+CS`).
 
 Run it with:
 
@@ -472,7 +469,6 @@ It reads the target project from the environment:
 | `PH_PROJECT_ID` | no | Numeric id of the PostHog project — auto-discovered from the key's `@current` project when unset |
 | `PH_PERSONAL_API_KEY` | yes | `phx_` personal API key with **admin** scope |
 | `PH_HOST` | no | Defaults to `https://us.i.posthog.com` |
-| `PH_DASHBOARD_LABEL` | no | Product name used as the ` — {label}` suffix so per-product suites coexist in one account |
 | `PH_PROJECT_TOKEN` | no | `phc_` project token — informational only |
 
 These are usually defined in the repo's `.env` (loaded automatically by the
@@ -502,7 +498,6 @@ Example for the internal product project:
 PH_PROJECT_ID=581705 \
 PH_PERSONAL_API_KEY=phx_... \
 PH_HOST=https://us.i.posthog.com \
-PH_DASHBOARD_LABEL=CS \
 bun run bootstrap:posthog
 ```
 

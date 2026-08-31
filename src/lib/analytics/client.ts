@@ -1,7 +1,3 @@
-// Accept both the PostHog dashboard names and the repo's previous names for
-// backward compatibility. Prefer the dashboard-style names:
-// - NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN
-// - NEXT_PUBLIC_POSTHOG_HOST
 import type { PostHog } from "posthog-js";
 
 const apiKey =
@@ -9,16 +5,7 @@ const apiKey =
   process.env.NEXT_PUBLIC_POSTHOG_PROJECT_API_KEY;
 const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || process.env.NEXT_PUBLIC_POSTHOG_API_HOST;
 
-// Optional secondary instance routed to the Dastyare Social ORG PostHog project.
-// Set NEXT_PUBLIC_POSTHOG_ORG_PROJECT_TOKEN to record every
-// visitor to BOTH the primary project (omidshabab.com) and the ORG project.
-const orgApiKey = process.env.NEXT_PUBLIC_POSTHOG_ORG_PROJECT_TOKEN;
-const orgApiHost = process.env.NEXT_PUBLIC_POSTHOG_ORG_HOST || process.env.NEXT_PUBLIC_POSTHOG_HOST;
-
-const ORG_INSTANCE = "dastyare_org";
-
 let posthog: PostHog | null = null;
-let orgClient: PostHog | null = null;
 let initialized = false;
 
 const canInit = () => {
@@ -27,9 +14,6 @@ const canInit = () => {
   if (typeof apiHost !== "string" || apiHost.trim().length === 0) return false;
   return true;
 };
-
-const canInitOrg = () =>
-  typeof orgApiKey === "string" && orgApiKey.trim().length > 0;
 
 async function getPosthog() {
   if (!canInit()) return null;
@@ -42,7 +26,6 @@ async function getPosthog() {
 function forEachClient(fn: (client: PostHog) => void) {
   if (typeof window === "undefined") return;
   if (posthog) fn(posthog);
-  if (orgClient) fn(orgClient);
 }
 
 export async function initPostHog() {
@@ -61,20 +44,6 @@ export async function initPostHog() {
       capture_heatmaps: true,
       loaded: startRecording,
     });
-
-    if (canInitOrg()) {
-      orgClient = ph.init(orgApiKey!, {
-        api_host: orgApiHost || apiHost,
-        autocapture: false,
-        capture_pageview: false,
-        capture_heatmaps: true,
-        loaded: () => {
-          if (orgClient) {
-            orgClient.startSessionRecording();
-          }
-        },
-      }, ORG_INSTANCE);
-    }
 
     initialized = true;
     return ph;
