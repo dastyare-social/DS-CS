@@ -593,6 +593,9 @@ const Post = memo(
     );
     const [localViews, setLocalViews] = useState<number>(Number(views || "0"));
 
+    // Emoji whose reaction request failed, so the user can retry it
+    const [failedReaction, setFailedReaction] = useState<string | null>(null);
+
     // Tracks duplicate view *inside one mounted instance*
     const hasSentViewRef = useRef(false);
 
@@ -605,23 +608,35 @@ const Post = memo(
     const getCount = (emoji: string) =>
       (localReactions ?? []).find((r: any) => r.emoji === emoji)?.count ?? 0;
 
+    // Move a single emoji count by `delta`, dropping it when it reaches zero
+    const bumpReaction = (emoji: string, delta: number) =>
+      setLocalReactions((prev) => {
+        const safePrev = prev ?? [];
+        const existing = safePrev.find((r) => r.emoji === emoji);
+        if (existing) {
+          return safePrev
+            .map((r) =>
+              r.emoji === emoji ? { ...r, count: r.count + delta } : r,
+            )
+            .filter((r) => r.count > 0);
+        }
+        if (delta <= 0) return safePrev;
+        return [...safePrev, { emoji, count: delta }];
+      });
+
     const handleReact = async (emoji: string) => {
       // optimistic reaction update
-      setLocalReactions((prev: any[] | null) => {
-        const safePrev = prev ?? [];
-        const existing = safePrev.find((r: any) => r.emoji === emoji);
-        if (existing) {
-          return safePrev.map((r: any) =>
-            r.emoji === emoji ? { ...r, count: r.count + 1 } : r,
-          );
-        }
-        return [...safePrev, { emoji, count: 1 }];
-      });
+      setFailedReaction(null);
+      bumpReaction(emoji, 1);
 
       try {
         await addReaction(id, emoji);
       } catch (err) {
+        // The server never recorded the reaction, so undo the optimistic bump
+        // and surface a retry instead of leaving the count drifting.
         console.error("Failed to send reaction", err);
+        bumpReaction(emoji, -1);
+        setFailedReaction(emoji);
       }
     };
 
@@ -636,7 +651,6 @@ const Post = memo(
           hasSentViewRef.current = true;
           return;
         }
-        window.localStorage.setItem(storageKey, "1");
       }
 
       hasSentViewRef.current = true;
@@ -648,8 +662,16 @@ const Post = memo(
         if (result) {
           setLocalViews(Number(result.views));
         }
+        // Persist the marker only after the server recorded the view. A failed
+        // request leaves no marker, so the view is retried on the next mount.
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(storageKey, "1");
+        }
       } catch (err) {
         console.error("Failed to send view", err);
+        // Undo the optimistic count; the view retries on the next mount because
+        // no marker was written.
+        setLocalViews((prev) => Math.max(0, prev - 1));
       }
     };
 
@@ -908,6 +930,17 @@ const Post = memo(
                         />
                       ))}
                     </div>
+                  )}
+
+                  {failedReaction && (
+                    <button
+                      type="button"
+                      onClick={() => handleReact(failedReaction)}
+                      className="flex items-center gap-x-1.5 text-[12px] mt-2 text-red-500/80 hover:text-red-500 cursor-pointer"
+                    >
+                      <span>{failedReaction}</span>
+                      <span>{t("general.reaction_failed")}</span>
+                    </button>
                   )}
 
                   <div className="flex justify-between items-center opacity-60 mt-1.5">

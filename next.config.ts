@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 import createNextIntlPlugin from "next-intl/plugin";
+import { withPostHogConfig } from "@posthog/nextjs-config";
 
 // Define RemotePattern type inline since it might not be exported in Next.js 16
 type RemotePattern = {
@@ -176,4 +177,18 @@ const nextConfig: NextConfig = {
   devIndicators: false,
 };
 
-export default withSerwist(withNextIntl(nextConfig));
+// Upload browser source maps to PostHog during `next build` so error tracking
+// resolves minified frames to real files. Only enable when the personal API key
+// and project id are present, so builds without those credentials still pass.
+// Works under Turbopack (the Next.js 16 default): withPostHogConfig sets
+// productionBrowserSourceMaps and uploads through the compiler hook.
+const posthogSourcemapsEnabled = Boolean(
+  process.env.PH_PERSONAL_API_KEY && process.env.PH_PROJECT_ID,
+);
+
+export default withPostHogConfig(withSerwist(withNextIntl(nextConfig)), {
+  personalApiKey: process.env.PH_PERSONAL_API_KEY ?? "",
+  projectId: process.env.PH_PROJECT_ID,
+  host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+  sourcemaps: { enabled: posthogSourcemapsEnabled },
+});
