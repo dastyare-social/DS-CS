@@ -29,6 +29,8 @@
 ```bash
 # Single analytics destination — Dastyare Social ORG PostHog project (581705),
 # shared by the browser (posthog-js) and the server (posthog-node).
+# The browser captures to the same-origin /ingest path, which next.config.ts
+# rewrites to this host, so ad blockers cannot drop pageviews or recordings.
 NEXT_PUBLIC_POSTHOG_HOST="https://us.i.posthog.com"
 NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN="phc_..."
 
