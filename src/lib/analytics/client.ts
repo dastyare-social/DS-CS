@@ -1,8 +1,12 @@
 import type { PostHog } from "posthog-js";
+import { POSTHOG_INGEST_PATH, posthogUiHost } from "./proxy";
 
 const apiKey =
   process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN ||
   process.env.NEXT_PUBLIC_POSTHOG_PROJECT_API_KEY;
+// Only gates init on the host being configured. The browser captures to the
+// same-origin `POSTHOG_INGEST_PATH`, which `next.config.ts` rewrites to this
+// host, so ad blockers cannot drop the third-party request.
 const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || process.env.NEXT_PUBLIC_POSTHOG_API_HOST;
 
 let posthog: PostHog | null = null;
@@ -38,7 +42,8 @@ export async function initPostHog() {
   try {
     const startRecording = () => ph.startSessionRecording();
     ph.init(apiKey!, {
-      api_host: apiHost,
+      api_host: POSTHOG_INGEST_PATH,
+      ui_host: posthogUiHost(),
       autocapture: false,
       capture_pageview: false,
       capture_heatmaps: true,

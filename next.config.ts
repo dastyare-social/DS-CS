@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 import createNextIntlPlugin from "next-intl/plugin";
 
+import {
+  POSTHOG_INGEST_PATH,
+  posthogAssetsHost,
+  posthogIngestionHost,
+} from "./src/lib/analytics/proxy";
+
 // Define RemotePattern type inline since it might not be exported in Next.js 16
 type RemotePattern = {
   protocol: "http" | "https";
@@ -102,7 +108,24 @@ const nextConfig: NextConfig = {
     remotePatterns,
   },
   allowedDevOrigins: ["::1", "127.0.0.1", "cs.dastyare.social"],
+  // posthog-js resolves `/ingest/decide` etc. against the origin; keep the
+  // trailing-slash redirect from breaking those capture requests.
+  skipTrailingSlashRedirect: true,
   async rewrites() {
+    // First-party PostHog proxy: forward same-origin capture traffic to the
+    // real PostHog hosts so ad blockers cannot drop it. Static assets first,
+    // then the catch-all for capture, decide, and session recording.
+    const posthogRewrites = [
+      {
+        source: `${POSTHOG_INGEST_PATH}/static/:path*`,
+        destination: `${posthogAssetsHost()}/static/:path*`,
+      },
+      {
+        source: `${POSTHOG_INGEST_PATH}/:path*`,
+        destination: `${posthogIngestionHost()}/:path*`,
+      },
+    ];
+
     const s3PublicBase = process.env.S3_PUBLIC_BASE_URL?.replace(/\/+$/, "");
     const s3Endpoint = process.env.S3_ENDPOINT?.replace(/\/+$/, "");
     const s3Bucket = process.env.S3_BUCKET_NAME || "";
@@ -115,9 +138,10 @@ const nextConfig: NextConfig = {
       emojiBaseUrl = `${s3Endpoint}/${s3Bucket}`;
     }
 
-    if (!emojiBaseUrl) return [];
+    if (!emojiBaseUrl) return posthogRewrites;
 
     return [
+      ...posthogRewrites,
       {
         source: "/animated-emojies/:path*",
         destination: `${emojiBaseUrl}/animated-emojies/:path*`,
