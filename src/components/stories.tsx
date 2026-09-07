@@ -25,6 +25,7 @@ import {
   toggleStoryLike,
   deleteStoryAction,
 } from "@/lib/actions/stories";
+import { captureClientEvent } from "@/lib/analytics/client";
 
 type StoryItem = {
   id: string;
@@ -50,6 +51,17 @@ const normalizeMediaUrl = (raw?: string | null): string => {
 // a press must be held at least this long to be treated as a "hold" (pause);
 // shorter presses stay quick taps that navigate like before
 const HOLD_THRESHOLD_MS = 300;
+
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
+const normalizedPointer = (
+  rect: DOMRect,
+  clientX: number,
+  clientY: number,
+) => ({
+  x: clamp01((clientX - rect.left) / rect.width),
+  y: clamp01((clientY - rect.top) / rect.height),
+});
 
 const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
   const t = useTranslations();
@@ -78,9 +90,30 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
   const pointerDownAtRef = useRef<number | null>(null);
   const suppressClickRef = useRef(false);
   const holdTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null);
+  const lastPointerTypeRef = useRef<string>("pointer");
+
+  // per-carousel-session analytics aggregates
+  const sessionStartRef = useRef<number | null>(null);
+  const sessionStoriesRef = useRef(0);
+  const sessionCompletionsRef = useRef(0);
+  const sessionHoldsRef = useRef(0);
+  const sessionTapsNextRef = useRef(0);
+  const sessionTapsBackRef = useRef(0);
+  const sessionLikesRef = useRef(0);
+  const sessionUnlikesRef = useRef(0);
+  const sessionSeenStoryIdsRef = useRef(new Set<string>());
 
   const currentStory = stories[currentIndex];
   const currentStoryId = currentStory?.id;
+
+  const storyEventProps = (overrides: Record<string, unknown> = {}) => ({
+    story_id: currentStoryId,
+    story_index: currentIndex,
+    stories_total: stories.length,
+    media_type: currentStory?.type,
+    ...overrides,
+  });
 
   // pre-load delay state
   const [isPreloading, setIsPreloading] = useState<boolean>(false);
@@ -262,6 +295,8 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
       progressRef.current = percent;
 
       if (elapsed >= duration) {
+        sessionCompletionsRef.current += 1;
+        void captureClientEvent("story_complete", storyEventProps({}));
         goToNext();
         return;
       }
@@ -314,6 +349,8 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
 
   const handleVideoEnded = () => {
     if (menuOpen) return; // never auto-advance under the menu
+    sessionCompletionsRef.current += 1;
+    void captureClientEvent("story_complete", storyEventProps({}));
     goToNext();
   };
 
@@ -335,14 +372,25 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
     if (menuOpen) return;
     if (!stories.length) return;
     const rect = e.currentTarget.getBoundingClientRect();
+    const normalized = normalizedPointer(rect, e.clientX, e.clientY);
     const clickX = e.clientX - rect.left;
     const half = rect.width / 2;
+    const previous = clickX < half;
+    const direction = previous ? "back" : "next";
 
-    if (clickX < half) {
+    if (previous) {
+      sessionTapsBackRef.current += 1;
       goToPrevious();
     } else {
+      sessionTapsNextRef.current += 1;
       goToNext();
     }
+    void captureClientEvent("story_tap", storyEventProps({
+      direction,
+      pointer_type: lastPointerTypeRef.current || "pointer",
+      pointer_x: normalized.x,
+      pointer_y: normalized.y,
+    }));
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -350,27 +398,52 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
     if ((e.target as HTMLElement).closest("button")) return;
 
     pointerDownAtRef.current = performance.now();
+    const rect = e.currentTarget.getBoundingClientRect();
+    pointerDownPosRef.current = normalizedPointer(rect, e.clientX, e.clientY);
+    lastPointerTypeRef.current = e.pointerType || "pointer";
     if (holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current);
     holdTimeoutRef.current = setTimeout(() => {
       if (pointerDownAtRef.current !== null) {
         setIsHeld(true);
+        sessionHoldsRef.current += 1;
+        void captureClientEvent("story_hold_start", storyEventProps({
+          pointer_x: pointerDownPosRef.current?.x ?? 0.5,
+          pointer_y: pointerDownPosRef.current?.y ?? 0.5,
+          pointer_type: lastPointerTypeRef.current,
+        }));
       }
     }, HOLD_THRESHOLD_MS);
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     const wasHeld = isHeld;
     if (holdTimeoutRef.current) {
       clearTimeout(holdTimeoutRef.current);
       holdTimeoutRef.current = null;
     }
+    const start = pointerDownAtRef.current;
     pointerDownAtRef.current = null;
     if (wasHeld) {
+      const durationMs = start !== null ? performance.now() - start : 0;
+      let pointer: { x: number; y: number };
+      if (e.clientX === 0 && e.clientY === 0) {
+        pointer = pointerDownPosRef.current ?? { x: 0.5, y: 0.5 };
+      } else {
+        const rect = e.currentTarget.getBoundingClientRect();
+        pointer = normalizedPointer(rect, e.clientX, e.clientY);
+      }
+      void captureClientEvent("story_hold_end", storyEventProps({
+        duration_ms: Math.round(durationMs),
+        pointer_x: pointer.x,
+        pointer_y: pointer.y,
+        pointer_type: lastPointerTypeRef.current,
+      }));
       suppressClickRef.current = true;
       window.setTimeout(() => {
         suppressClickRef.current = false;
       }, 200);
     }
+    pointerDownPosRef.current = null;
     setIsHeld(false);
   };
 
@@ -449,10 +522,46 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
 
     incrementView();
 
+    sessionStoriesRef.current += 1;
+    sessionSeenStoryIdsRef.current.add(currentStoryId);
+    void captureClientEvent("story_open", storyEventProps({}));
+
     return () => {
       canceled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, currentStoryId, isPreloading, mediaLoading]);
+
+  // per-carousel-session analytics: start on open, capture aggregate on close
+  useEffect(() => {
+    if (open) {
+      sessionStartRef.current = performance.now();
+      sessionStoriesRef.current = 0;
+      sessionCompletionsRef.current = 0;
+      sessionHoldsRef.current = 0;
+      sessionTapsNextRef.current = 0;
+      sessionTapsBackRef.current = 0;
+      sessionLikesRef.current = 0;
+      sessionUnlikesRef.current = 0;
+      sessionSeenStoryIdsRef.current = new Set();
+      return;
+    }
+
+    if (sessionStartRef.current === null) return;
+    const durationMs = performance.now() - sessionStartRef.current;
+    void captureClientEvent("story_carousel_session", {
+      duration_ms: Math.round(durationMs),
+      stories_opened: sessionStoriesRef.current,
+      stories_completed: sessionCompletionsRef.current,
+      distinct_stories: sessionSeenStoryIdsRef.current.size,
+      holds: sessionHoldsRef.current,
+      taps_next: sessionTapsNextRef.current,
+      taps_back: sessionTapsBackRef.current,
+      likes: sessionLikesRef.current,
+      unlikes: sessionUnlikesRef.current,
+    });
+    sessionStartRef.current = null;
+  }, [open]);
 
   // per-story like toggle (API + optimistic UI)
   const toggleLike = (index: number) => {
@@ -474,6 +583,24 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
       countsCopy[index] = countsCopy[index] + (wasLiked ? -1 : 1);
       return countsCopy;
     });
+
+    // analytics: optimistic like count on the story
+    const optimisticCount = (likeCounts[index] ?? 0) + (wasLiked ? -1 : 1);
+    if (wasLiked) {
+      sessionUnlikesRef.current += 1;
+      void captureClientEvent("story_unlike", storyEventProps({
+        story_id: story.id,
+        story_index: index,
+        likes: optimisticCount,
+      }));
+    } else {
+      sessionLikesRef.current += 1;
+      void captureClientEvent("story_like", storyEventProps({
+        story_id: story.id,
+        story_index: index,
+        likes: optimisticCount,
+      }));
+    }
 
     // fire & forget API
     (async () => {
