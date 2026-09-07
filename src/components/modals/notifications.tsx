@@ -12,15 +12,19 @@ import {
 import { Button } from "../button";
 
 const NotifModal = () => {
-  const [status, setStatus] = useState<PushStatus>("idle");
+  const [status, setStatus] = useState<PushStatus>("checking");
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
     const initializeModal = async () => {
-      // Check if already subscribed
-      const subscribed = await checkPushSubscription();
-      setIsSubscribed(subscribed);
-      setStatus(subscribed ? "enabled" : "idle");
+      try {
+        // Check if already subscribed
+        const subscribed = await checkPushSubscription();
+        setIsSubscribed(subscribed);
+        setStatus(subscribed ? "enabled" : "idle");
+      } catch {
+        setStatus("idle");
+      }
     };
 
     initializeModal();
@@ -87,7 +91,7 @@ const NotifModal = () => {
         variant={getButtonVariant()}
         className="w-full text-sm md:text-sm"
         onClick={handleToggle}
-        disabled={status === "loading"}
+        disabled={status === "loading" || status === "checking"}
       >
         {getButtonText()}
       </Button>

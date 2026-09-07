@@ -1,5 +1,6 @@
 export type PushStatus =
   | "idle"
+  | "checking"
   | "loading"
   | "enabled"
   | "unsupported-browser"
@@ -22,6 +23,7 @@ export function getPushStatusMessage(status: PushStatus) {
       return "Push notifications are not configured yet. Add VAPID keys to your environment to enable them.";
     case "error":
       return "Something went wrong while enabling notifications. Please try again in a moment.";
+    case "checking":
     case "loading":
     case "idle":
     default:
