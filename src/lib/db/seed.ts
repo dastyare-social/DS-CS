@@ -13,6 +13,15 @@ type SeedPost = {
   pinned?: boolean;
 };
 
+type SeedStory = {
+  id: string;
+  type: "image" | "video";
+  media: { url: string; width: number; height: number };
+  views: string;
+  likes: string;
+  hoursAgo: number;
+};
+
 const POSTS: SeedPost[] = [
   {
     id: "seed-post-1-owned-vs-rented",
@@ -57,7 +66,7 @@ I do, actually. It just doesn't live on Telegram.
 DS-CS renders text posts channel-style — same broadcast feel, same clean feed, one place people go to hear from you directly. The difference is it's on my domain, not a messaging app that could change its terms tomorrow.
 
 You can have the format without the landlord.`,
-    media: { url: "/seed/post-3-channel-style.png", width: 896, height: 896 },
+    media: { url: "/seed/post_03.webp", width: 1024, height: 1024 },
     views: "289",
     hoursAgo: 4 * 24,
   },
@@ -71,7 +80,7 @@ If your account gets flagged, restricted, or the platform just decides your nich
 DS-CS has a shorts section — 1080x1920, same format your audience already scrolls — except it's served from your own storage, on your own domain. Same viewing experience, zero platform risk.
 
 Build the habit people already have. Just stop building it on borrowed infrastructure.`,
-    media: { url: "/seed/post-4-shorts.png", width: 896, height: 896 },
+    media: { url: "/seed/post_04.webp", width: 1200, height: 896 },
     views: "334",
     hoursAgo: 3 * 24,
   },
@@ -108,9 +117,36 @@ The pitch isn't "free forever." The pitch is: nobody can hold your audience over
 Fine for the format. Not fine when the platform underneath it can vanish too.
 
 DS-CS has stories — image and video, likes and views, same lightweight format people already expect. It just runs on infrastructure you control, so the habit doesn't come with a hidden dependency.`,
-    media: { url: "/seed/post-7-stories.png", width: 896, height: 896 },
+    media: { url: "/seed/post_07.webp", width: 1024, height: 1024 },
     views: "245",
     hoursAgo: 8,
+  },
+];
+
+const STORIES: SeedStory[] = [
+  {
+    id: "seed-story-01",
+    type: "image",
+    media: { url: "/seed/story_01.webp", width: 768, height: 1376 },
+    views: "214",
+    likes: "62",
+    hoursAgo: 20,
+  },
+  {
+    id: "seed-story-02",
+    type: "image",
+    media: { url: "/seed/story_02.webp", width: 768, height: 1376 },
+    views: "178",
+    likes: "48",
+    hoursAgo: 12,
+  },
+  {
+    id: "seed-story-03",
+    type: "image",
+    media: { url: "/seed/story_03.webp", width: 768, height: 1376 },
+    views: "143",
+    likes: "39",
+    hoursAgo: 3,
   },
 ];
 
@@ -137,6 +173,7 @@ async function main() {
   // replace: clear reactions tied to old posts, then the posts themselves
   await connection`DELETE FROM reactions`;
   await connection`DELETE FROM posts`;
+  await connection`DELETE FROM stories`;
 
   for (const post of POSTS) {
     const createdAt = new Date(Date.now() - post.hoursAgo * 60 * 60 * 1000);
@@ -157,8 +194,22 @@ async function main() {
     }
   }
 
+  for (const story of STORIES) {
+    const createdAt = new Date(Date.now() - story.hoursAgo * 60 * 60 * 1000);
+    await connection`
+      INSERT INTO stories (id, type, views, likes, media, created_at, updated_at)
+      VALUES (${story.id}, ${story.type}, ${story.views}, ${story.likes}, ${
+        story.media ? JSON.stringify(story.media) : null
+      }, ${createdAt}, ${createdAt})
+      ON CONFLICT (id) DO NOTHING
+    `;
+  }
+
   const count = await connection`SELECT count(*)::int AS n FROM posts`;
-  console.log(`✅ Inserted ${POSTS.length} seed posts (table now has ${count[0].n})`);
+  const storyCount = await connection`SELECT count(*)::int AS n FROM stories`;
+  console.log(
+    `✅ Inserted ${POSTS.length} seed posts and ${STORIES.length} seed stories (tables now have ${count[0].n} posts, ${storyCount[0].n} stories)`
+  );
   await connection.end();
 }
 

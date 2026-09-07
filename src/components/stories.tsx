@@ -10,7 +10,6 @@ import {
   EllipsisVerticalIcon,
   EraserIcon,
   HeartIcon,
-  Trash2Icon,
 } from "lucide-react";
 import Loader from "./loader";
 import ProfileModal from "./modals/profile";
@@ -48,6 +47,10 @@ const normalizeMediaUrl = (raw?: string | null): string => {
   return url;
 };
 
+// a press must be held at least this long to be treated as a "hold" (pause);
+// shorter presses stay quick taps that navigate like before
+const HOLD_THRESHOLD_MS = 300;
+
 const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
   const t = useTranslations();
   const tLastTime = useTranslations("last_time");
@@ -66,12 +69,18 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
   const [open, setOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [isHeld, setIsHeld] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const animationRef = useRef<number | null>(null);
   const imageStartTimeRef = useRef<number | null>(null);
+  const progressRef = useRef(0);
+  const pointerDownAtRef = useRef<number | null>(null);
+  const suppressClickRef = useRef(false);
+  const holdTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentStory = stories[currentIndex];
+  const currentStoryId = currentStory?.id;
 
   // pre-load delay state
   const [isPreloading, setIsPreloading] = useState<boolean>(false);
@@ -103,49 +112,6 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
 
   const MENU_WIDTH = 144; // w-36 — must match the menu container width so it stays flush with the ellipsis
 
-  // --- Fetch stories from API ---
-  const loadStories = useCallback(async (silent = false) => {
-    try {
-      if (!silent) setLoading(true);
-      setError(null);
-
-      const data = await getStories({ page: 1, limit: 20 });
-      const items = data.items || [];
-
-      const mapped: StoryItem[] = items.map((item: any) => ({
-        id: item.id,
-        type: item.type,
-        url: normalizeMediaUrl(item.media?.url ?? item.url),
-        duration: item.media?.duration ?? item.duration,
-        likes: Number(item.likes ?? 0),
-        views: Number(item.views ?? 0),
-        createdAt: new Date(item.createdAt),
-      }));
-
-      setStories(mapped);
-      setLikedStates(mapped.map(() => false));
-      setLikeCounts(mapped.map((s) => s.likes));
-
-      if (!mapped.length) {
-        setOpen(false);
-        setCurrentIndex(0);
-        resetStoryState();
-      } else {
-        setCurrentIndex((prev) => Math.min(prev, mapped.length - 1));
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to load stories");
-    } finally {
-      if (!silent) setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    void loadStories();
-  }, [loadStories]);
-
   const clearPreloadingTimeout = () => {
     if (preloadingTimeoutRef.current) {
       clearTimeout(preloadingTimeoutRef.current);
@@ -153,9 +119,26 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
     }
   };
 
+  const clearHoldTimeout = () => {
+    if (holdTimeoutRef.current) {
+      clearTimeout(holdTimeoutRef.current);
+      holdTimeoutRef.current = null;
+    }
+  };
+
+  const releaseHold = () => {
+    clearHoldTimeout();
+    pointerDownAtRef.current = null;
+    suppressClickRef.current = false;
+    setIsHeld(false);
+  };
+
   const resetStoryState = () => {
     setProgress(0);
+    progressRef.current = 0;
     imageStartTimeRef.current = null;
+    clearHoldTimeout();
+    setIsHeld(false);
 
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
@@ -171,6 +154,53 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
     setIsPreloading(false);
     setMediaLoading(false);
   };
+
+  // --- Fetch stories from API ---
+  const loadStories = useCallback(async (silent = false) => {
+    try {
+      if (!silent) setLoading(true);
+      setError(null);
+
+      const data = await getStories({ page: 1, limit: 20 });
+      const items = data.items || [];
+
+      const mapped: StoryItem[] = items.map((item) => {
+        const legacy = item as { url?: string; duration?: number };
+        return {
+          id: item.id,
+          type: item.type,
+          url: normalizeMediaUrl(item.media?.url ?? legacy.url),
+          duration: item.media?.duration ?? legacy.duration,
+          likes: Number(item.likes ?? 0),
+          views: Number(item.views ?? 0),
+          createdAt: new Date(item.createdAt ?? 0),
+        };
+      });
+
+      setStories(mapped);
+      setLikedStates(mapped.map(() => false));
+      setLikeCounts(mapped.map((s) => s.likes));
+
+      if (!mapped.length) {
+        setOpen(false);
+        setCurrentIndex(0);
+        resetStoryState();
+      } else {
+        setCurrentIndex((prev) => Math.min(prev, mapped.length - 1));
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Failed to load stories");
+    } finally {
+      if (!silent) setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadStories();
+  }, [loadStories]);
 
   const goToNext = () => {
     if (!stories.length) return;
@@ -192,6 +222,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
     } else {
       // first story – just reset progress
       setProgress(0);
+      progressRef.current = 0;
     }
   };
 
@@ -206,7 +237,8 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
       currentStory.type !== "image" ||
       isPreloading ||
       mediaLoading ||
-      menuOpen
+      menuOpen ||
+      isHeld
     ) {
       // stop any running animation if dialog closed or media not ready
       if (animationRef.current) {
@@ -218,8 +250,8 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
 
     // fixed 5s duration for all images
     const duration = 5000;
-    imageStartTimeRef.current = performance.now();
-    setProgress(0);
+    imageStartTimeRef.current =
+      performance.now() - (progressRef.current / 100) * duration;
 
     const updateImageProgress = (now: number) => {
       if (!imageStartTimeRef.current) return;
@@ -227,6 +259,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
       const elapsed = now - imageStartTimeRef.current;
       const percent = Math.min((elapsed / duration) * 100, 100);
       setProgress(percent);
+      progressRef.current = percent;
 
       if (elapsed >= duration) {
         goToNext();
@@ -244,6 +277,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
         animationRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     open,
     currentIndex,
@@ -254,23 +288,23 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
     mediaLoading,
     currentStory?.duration,
     menuOpen,
+    isHeld,
   ]);
 
   // freeze/resume video playback while the manage menu / confirm is open
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !open) return;
-    if (menuOpen) {
+    if (menuOpen || isHeld) {
       video.pause();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     } else if (!isPreloading && !mediaLoading) {
       video.play().catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [menuOpen, open]);
+  }, [menuOpen, open, isHeld]);
 
   const handleVideoTimeUpdate = () => {
-    if (menuOpen) return;
+    if (menuOpen || isHeld) return;
     const video = videoRef.current;
     if (!video || !video.duration) return;
 
@@ -293,6 +327,9 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
   };
 
   const handleStoryClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // a click right after releasing a hold is the tail of the pointer-up;
+    // it must never be treated as a tap on the story
+    if (suppressClickRef.current) return;
     // never navigate while the manage menu / confirm dialog is open —
     // a click meant for the menu must never advance the story
     if (menuOpen) return;
@@ -308,11 +345,49 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
     }
   };
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (menuOpen || isPreloading || mediaLoading || !currentStory) return;
+    if ((e.target as HTMLElement).closest("button")) return;
+
+    pointerDownAtRef.current = performance.now();
+    if (holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current);
+    holdTimeoutRef.current = setTimeout(() => {
+      if (pointerDownAtRef.current !== null) {
+        setIsHeld(true);
+      }
+    }, HOLD_THRESHOLD_MS);
+  };
+
+  const handlePointerUp = () => {
+    const wasHeld = isHeld;
+    if (holdTimeoutRef.current) {
+      clearTimeout(holdTimeoutRef.current);
+      holdTimeoutRef.current = null;
+    }
+    pointerDownAtRef.current = null;
+    if (wasHeld) {
+      suppressClickRef.current = true;
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 200);
+    }
+    setIsHeld(false);
+  };
+
+  const handlePointerLeave = () => {
+    releaseHold();
+  };
+
+  const handlePointerCancel = () => {
+    releaseHold();
+  };
+
   // When dialog opens or story index changes, do a 500ms pre-load delay
   useEffect(() => {
     if (!open || !currentStory) {
       if (!open) {
         // dialog closed: reset everything
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         resetStoryState();
         setCurrentIndex(0);
         setMenuPos(null);
@@ -340,7 +415,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
 
   // --- API: increment views when story is actually watched ---
   useEffect(() => {
-    if (!open || !currentStory) return;
+    if (!open || !currentStoryId) return;
 
     // "watched" when media is ready and overlays are visible
     if (isPreloading || mediaLoading) return;
@@ -349,14 +424,14 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
 
     const incrementView = async () => {
       try {
-        const data = await incrementStoryViews(currentStory.id);
+        const data = await incrementStoryViews(currentStoryId);
 
         if (canceled) return;
 
         // Optimistically update local views
         setStories((prev) =>
           prev.map((story) =>
-            story.id === currentStory.id
+            story.id === currentStoryId
               ? {
                   ...story,
                   views:
@@ -377,7 +452,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
     return () => {
       canceled = true;
     };
-  }, [open, currentStory?.id, isPreloading, mediaLoading]);
+  }, [open, currentStoryId, isPreloading, mediaLoading]);
 
   // per-story like toggle (API + optimistic UI)
   const toggleLike = (index: number) => {
@@ -466,6 +541,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
   useEffect(() => {
     return () => {
       clearPreloadingTimeout();
+      clearHoldTimeout();
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
@@ -513,7 +589,11 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
             {!loading && !error && hasStories && currentStory && (
               <div
                 onClick={handleStoryClick}
-                className="relative w-full cursor-pointer overflow-hidden flex flex-col border border-secondary/5 backdrop-blur-3xl bg-white/50 aspect-9/16 min-w-xs"
+                onPointerDown={handlePointerDown}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={handlePointerLeave}
+                onPointerCancel={handlePointerCancel}
+                className="relative w-full cursor-pointer overflow-hidden flex flex-col border border-secondary/5 backdrop-blur-3xl bg-white/50 aspect-9/16 min-w-xs select-none"
               >
                 {/* media area */}
                 <div className="p-1 absolute inset-0">
@@ -567,7 +647,12 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                 )}
 
                 {/* progress bars */}
-                <div className="relative z-10 w-full pt-3 px-3.5">
+                <div
+                  className={cn(
+                    "relative z-10 w-full pt-3 px-3.5 transition-opacity duration-300",
+                    isHeld && "opacity-0 pointer-events-none",
+                  )}
+                >
                   <div className="h-0.5 w-full flex gap-x-1">
                     {stories.map((story, index) => {
                       let width = "0%";
@@ -602,7 +687,10 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                 {/* header */}
                 <div
                   dir={dir}
-                  className="relative z-10 flex gap-x-1.5 px-3 py-2 items-center"
+                  className={cn(
+                    "relative z-10 flex gap-x-1.5 px-3 py-2 items-center transition-opacity duration-300",
+                    isHeld && "opacity-0 pointer-events-none",
+                  )}
                 >
                   <SafeImage
                     src="/profile-image.png"
@@ -674,11 +762,17 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
 
                 {/* bottom right stats */}
                 {!(isPreloading || mediaLoading) && (
-                  <div className="absolute flex bottom-0 text-white z-10 w-full px-5 py-4 items=end">
+                  <div
+                    className={cn(
+                      "absolute flex bottom-0 text-white z-10 w-full px-5 py-4 items=end transition-opacity duration-300",
+                      isHeld && "opacity-0 pointer-events-none",
+                    )}
+                  >
                     <div className="flex-1" />
                     <div className="flex flex-col gap-y-2.5 items-center">
                       {/* LIKE */}
                       <div
+                        onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleLike(currentIndex);
