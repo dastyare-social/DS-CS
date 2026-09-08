@@ -20,7 +20,6 @@
     "db:pull": "drizzle-kit introspect",
     "db:push": "drizzle-kit push && tsx src/lib/db/seed.ts",
     "db:seed": "tsx src/lib/db/seed.ts",
-    "seed:messages": "tsx scripts/seed-messages.ts",
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
     "openapi:generate": "bunx next-openapi-gen generate",
