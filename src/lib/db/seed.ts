@@ -28,13 +28,13 @@ const POSTS: SeedPost[] = [
     type: "text",
     content: `I posted 400 times on a platform I don't own.
 
-Then the algorithm changed, reach dropped 80%, and none of it mattered. Not the posts, not the followers, not the two years of consistency.
+Then the algorithm changed, reach dropped 80% 📉 and none of it mattered. Not the posts, not the followers 💔, not the two years of consistency.
 
-Here's the part that got me: every single one of those posts still exists. On their server. Indexed by their search, ranked by their rules, monetized by their ads.
+Here's the part that got me: every single one of those posts still exists. On their server, indexed by their search, ranked by their rules, monetized by their ads.
 
-I didn't own an audience. I was renting one.
+I didn't own an audience 🔑, I was renting one.
 
-So I stopped building on land I don't control. DS-CS is where I post now — my server, my domain, my rules. Nobody can throttle it, delete it, or sell ads next to it.
+So I stopped building on land I don't control. DS-CS is where I post now — my server, my domain 🏠, my rules. Nobody can throttle it, delete it, or sell ads next to it.
 
 If your content is the asset, you should own the ground it sits on.`,
     views: "412",
@@ -44,15 +44,15 @@ If your content is the asset, you should own the ground it sits on.`,
   {
     id: "seed-post-2-compounding-content",
     type: "text",
-    content: `Most founder content has a shelf life of about 6 hours.
+    content: `Most founder content has a shelf life of about 6 hours ⏳ and then it's gone.
 
-You post, it gets its window in the feed, then it's gone. Buried. Unsearchable. A stranger googling your name next week will never find it.
+You post, it gets its window in the feed, then it's gone. Buried. Unsearchable. A stranger googling your name next week will never find it — your best posts just evaporate 🔍 into the feed.
 
 That's not a content problem. That's an infrastructure problem.
 
-Every post on DS-CS gets indexed by search engines the same day it's published. Six months from now, someone searching the exact question you answered today still finds your answer. Not your competitor's recycled version of it. Yours.
+Every post on DS-CS gets indexed by search engines the same day it's published. Six months from now, someone searching the exact question you answered today still finds your answer 📈 instead of your competitor's recycled version of it.
 
-Content should compound, not evaporate.`,
+Content should compound 💎, not evaporate.`,
     views: "357",
     hoursAgo: 5 * 24,
   },
@@ -63,9 +63,9 @@ Content should compound, not evaporate.`,
 
 I do, actually. It just doesn't live on Telegram.
 
-DS-CS renders text posts channel-style — same broadcast feel, same clean feed, one place people go to hear from you directly. The difference is it's on my domain, not a messaging app that could change its terms tomorrow.
+DS-CS renders text posts channel-style — same broadcast feel 📣, same clean feed, one place people go to hear from you 💬 directly. The difference is it's on my domain 📱, not a messaging app that could change its terms tomorrow.
 
-You can have the format without the landlord.`,
+You can have the format 🤝 without the landlord.`,
     media: { url: "/seed/post_03.webp", width: 1024, height: 1024 },
     views: "289",
     hoursAgo: 4 * 24,
@@ -73,11 +73,11 @@ You can have the format without the landlord.`,
   {
     id: "seed-post-4-shorts",
     type: "image",
-    content: `Every short video you post lives on somebody else's app.
+    content: `Every short video 🎬 you post lives on somebody else's app.
 
 If your account gets flagged, restricted, or the platform just decides your niche isn't profitable this quarter, that catalog is gone. Not backed up anywhere you control. Just gone.
 
-DS-CS has a shorts section — 1080x1920, same format your audience already scrolls — except it's served from your own storage, on your own domain. Same viewing experience, zero platform risk.
+DS-CS has a shorts section 📺 — 1080x1920, same format your audience already scrolls 📲 — except it's served from your own storage, on your own domain 🚀 — same viewing experience, zero platform risk.
 
 Build the habit people already have. Just stop building it on borrowed infrastructure.`,
     media: { url: "/seed/post_04.webp", width: 1200, height: 896 },
@@ -87,13 +87,13 @@ Build the habit people already have. Just stop building it on borrowed infrastru
   {
     id: "seed-post-5-ai-agents",
     type: "text",
-    content: `Here's a question most founders haven't asked yet: can an AI agent actually find and reference your content?
+    content: `Here's a question most founders haven't asked yet: can an AI agent 🤖 actually find and reference your content?
 
-Not "is it on the internet." Can a language model, searching for an answer to a question you've already answered, actually discover your post, read it, and cite it.
+Not "is it on the internet." Can a language model, searching for an answer to a question you've already answered, actually discover your post 🔎, read it, and cite it.
 
-Most content platforms weren't built for that. DS-CS was. Every post ships with a documented REST API, an OpenAPI spec, and an \`llms.txt\` file — a map built specifically for AI agents and search crawlers, not just human scrollers.
+Most content platforms weren't built for that. DS-CS was. Every post ships with a documented REST API, an OpenAPI spec, and an \`llms.txt\` file — a map 💡 built specifically for AI agents and search crawlers, not just human scrollers.
 
-The next wave of discovery isn't only search engines. It's agents doing research on your behalf. Worth being findable by both.`,
+The next wave of discovery isn't only search engines. It's agents doing research 📝 on your behalf. Worth being findable by both.`,
     views: "268",
     hoursAgo: 2 * 24,
   },
@@ -102,9 +102,9 @@ The next wave of discovery isn't only search engines. It's agents doing research
     type: "text",
     content: `I don't like paying rent on tools that hold my content hostage.
 
-DS-CS is open source and free to use. No license fee, no seat limit, no "upgrade to export your own data" wall six months in. You run it, you own the database, you own the media, you own the decision to walk away without losing anything.
+DS-CS is open source 🧰 and free to use. No license fee 🆓, no seat limit, no "upgrade to export your own data" wall six months in. You run it 💻, you own the database, you own the media, you own the decision to walk away without losing anything.
 
-The pitch isn't "free forever." The pitch is: nobody can hold your audience over your head to raise the price later.`,
+The pitch isn't "free forever." The pitch is: nobody can hold your audience 🔑 over your head to raise the price later.`,
     views: "301",
     hoursAgo: 1 * 24,
     pinned: true,
@@ -112,11 +112,11 @@ The pitch isn't "free forever." The pitch is: nobody can hold your audience over
   {
     id: "seed-post-7-stories",
     type: "image",
-    content: `Stories are supposed to be the low-effort, high-frequency layer of your presence. A quick update, a behind-the-scenes moment, gone in 24 hours by design.
+    content: `Stories are supposed to be the low-effort, high-frequency layer of your presence. A quick update, a behind-the-scenes moment 🌟, gone in 24 hours ⏳ by design.
 
 Fine for the format. Not fine when the platform underneath it can vanish too.
 
-DS-CS has stories — image and video, likes and views, same lightweight format people already expect. It just runs on infrastructure you control, so the habit doesn't come with a hidden dependency.`,
+DS-CS has stories ✨ — image and video 📲, likes and views, same lightweight format people already expect. It just runs on infrastructure you control, so the habit doesn't come with a hidden dependency.`,
     media: { url: "/seed/post_07.webp", width: 1024, height: 1024 },
     views: "245",
     hoursAgo: 8,
