@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="public/screenshots/wide-1280x720.png" alt="Dastyare Social — CS — Dashboard" width="100%" />
+  <img src="public/screenshots/hero-banner.webp" alt="Dastyare Social — CS" width="100%" />
 </p>
 
 <h1 align="center">Dastyare Social — CS</h1>
 
 <p align="center">
-  Get free of the algorithm. Focus on getting leads and making money.
+  Get free of the Algorithm. Focus on Getting Leads and Making More Money.
 </p>
 
 <p align="center">
@@ -44,8 +44,7 @@
 
 Every post you publish should work for you — not pad someone else's engagement numbers. DS-CS puts your content where real buyers and search engines actually find it, answering to you, not a feed algorithm.
 
-> [!WARNING]
-> **SEO & LLM discovery is experimental.** DS-CS follows current best practices (sitemap, robots.txt, `llms.txt`, structured data, MCP), but search engines and AI assistants may index, rank, cite, or surface your content unpredictably — or not at all. Don't treat discovery as a guarantee.
+> [!WARNING] > **SEO & LLM discovery is experimental.** DS-CS follows current best practices (sitemap, robots.txt, `llms.txt`, structured data, MCP), but search engines and AI assistants may index, rank, cite, or surface your content unpredictably — or not at all. Don't treat discovery as a guarantee.
 
 - Get found by the people actually looking for what you do — not buried by an algorithm's mood swings
 - Nothing you post can be taken down, demonetized, or buried by a policy change overnight
@@ -56,13 +55,7 @@ Every post you publish should work for you — not pad someone else's engagement
 ## Demo
 
 <p align="center">
-  <img src="public/screenshots/mobile-750x1334.png" alt="Mobile View" width="320" />
-  &nbsp;&nbsp;
-  <img src="public/screenshots/wide-1280x720.png" alt="Desktop View" width="480" />
-</p>
-
-<p align="center">
-  <em>Left: Mobile feed. Right: Desktop view with pinned posts and feed.</em>
+  <video src="public/screenshots/demo.webm" width="480" controls muted playsinline loop>
 </p>
 
 > **[Try the live demo →](https://cs.dastyare.social)**
@@ -73,18 +66,25 @@ Every post you publish should work for you — not pad someone else's engagement
 
 ## Pages
 
-| Route | Description |
-|-------|-------------|
-| **`/`** | **Home feed** — chronological post feed with infinite scroll, pinned post bar that cycles through pinned content, story avatar in the header, and a "Join My Channel" newsletter CTA at the bottom. |
-| **`/os`** | **Creator studio** — authenticated admin panel. Same feed but with full CRUD: create text/image/video/voice/file posts, edit, delete, pin/unpin, and upload media via presigned S3 URLs. Rich textarea composer with media attachment previews. |
-| **`/os/register`** | **Login** — two-step email/password sign-in via Better Auth. Email first, password fades in. |
-| **`/explore`** | **Explore** — dual-pane TikTok-style content explorer. Left: Shorts (vertical fullscreen video feed with double-tap like). Right: Threads (horizontal text+image/video feed with reactions). Auto-polls for new threads every 30s. |
-| **`/posts/[post_id]`** | **Single post** — permalink page for sharing individual posts. Tracks views, includes SEO ArticleSchema structured data, and generates a dynamic OG image for social media previews. |
-| **`/resume`** | **Resume / CV** — driven entirely by `config/resume.config.yml`. Toggle on/off without rebuild. Shows profile, experience, education, and contact sections. |
-| **`/docs`** | **API reference** — interactive Scalar UI for the REST API. |
-| **`/sitemap.xml`** | **Sitemap** — dynamic XML sitemap including all published posts. |
-| **`/robots.txt`** | **Robots** — allows public routes, blocks `/os/` and `/api/`. |
-| **`/llms.txt`** | **AI agent map** — structured content map for language models and crawlers. |
+| Route                  | Description                                                                                                                                                                                                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`/`**                | **Home feed** — chronological post feed with infinite scroll, pinned post bar that cycles through pinned content, story avatar in the header, and a "Join My Channel" newsletter CTA at the bottom.                                             |
+| **`/os`**              | **Creator studio** — authenticated admin panel. Same feed but with full CRUD: create text/image/video/voice/file posts, edit, delete, pin/unpin, and upload media via presigned S3 URLs. Rich textarea composer with media attachment previews. |
+| **`/os/register`**     | **Login** — two-step email/password sign-in via Better Auth. Email first, password fades in.                                                                                                                                                    |
+| **`/explore`**         | **Explore** — dual-pane TikTok-style content explorer. Left: Shorts (vertical fullscreen video feed with double-tap like). Right: Threads (horizontal text+image/video feed with reactions). Auto-polls for new threads every 30s.              |
+| **`/posts/[post_id]`** | **Single post** — permalink page for sharing individual posts. Tracks views, includes SEO ArticleSchema structured data, and generates a dynamic OG image for social media previews.                                                            |
+| **`/resume`**          | **Resume / CV** — driven entirely by `config/resume.config.yml`. Toggle on/off without rebuild. Shows profile, experience, education, and contact sections.                                                                                     |
+| **`/docs`**            | **API reference** — interactive Scalar UI for the REST API.                                                                                                                                                                                     |
+| **`/sitemap.xml`**     | **Sitemap** — dynamic XML sitemap including all published posts.                                                                                                                                                                                |
+| **`/robots.txt`**      | **Robots** — allows public routes, blocks `/os/` and `/api/`.                                                                                                                                                                                   |
+| **`/llms.txt`**        | **AI agent map** — structured content map for language models and crawlers.                                                                                                                                                                     |
+
+### Screenshots
+
+<p align="center">
+  <img src="public/screenshots/home-page.webp" alt="Home feed" width="400" />
+  <img src="public/screenshots/explore.webp" alt="/explore — Shorts and Threads" width="400" />
+</p>
 
 ---
 
@@ -106,7 +106,7 @@ A fully custom-built right-click / long-press context menu — zero dependencies
 ### Stories
 
 <p align="center">
-  <img src="public/screenshots/story-viewer.png" alt="Story viewer with progress bars" width="350" />
+  <img src="public/screenshots/stories.webp" alt="Stories" width="350" />
 </p>
 
 Ephemeral image and video stories with a native-feeling viewer — not a horizontal avatar bar, but a full-screen vertical reel.
@@ -160,25 +160,25 @@ DS-CS keeps that reach working for you instead: your content stays discoverable,
 
 ## What You Get
 
-| Feature | What it does |
-|---------|-------------|
-| **Multi-format posts** | Text, image, video, voice, or file — each published in the format that reads best. |
-| **Shorts (vertical video)** | TikTok/Reels-style vertical video feed built in. |
-| **Stories** | Ephemeral image and video stories with view/like tracking. |
-| **Post context menu** | Custom right-click/long-press menu with emoji reactions, pin, edit, delete. |
-| **Dynamic OG images** | Server-generated 2400×1260 social preview for every post. |
-| **Explore page** | Dual-pane Shorts + Threads explorer with auto-polling. |
-| **Creator studio** | Full CRUD admin panel with rich composer and presigned S3 uploads. |
-| **AI-ready content** | Every post indexed for search engines, structured for AI agents, `llms.txt` sitemap included. |
-| **MCP server** | AI agents can call posts and stories as tools via `/api/mcp`. [Setup guide →](./docs/mcp-guide.md) |
-| **Push notifications** | Browser push notifications to subscribers when you publish. |
-| **SEO built in** | Sitemap, robots.txt, OpenGraph images, structured data (JSON-LD), Google Search Console integration. |
-| **Animated emoji** | Optional animated .webp emoji overlays from the Telegram emoji set. |
-| **Admin bootstrap** | First user created automatically from environment variables. |
-| **REST API + tRPC** | Full API for headless publishing; tRPC for the internal dashboard. |
-| **Self-hosted** | Your server, your database, your data. No third parties. |
-| **Docker-ready** | Multi-stage build, Docker Compose included, one-command deploy. |
-| **Modern stack** | Next.js 16, React 19, TypeScript, Bun, PostgreSQL, Drizzle ORM, Tailwind CSS. |
+| Feature                     | What it does                                                                                         |
+| --------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Multi-format posts**      | Text, image, video, voice, or file — each published in the format that reads best.                   |
+| **Shorts (vertical video)** | TikTok/Reels-style vertical video feed built in.                                                     |
+| **Stories**                 | Ephemeral image and video stories with view/like tracking.                                           |
+| **Post context menu**       | Custom right-click/long-press menu with emoji reactions, pin, edit, delete.                          |
+| **Dynamic OG images**       | Server-generated 2400×1260 social preview for every post.                                            |
+| **Explore page**            | Dual-pane Shorts + Threads explorer with auto-polling.                                               |
+| **Creator studio**          | Full CRUD admin panel with rich composer and presigned S3 uploads.                                   |
+| **AI-ready content**        | Every post indexed for search engines, structured for AI agents, `llms.txt` sitemap included.        |
+| **MCP server**              | AI agents can call posts and stories as tools via `/api/mcp`. [Setup guide →](./docs/mcp-guide.md)   |
+| **Push notifications**      | Browser push notifications to subscribers when you publish.                                          |
+| **SEO built in**            | Sitemap, robots.txt, OpenGraph images, structured data (JSON-LD), Google Search Console integration. |
+| **Animated emoji**          | Optional animated .webp emoji overlays from the Telegram emoji set.                                  |
+| **Admin bootstrap**         | First user created automatically from environment variables.                                         |
+| **REST API + tRPC**         | Full API for headless publishing; tRPC for the internal dashboard.                                   |
+| **Self-hosted**             | Your server, your database, your data. No third parties.                                             |
+| **Docker-ready**            | Multi-stage build, Docker Compose included, one-command deploy.                                      |
+| **Modern stack**            | Next.js 16, React 19, TypeScript, Bun, PostgreSQL, Drizzle ORM, Tailwind CSS.                        |
 
 ---
 
@@ -217,19 +217,19 @@ Every feature in the dashboard is also available through the REST API. Protect y
 
 ### Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/posts` | List posts |
-| `POST` | `/api/posts` | Create a post |
-| `GET` | `/api/posts/{id}` | Get a post by ID |
-| `PATCH` | `/api/posts/{id}` | Update a post |
-| `DELETE` | `/api/posts/{id}` | Delete a post |
-| `POST` | `/api/posts/{id}` | Actions: reaction, view |
-| `GET` | `/api/stories` | List stories |
-| `POST` | `/api/stories` | Create a story |
-| `GET` | `/api/stories/{id}` | Get a story by ID |
-| `PATCH` | `/api/stories/{id}` | Update a story |
-| `DELETE` | `/api/stories/{id}` | Delete a story |
+| Method   | Endpoint            | Description             |
+| -------- | ------------------- | ----------------------- |
+| `GET`    | `/api/posts`        | List posts              |
+| `POST`   | `/api/posts`        | Create a post           |
+| `GET`    | `/api/posts/{id}`   | Get a post by ID        |
+| `PATCH`  | `/api/posts/{id}`   | Update a post           |
+| `DELETE` | `/api/posts/{id}`   | Delete a post           |
+| `POST`   | `/api/posts/{id}`   | Actions: reaction, view |
+| `GET`    | `/api/stories`      | List stories            |
+| `POST`   | `/api/stories`      | Create a story          |
+| `GET`    | `/api/stories/{id}` | Get a story by ID       |
+| `PATCH`  | `/api/stories/{id}` | Update a story          |
+| `DELETE` | `/api/stories/{id}` | Delete a story          |
 
 ### Example
 
@@ -250,12 +250,12 @@ curl -X POST https://app.dastyare.social/api/posts \
 
 ### Documentation
 
-| Resource | URL |
-|----------|-----|
-| Interactive API docs | [`/docs`](https://app.dastyare.social/docs) |
-| OpenAPI spec (JSON) | [`/openapi.json`](https://app.dastyare.social/openapi.json) |
-| MCP server | [`/api/mcp`](https://app.dastyare.social/api/mcp) |
-| MCP discovery | [`/.well-known/mcp`](https://app.dastyare.social/.well-known/mcp) |
+| Resource             | URL                                                               |
+| -------------------- | ----------------------------------------------------------------- |
+| Interactive API docs | [`/docs`](https://app.dastyare.social/docs)                       |
+| OpenAPI spec (JSON)  | [`/openapi.json`](https://app.dastyare.social/openapi.json)       |
+| MCP server           | [`/api/mcp`](https://app.dastyare.social/api/mcp)                 |
+| MCP discovery        | [`/.well-known/mcp`](https://app.dastyare.social/.well-known/mcp) |
 
 ---
 
@@ -280,61 +280,61 @@ Copy `.env.example` to `.env` and fill in the values. **Never commit `.env` to s
 <details>
 <summary><strong>Database</strong></summary>
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| Variable       | Description                  | Required |
+| -------------- | ---------------------------- | -------- |
+| `DATABASE_URL` | PostgreSQL connection string | Yes      |
 
 </details>
 
 <details>
 <summary><strong>Auth & Admin</strong></summary>
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `ADMIN_EMAIL` | Admin email for bootstrap and login | Yes |
-| `ADMIN_PASSWORD` | Admin password (strong recommended) | Yes |
-| `BETTER_AUTH_URL` | Public app URL (e.g. `https://app.example.com`) | Yes |
-| `BETTER_AUTH_SECRET` | Random secret for session signing (`openssl rand -base64 32`) | Yes |
-| `API_KEY` | Shared API key for REST endpoints (`openssl rand -hex 32`) | Yes |
+| Variable             | Description                                                   | Required |
+| -------------------- | ------------------------------------------------------------- | -------- |
+| `ADMIN_EMAIL`        | Admin email for bootstrap and login                           | Yes      |
+| `ADMIN_PASSWORD`     | Admin password (strong recommended)                           | Yes      |
+| `BETTER_AUTH_URL`    | Public app URL (e.g. `https://app.example.com`)               | Yes      |
+| `BETTER_AUTH_SECRET` | Random secret for session signing (`openssl rand -base64 32`) | Yes      |
+| `API_KEY`            | Shared API key for REST endpoints (`openssl rand -hex 32`)    | Yes      |
 
 </details>
 
 <details>
 <summary><strong>S3 Storage</strong></summary>
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `S3_ENDPOINT` | S3 endpoint (AWS, DigitalOcean, MinIO) | Yes |
-| `S3_REGION` | Storage region | Yes |
-| `S3_ACCESS_KEY_ID` | Access key | Yes |
-| `S3_SECRET_ACCESS_KEY` | Secret key | Yes |
-| `S3_BUCKET_NAME` | Bucket name | Yes |
-| `S3_FORCE_PATH_STYLE` | `true` for MinIO, `false` for AWS | Yes |
+| Variable               | Description                            | Required |
+| ---------------------- | -------------------------------------- | -------- |
+| `S3_ENDPOINT`          | S3 endpoint (AWS, DigitalOcean, MinIO) | Yes      |
+| `S3_REGION`            | Storage region                         | Yes      |
+| `S3_ACCESS_KEY_ID`     | Access key                             | Yes      |
+| `S3_SECRET_ACCESS_KEY` | Secret key                             | Yes      |
+| `S3_BUCKET_NAME`       | Bucket name                            | Yes      |
+| `S3_FORCE_PATH_STYLE`  | `true` for MinIO, `false` for AWS      | Yes      |
 
 </details>
 
 <details>
 <summary><strong>App & Frontend</strong></summary>
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `NEXT_PUBLIC_APP_URL` | Public app URL for metadata and links | Yes |
-| `NEXT_PUBLIC_ANIMATED_EMOJIES` | Enable animated emoji overlays | No |
-| `NEXT_PUBLIC_ALLOW_INDEXING` | Allow search engine indexing | No |
-| `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` | PostHog project token (analytics) | No |
-| `DISABLE_DEV_TEAM_PH` | Set `false` to stop relaying server events to the Cloudflare reverse-proxy proxy | No |
-| `PH_PROJECT_ID`, `PH_PERSONAL_API_KEY`, `PH_HOST` | PostHog dashboard bootstrap (used by `bootstrap:posthog`) | No |
+| Variable                                          | Description                                                                      | Required |
+| ------------------------------------------------- | -------------------------------------------------------------------------------- | -------- |
+| `NEXT_PUBLIC_APP_URL`                             | Public app URL for metadata and links                                            | Yes      |
+| `NEXT_PUBLIC_ANIMATED_EMOJIES`                    | Enable animated emoji overlays                                                   | No       |
+| `NEXT_PUBLIC_ALLOW_INDEXING`                      | Allow search engine indexing                                                     | No       |
+| `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`               | PostHog project token (analytics)                                                | No       |
+| `DISABLE_DEV_TEAM_PH`                             | Set `false` to stop relaying server events to the Cloudflare reverse-proxy proxy | No       |
+| `PH_PROJECT_ID`, `PH_PERSONAL_API_KEY`, `PH_HOST` | PostHog dashboard bootstrap (used by `bootstrap:posthog`)                        | No       |
 
 </details>
 
 <details>
 <summary><strong>Push Notifications</strong></summary>
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY` | VAPID public key | No |
-| `WEBPUSH_PRIVATE_KEY` | VAPID private key | No |
-| `WEBPUSH_SUBJECT` | Contact URI (e.g. `mailto:you@example.com`) | No |
+| Variable                         | Description                                 | Required |
+| -------------------------------- | ------------------------------------------- | -------- |
+| `NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY` | VAPID public key                            | No       |
+| `WEBPUSH_PRIVATE_KEY`            | VAPID private key                           | No       |
+| `WEBPUSH_SUBJECT`                | Contact URI (e.g. `mailto:you@example.com`) | No       |
 
 Generate VAPID keys: `npx web-push generate-vapid-keys`
 
@@ -343,10 +343,10 @@ Generate VAPID keys: `npx web-push generate-vapid-keys`
 <details>
 <summary><strong>URL Shortener (Optional)</strong></summary>
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DS_SH_URL` | Dastyare Social SH instance URL | No |
-| `DS_SH_API_KEY` | API key for the URL shortener | No |
+| Variable        | Description                     | Required |
+| --------------- | ------------------------------- | -------- |
+| `DS_SH_URL`     | Dastyare Social SH instance URL | No       |
+| `DS_SH_API_KEY` | API key for the URL shortener   | No       |
 
 </details>
 
@@ -438,24 +438,24 @@ src/
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `bun run dev` | Start dev server on port 8729 |
-| `bun run build` | Production build (config, icons, emojis, migrate, bootstrap, build) |
-| `bun run start` | Start production server |
-| `bun run lint` | Run ESLint |
-| `bun run test` | Run tests with Bun |
-| `bun run test:watch` | Run tests in watch mode |
-| `bun run generate:config` | Generate app config from `config/app.config.yml` |
-| `bun run generate:icons` | Generate PWA icons |
-| `bun run upload:emojis` | Upload animated emojis to S3 (skipped locally) |
-| `bun run bootstrap:admin` | Create or update admin user from env |
-| `bun run db:generate` | Generate migration from schema changes |
-| `bun run db:migrate` | Run Drizzle migrations |
-| `bun run db:push` | Push schema to database and seed |
-| `bun run db:studio` | Open Drizzle Studio (database GUI) |
-| `bun run openapi:generate` | Regenerate OpenAPI spec |
-| `bun run mcp` | Run local MCP server (stdio) |
+| Command                    | Description                                                         |
+| -------------------------- | ------------------------------------------------------------------- |
+| `bun run dev`              | Start dev server on port 8729                                       |
+| `bun run build`            | Production build (config, icons, emojis, migrate, bootstrap, build) |
+| `bun run start`            | Start production server                                             |
+| `bun run lint`             | Run ESLint                                                          |
+| `bun run test`             | Run tests with Bun                                                  |
+| `bun run test:watch`       | Run tests in watch mode                                             |
+| `bun run generate:config`  | Generate app config from `config/app.config.yml`                    |
+| `bun run generate:icons`   | Generate PWA icons                                                  |
+| `bun run upload:emojis`    | Upload animated emojis to S3 (skipped locally)                      |
+| `bun run bootstrap:admin`  | Create or update admin user from env                                |
+| `bun run db:generate`      | Generate migration from schema changes                              |
+| `bun run db:migrate`       | Run Drizzle migrations                                              |
+| `bun run db:push`          | Push schema to database and seed                                    |
+| `bun run db:studio`        | Open Drizzle Studio (database GUI)                                  |
+| `bun run openapi:generate` | Regenerate OpenAPI spec                                             |
+| `bun run mcp`              | Run local MCP server (stdio)                                        |
 
 ---
 
