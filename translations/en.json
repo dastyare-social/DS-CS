@@ -40,6 +40,7 @@
     "logout": "Logout Your Account",
     "sending": "Sending...",
     "try_again": "Try Again",
+    "reaction_failed": "Reaction failed — tap to retry",
     "preview": "Preview",
     "publish": "Publish",
     "publishing": "Publishing...",
