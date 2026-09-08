@@ -55,14 +55,12 @@ Every post you publish should work for you — not pad someone else's engagement
 ## Demo
 
 <p align="center">
-  <a href="https://github.com/dastyare-social/DS-CS/blob/main/public/screenshots/demo.webm">
+  <a href="https://github.com/dastyare-social/DS-CS/blob/main/public/screenshots/demo.mp4">
     <img src="public/screenshots/demo-poster.png" alt="Demo video — click to play on GitHub" width="480" />
   </a>
 </p>
 
-> GitHub's Markdown renderer strips `<video>` tags, so the demo is a frame from the video. Click it to play the full audio/video walkthrough on the repo page.
-
-> **[Try the live demo →](https://cs.dastyare.social)**
+> **<a href="https://cs.dastyare.social" target="_blank" rel="noopener noreferrer">▶ Try the live demo →</a>** <sup>opens in new tab</sup>
 >
 > See how the creator studio feels before you deploy it yourself.
 
