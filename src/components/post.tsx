@@ -69,6 +69,7 @@ type PostProps = {
   can_delete_post?: boolean;
   can_copy_text?: boolean;
   pinned?: boolean;
+  highlighted?: boolean;
   // allow parent to remove from list optimistically
   onDelete?: (id: string) => void;
   onDeleteError?: (err: unknown) => void;
@@ -574,6 +575,7 @@ const Post = memo(
     can_delete_post = false,
     can_copy_text = false,
     pinned = false,
+    highlighted = false,
     onDelete,
     onDeleteError,
     onPin,
@@ -881,12 +883,17 @@ const Post = memo(
 
               <div
                 className={cn(
-                  "flex flex-col gap-y-2.5",
+                  "flex flex-col gap-y-1.5",
                   postStatus === "sending" && "animate-pulse opacity-60",
                 )}
               >
                 {pinned && (
-                  <div className="flex items-center gap-x-1.5 text-[11px] opacity-60 pl-1">
+                  <div
+                    className={cn(
+                      "flex items-center gap-x-1.5 text-[11px] opacity-60 pl-1",
+                      highlighted && "text-primary opacity-100",
+                    )}
+                  >
                     <PinIcon className="size-3.5 stroke-[1.5px] rotate-45" />
                     <span>{t("general.pinned_to_top")}</span>
                   </div>
@@ -894,7 +901,12 @@ const Post = memo(
 
                 {renderMedia()}
 
-                <div className="rounded-2xl border border-secondary/5 bg-secondary/1 px-3.5 py-2 max-w-2xs min-w-[220px] backdrop-blur-sm bg-white/10">
+                <div
+                  className={cn(
+                    "rounded-2xl border border-secondary/5 bg-secondary/1 px-3.5 py-2 max-w-2xs min-w-[220px] backdrop-blur-sm bg-white/10",
+                    highlighted && "ring-2 ring-primary/5 bg-primary/3 text-primary",
+                  )}
+                >
                   {renderSimpleMarkdown(content)}
 
                   {normalizedReactions.length > 0 && (

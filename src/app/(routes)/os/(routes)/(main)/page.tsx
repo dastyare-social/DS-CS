@@ -1186,11 +1186,7 @@ const Page = () => {
                   key={msg.id}
                   id={`message-${msg.id}`}
                   data-message-id={msg.id}
-                  className={cn(
-                    "rounded-2xl",
-                    highlightedPostId === msg.id &&
-                      "bg-primary/5 ring-2 ring-primary/40",
-                  )}
+                  className="message-wrapper"
                 >
                   <Message
                     can_pin_post
@@ -1198,6 +1194,7 @@ const Page = () => {
                     can_delete_post
                     can_copy_text
                     post={msg}
+                    highlighted={highlightedPostId === msg.id}
                     pinned={msg.pinnedAt != null}
                     onDelete={(id) => {
                       const wasPinned = msg.pinnedAt != null;

@@ -366,9 +366,13 @@ const Page = () => {
                   key={msg.id ?? index}
                   id={`message-${msg.id}`}
                   data-message-id={msg.id}
-                  className={`message-wrapper rounded-2xl${highlightedPostId === msg.id ? " bg-primary/5 ring-2 ring-primary/40" : ""}`}
+                  className="message-wrapper"
                 >
-                  <Post post={msg} pinned={msg.pinnedAt != null} />
+                  <Post
+                    post={msg}
+                    pinned={msg.pinnedAt != null}
+                    highlighted={highlightedPostId === msg.id}
+                  />
                 </div>
               ))}
 
