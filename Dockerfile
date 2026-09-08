@@ -8,14 +8,17 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y curl ca-certificates --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
-# Install Bun
-RUN curl -fsSL https://bun.sh/install | bash -s "bun-v1.1.26"
+# Install Bun (>=1.2 is required to read the text bun.lock format)
+RUN curl -fsSL https://bun.sh/install | bash -s "bun-v1.4.0"
 ENV BUN_INSTALL="/root/.bun"
 ENV PATH="$BUN_INSTALL/bin:$PATH"
 
-# Copy project manifest and install dependencies with bun
-COPY package.json package-lock.json* ./
-RUN if [ -f package.json ]; then bun install --production=false || bun install; fi
+# Copy the lockfile with the manifest and install the exact pinned versions.
+# --frozen-lockfile fails the build when bun.lock and package.json disagree,
+# so every deploy resolves the same dependency tree instead of floating the
+# caret to whatever version is newest at build time.
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
 # Copy the rest of the source
 COPY . .
