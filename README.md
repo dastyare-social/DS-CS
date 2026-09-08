@@ -55,8 +55,12 @@ Every post you publish should work for you — not pad someone else's engagement
 ## Demo
 
 <p align="center">
-  <video src="public/screenshots/demo.webm" width="480" controls muted playsinline loop>
+  <a href="https://github.com/dastyare-social/DS-CS/blob/main/public/screenshots/demo.webm">
+    <img src="public/screenshots/demo-poster.png" alt="Demo video — click to play on GitHub" width="480" />
+  </a>
 </p>
+
+> GitHub's Markdown renderer strips `<video>` tags, so the demo is a frame from the video. Click it to play the full audio/video walkthrough on the repo page.
 
 > **[Try the live demo →](https://cs.dastyare.social)**
 >
@@ -81,9 +85,16 @@ Every post you publish should work for you — not pad someone else's engagement
 
 ### Screenshots
 
+#### Home page
+
 <p align="center">
-  <img src="public/screenshots/home-page.webp" alt="Home feed" width="400" />
-  <img src="public/screenshots/explore.webp" alt="/explore — Shorts and Threads" width="400" />
+  <img src="public/screenshots/home-page.webp" alt="Home page — chronological post feed" width="100%" />
+</p>
+
+#### Explore page
+
+<p align="center">
+  <img src="public/screenshots/explore.webp" alt="Explore page — Shorts and Threads" width="100%" />
 </p>
 
 ---
