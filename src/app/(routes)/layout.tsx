@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { preload } from "react-dom";
 import "@/styles/globals.css";
 
 import { NextIntlClientProvider } from "next-intl";
@@ -34,11 +35,13 @@ export default async function RootLayout({
   const font = LangFont(locale);
   const dir = LangDir(locale);
 
+  // Preload through React's resource API, not an explicit <head>. React hoists
+  // this link and reconciles it the same on the server and the client, so it
+  // does not conflict with the JSON-LD scripts during hydration.
+  preload("/profile-image.png", { as: "image" });
+
   return (
     <html lang={locale} dir={dir}>
-      <head>
-        <link rel="preload" href="/profile-image.png" as="image" />
-      </head>
       <body
         suppressHydrationWarning
         className={cn(
