@@ -14,6 +14,7 @@ import { sendPushNotification } from "@/lib/notifications/push";
 import { shortenContentUrls } from "@/lib/shorten";
 import { getMediaDimensionsFromUrl } from "@/lib/utils/media";
 import { assertWritable } from "@/lib/demo-mode";
+import { emitWebhookEvent } from "@/lib/webhooks";
 
 export function inferPostTypeFromUrl(url: string): PostType {
   const lowerUrl = url.toLowerCase();
@@ -167,6 +168,11 @@ async function insertPost({
     });
     await flushServerEvents();
 
+    emitWebhookEvent("post.created", {
+      ...inserted,
+      reactions: [],
+    });
+
     if (push) {
       const fallbackBody =
         type === "image"
@@ -292,6 +298,11 @@ async function updatePostInternal({
     .from(reactions)
     .where(eq(reactions.postId, id));
 
+  emitWebhookEvent("post.updated", {
+    ...updated,
+    reactions: reactionsRows,
+  });
+
   return {
     ...updated,
     reactions: reactionsRows,
@@ -322,6 +333,10 @@ export async function batchIncrementViews(ids: string[]): Promise<void> {
     count: ids.length,
   });
   await flushServerEvents();
+
+  for (const id of ids) {
+    emitWebhookEvent("post.viewed", { id });
+  }
 }
 
 export async function deletePostById(id: string): Promise<boolean> {
@@ -337,6 +352,8 @@ export async function deletePostById(id: string): Promise<boolean> {
       post_id: id,
     });
     await flushServerEvents();
+
+    emitWebhookEvent("post.deleted", { id });
   }
   return success;
 }
@@ -395,6 +412,12 @@ export async function addReaction({
   });
   await flushServerEvents();
 
+  emitWebhookEvent("post.reacted", {
+    postId,
+    emoji,
+    count: row.count,
+  });
+
   return {
     postId: row.postId,
     emoji: row.emoji,
@@ -419,6 +442,11 @@ export async function viewPost(
     views: newViews,
   });
   await flushServerEvents();
+
+  emitWebhookEvent("post.viewed", {
+    id,
+    views: newViews,
+  });
 
   return {
     messageId: id,

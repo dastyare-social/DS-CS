@@ -14,6 +14,7 @@ import { sendPushNotification } from "@/lib/notifications/push";
 import { captureServerEvent, flushServerEvents } from "@/lib/analytics/server";
 import { getMediaDimensionsFromUrl } from "@/lib/utils/media";
 import { assertWritable } from "@/lib/demo-mode";
+import { emitWebhookEvent } from "@/lib/webhooks";
 
 export function inferStoryTypeFromUrl(url: string): StoryType {
   const lowerUrl = url.toLowerCase();
@@ -157,6 +158,7 @@ async function insertStory({
       likes: inserted.likes,
     });
     await flushServerEvents();
+    emitWebhookEvent("story.created", { ...inserted });
 
     if (push) {
       await sendPushNotification({
@@ -249,6 +251,7 @@ async function updateStoryInternal({
     story_type: updated.type,
   });
   await flushServerEvents();
+  emitWebhookEvent("story.updated", { ...updated });
   return {
     ...updated,
   };
@@ -274,6 +277,7 @@ export async function deleteStoryById(id: string): Promise<boolean> {
       story_id: id,
     });
     await flushServerEvents();
+    emitWebhookEvent("story.deleted", { id });
   }
   return success;
 }
@@ -295,6 +299,7 @@ export async function incrementStoryViews(
     views: newViews,
   });
   await flushServerEvents();
+  emitWebhookEvent("story.viewed", { id, views: newViews });
 
   return { storyId: id, views: newViews };
 }
@@ -318,6 +323,7 @@ export async function toggleStoryLike(id: string, direction: "inc" | "dec") {
     likes: newLikes,
   });
   await flushServerEvents();
+  emitWebhookEvent("story.liked", { id, likes: newLikes, direction });
 
   return { storyId: id, likes: newLikes };
 }

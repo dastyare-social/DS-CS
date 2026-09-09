@@ -178,6 +178,26 @@
           }
         }
       },
+      "CreateWebhookBody": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookEventInput"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "url",
+          "events"
+        ]
+      },
       "insertPostsSchema": {
         "type": "object"
       },
@@ -1018,6 +1038,122 @@
         },
         "required": [
           "endpoint"
+        ]
+      },
+      "UpdateWebhookBody": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookEventInput"
+            },
+            "minItems": 1
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WebhookEventInput": {
+        "type": "string"
+      },
+      "WebhookParams": {
+        "type": "object",
+        "properties": {
+          "webhook_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "webhook_id"
+        ]
+      },
+      "WebhookSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "secret": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "lastStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastAttemptAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "failureCount": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "events",
+          "secret",
+          "active",
+          "lastStatus",
+          "lastAttemptAt",
+          "failureCount",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "WebhooksListResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookSchema"
+            }
+          },
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ]
+      },
+      "WebhookSuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
         ]
       }
     },
@@ -1951,6 +2087,272 @@
           }
         }
       }
+    },
+    "/webhooks": {
+      "get": {
+        "operationId": "get-webhooks",
+        "summary": "Webhooks — List Endpoints",
+        "description": "Returns all registered webhook endpoints with their subscribed events and delivery status.",
+        "tags": [
+          "Webhooks"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhooksListResponse"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "items": [
+                        {
+                          "id": "5f4e3d2c-1b0a-4987-6543-210fedcba987",
+                          "url": "https://example.com/hooks/ds",
+                          "events": [
+                            "post.created",
+                            "story.created"
+                          ],
+                          "secret": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                          "active": true,
+                          "lastStatus": "ok",
+                          "lastAttemptAt": "2026-08-23T10:15:00.000Z",
+                          "failureCount": 0,
+                          "createdAt": "2026-08-23T09:00:00.000Z",
+                          "updatedAt": "2026-08-23T10:15:00.000Z"
+                        }
+                      ],
+                      "total": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-webhooks",
+        "summary": "Webhooks — Create Endpoint",
+        "description": "Register a new endpoint that will receive signed POST deliveries for the subscribed events. Automatically generates a per-endpoint HMAC secret returned in the response.",
+        "tags": [
+          "Webhooks"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhookBody"
+              },
+              "examples": {
+                "example": {
+                  "value": {
+                    "url": "https://example.com/hooks/ds",
+                    "events": [
+                      "post.created",
+                      "post.updated",
+                      "post.deleted"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSchema"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "id": "5f4e3d2c-1b0a-4987-6543-210fedcba987",
+                      "url": "https://example.com/hooks/ds",
+                      "events": [
+                        "post.created",
+                        "post.updated",
+                        "post.deleted"
+                      ],
+                      "secret": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                      "active": true,
+                      "lastStatus": null,
+                      "lastAttemptAt": null,
+                      "failureCount": 0,
+                      "createdAt": "2026-08-23T09:00:00.000Z",
+                      "updatedAt": "2026-08-23T09:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/{webhook_id}": {
+      "get": {
+        "operationId": "get-webhooks-{webhook_id}",
+        "summary": "Webhooks — Get Endpoint by ID",
+        "description": "Returns a single registered webhook endpoint with its subscribed events, secret, and delivery status.",
+        "tags": [
+          "Webhooks"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "webhook_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSchema"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "id": "5f4e3d2c-1b0a-4987-6543-210fedcba987",
+                      "url": "https://example.com/hooks/ds",
+                      "events": [
+                        "post.created",
+                        "story.created"
+                      ],
+                      "secret": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                      "active": true,
+                      "lastStatus": "ok",
+                      "lastAttemptAt": "2026-08-23T10:15:00.000Z",
+                      "failureCount": 0,
+                      "createdAt": "2026-08-23T09:00:00.000Z",
+                      "updatedAt": "2026-08-23T10:15:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patch-webhooks-{webhook_id}",
+        "summary": "Webhooks — Update Endpoint",
+        "description": "Partially update a webhook endpoint: URL, subscribed events, or active status. Passing active=false pauses deliveries without deleting the endpoint.",
+        "tags": [
+          "Webhooks"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "webhook_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "123"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWebhookBody"
+              },
+              "examples": {
+                "example": {
+                  "value": {
+                    "active": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSchema"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "id": "5f4e3d2c-1b0a-4987-6543-210fedcba987",
+                      "url": "https://example.com/hooks/ds",
+                      "events": [
+                        "post.created",
+                        "story.created"
+                      ],
+                      "secret": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                      "active": false,
+                      "lastStatus": "ok",
+                      "lastAttemptAt": "2026-08-23T10:15:00.000Z",
+                      "failureCount": 0,
+                      "createdAt": "2026-08-23T09:00:00.000Z",
+                      "updatedAt": "2026-08-23T11:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete-webhooks-{webhook_id}",
+        "summary": "Webhooks — Delete Endpoint",
+        "description": "Permanently deletes a webhook endpoint and stops all future deliveries.",
+        "tags": [
+          "Webhooks"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "webhook_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSuccessResponse"
+                },
+                "examples": {
+                  "example": {
+                    "value": {
+                      "success": true,
+                      "id": "5f4e3d2c-1b0a-4987-6543-210fedcba987"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "tags": [
@@ -1962,6 +2364,9 @@
     },
     {
       "name": "Stories"
+    },
+    {
+      "name": "Webhooks"
     }
   ],
   "servers": [
