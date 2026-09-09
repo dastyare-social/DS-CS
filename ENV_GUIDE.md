@@ -65,7 +65,7 @@ Used by `bun run setup` / the bootstrap script to create or update the admin use
 | `S3_REGION` | — | `us-east-1` | Region of the bucket. |
 | `S3_ACCESS_KEY_ID` | ✅ | — | Access key for the bucket. |
 | `S3_SECRET_ACCESS_KEY` | ✅ | — | Secret key for the bucket. |
-| `S3_BUCKET_NAME` | ✅ | `dastyare-social-cs` | Bucket name. |
+| `S3_BUCKET_NAME` | ✅ | `ds-cs` | Bucket name. |
 | `S3_FORCE_PATH_STYLE` | — | `true` | Whether to force path-style addressing (required for some providers like MinIO). |
 | `S3_PUBLIC_BASE_URL` | ✅ | — | Public URL base for serving files (differs from `S3_ENDPOINT` for some providers). |
 

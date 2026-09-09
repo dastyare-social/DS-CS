@@ -36,7 +36,7 @@ S3_ENDPOINT="https://your-s3-provider.example.com"
 S3_REGION="us-east-1"
 S3_ACCESS_KEY_ID="your-access-key"
 S3_SECRET_ACCESS_KEY="your-secret"
-S3_BUCKET_NAME="dastyare-social-cs"
+S3_BUCKET_NAME="ds-cs"
 S3_FORCE_PATH_STYLE=true
 ```
 
@@ -147,7 +147,7 @@ S3_ENDPOINT="http://your-minio-host:9000"
 S3_REGION="us-east-1"
 S3_ACCESS_KEY_ID="minioadmin"
 S3_SECRET_ACCESS_KEY="minioadmin"
-S3_BUCKET_NAME="dastyare-social-cs"
+S3_BUCKET_NAME="ds-cs"
 S3_FORCE_PATH_STYLE=true
 ```
 
@@ -195,8 +195,8 @@ The script will:
 A Dockerfile is included. Build and run it locally:
 
 ```bash
-docker build -t dastyare-social-cs .
-docker run -p 8729:8729 --env-file .env dastyare-social-cs
+docker build -t ds-cs .
+docker run -p 8729:8729 --env-file .env ds-cs
 ```
 
 ### Production Docker Compose
@@ -222,8 +222,8 @@ Push the image to a registry such as Docker Hub or GitHub Container Registry, th
 Example:
 
 ```bash
-docker build -t omidshabab/dastyare-social-cs:latest .
-docker push omidshabab/dastyare-social-cs:latest
+docker build -t omidshabab/ds-cs:latest .
+docker push omidshabab/ds-cs:latest
 ```
 
 ## 8) Deploy on a VPS
@@ -235,7 +235,7 @@ Use the included Dockerfile and a compose file such as:
 ```yaml
 services:
   app:
-    image: omidshabab/dastyare-social-cs:latest
+    image: omidshabab/ds-cs:latest
     ports:
       - "8729:8729"
     env_file:

@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: dastyare-social-cs-dev:latest
+    image: ds-cs-dev:latest
     ports:
       - "8729:8729"
     env_file:
@@ -45,7 +45,7 @@ services:
   #   entrypoint: >
   #     /bin/sh -c "
   #     until (mc alias set local http://minio:9000 minioadmin minioadmin) do echo 'waiting for minio...' && sleep 1; done;
-  #     mc mb --ignore-existing local/dastyare-social-cs;
+  #     mc mb --ignore-existing local/ds-cs;
   #     exit 0;
   #     "
 
@@ -72,7 +72,7 @@ services:
     entrypoint: >
       /bin/sh -c "
       until (mc alias set local http://rustfs:9000 minioadmin minioadmin) do echo 'waiting for rustfs...' && sleep 1; done;
-      mc mb --ignore-existing local/dastyare-social-cs;
+      mc mb --ignore-existing local/ds-cs;
       exit 0;
       "
 

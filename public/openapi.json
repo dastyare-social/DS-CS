@@ -1201,7 +1201,7 @@
                 "examples": {
                   "example": {
                     "value": {
-                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
                       "key": "media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
                       "kind": "image",
                       "mimeType": "image/jpeg",
@@ -1261,7 +1261,7 @@
                 "examples": {
                   "example": {
                     "value": {
-                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
+                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
                       "key": "media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
                       "kind": "video",
                       "mimeType": "video/mp4",
@@ -1316,7 +1316,7 @@
                 "examples": {
                   "example": {
                     "value": {
-                      "uploadUrl": "https://s3.amazonaws.com/dastyare-social-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20260823%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260823T000000Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=3a7bd35c9e1f4b8a2c6d5e7f90ab1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+                      "uploadUrl": "https://s3.amazonaws.com/ds-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20260823%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260823T000000Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=3a7bd35c9e1f4b8a2c6d5e7f90ab1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
                       "key": "media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
                       "kind": "video",
                       "mimeType": "video/mp4"
@@ -1394,7 +1394,7 @@
                           "media": [
                             {
                               "kind": "image",
-                              "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                              "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
                               "width": 1080,
                               "height": 1920
                             }
@@ -1442,7 +1442,7 @@
                     "content": "Just shipped a new behind-the-scenes clip from the studio 🎬",
                     "media": [
                       {
-                        "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                        "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
                         "type": "image",
                         "width": 1080,
                         "height": 1920
@@ -1471,7 +1471,7 @@
                       "media": [
                         {
                           "kind": "image",
-                          "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                          "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
                           "width": 1080,
                           "height": 1920
                         }
@@ -1534,7 +1534,7 @@
                       "media": [
                         {
                           "kind": "image",
-                          "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                          "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
                           "width": 1080,
                           "height": 1920
                         }
@@ -1797,7 +1797,7 @@
                         {
                           "id": "c2d3e4f5-a6b7-4890-b123-456789abcdef",
                           "type": "image",
-                          "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                          "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
                           "width": 1080,
                           "height": 1920,
                           "likes": 24,
@@ -1835,7 +1835,7 @@
                   "value": {
                     "type": "image",
                     "media": {
-                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
                       "width": 1080,
                       "height": 1920
                     }
@@ -1858,7 +1858,7 @@
                     "value": {
                       "id": "c2d3e4f5-a6b7-4890-b123-456789abcdef",
                       "type": "image",
-                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
+                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/image/9f8e7d6c-5b4a-4321-8765-fedcba987654.jpg",
                       "width": 1080,
                       "height": 1920,
                       "likes": 0,
@@ -1908,7 +1908,7 @@
                     "value": {
                       "id": "c2d3e4f5-a6b7-4890-b123-456789abcdef",
                       "type": "video",
-                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
+                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
                       "width": 1080,
                       "height": 1920,
                       "duration": 35533,
@@ -2032,7 +2032,7 @@
                     "value": {
                       "id": "c2d3e4f5-a6b7-4890-b123-456789abcdef",
                       "type": "video",
-                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
+                      "url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4",
                       "width": 1080,
                       "height": 1920,
                       "duration": 35533,

@@ -50,7 +50,7 @@ export const ConfirmResultSchema = z.object({
  * @body ConfirmBody
  * @response ConfirmResultSchema
  * @examples request: {"key": "media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4", "mimeType": "video/mp4", "filename": "story.mp4", "size": 6041570, "width": 1080, "height": 1920, "duration": 35533}
- * @examples response: {"url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4", "key": "media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4", "kind": "video", "mimeType": "video/mp4", "size": 6041570, "width": 1080, "height": 1920, "duration": 35533, "filename": "story.mp4"}
+ * @examples response: {"url": "https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4", "key": "media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4", "kind": "video", "mimeType": "video/mp4", "size": 6041570, "width": 1080, "height": 1920, "duration": 35533, "filename": "story.mp4"}
  * @openapi
  */
 export async function POST(request: NextRequest) {

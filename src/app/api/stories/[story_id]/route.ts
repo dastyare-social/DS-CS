@@ -49,7 +49,7 @@ export const StoryItemSchema = z.object({
  * @tag Stories
  * @pathParams StoryParams
  * @response 200 StoryItemSchema
- * @examples response: {"id":"c2d3e4f5-a6b7-4890-b123-456789abcdef","type":"video","url":"https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4","width":1080,"height":1920,"duration":35533,"likes":24,"views":510,"createdAt":"2026-08-23T09:30:00.000Z"}
+ * @examples response: {"id":"c2d3e4f5-a6b7-4890-b123-456789abcdef","type":"video","url":"https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4","width":1080,"height":1920,"duration":35533,"likes":24,"views":510,"createdAt":"2026-08-23T09:30:00.000Z"}
  * @openapi
  */
 export async function GET(req: NextRequest, context: RouteParams) {
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest, context: RouteParams) {
  * @body patchStoriesSchema
  * @examples request: {"likes":25,"views":512}
  * @response 200 StoryItemSchema
- * @examples response: {"id":"c2d3e4f5-a6b7-4890-b123-456789abcdef","type":"video","url":"https://sample-ref-12345678.supabase.co/storage/v1/object/public/dastyare-social-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4","width":1080,"height":1920,"duration":35533,"likes":25,"views":512,"createdAt":"2026-08-23T09:30:00.000Z"}
+ * @examples response: {"id":"c2d3e4f5-a6b7-4890-b123-456789abcdef","type":"video","url":"https://sample-ref-12345678.supabase.co/storage/v1/object/public/ds-cs/media/video/7c9e6679-7425-40de-944b-e07fc1f90ae7.mp4","width":1080,"height":1920,"duration":35533,"likes":25,"views":512,"createdAt":"2026-08-23T09:30:00.000Z"}
  * @openapi
  */
 export async function PATCH(req: NextRequest, context: RouteParams) {
