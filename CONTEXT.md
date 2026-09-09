@@ -25,7 +25,7 @@ keeps that reach working for you on your own infrastructure.
 - **Runtime:** Bun, Node 20+, PostgreSQL, S3-compatible storage
 - **Dev port:** 8729
 - **Stack:** Next.js 16, React 19, TypeScript, Drizzle ORM, Tailwind CSS 4, tRPC, Better Auth
-- **Public site:** home feed `/`, explore `/explore`, single post `/posts/{id}`, optional `/resume`
+- **Public site:** home feed `/`, explore `/explore`, single post `/posts/{id}`, optional `/about`
 - **Creator panel (auth):** `/os`, login `/os/register`
 - **Agent surfaces:** `/api/mcp` (MCP tools), `/openapi.json`, `/docs` (Scalar), `/llms.txt`, `/agents.md`, `/context.md`
 

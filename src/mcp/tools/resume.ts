@@ -17,7 +17,7 @@ export function registerResumeTools(
     {
       title: "Get resume config",
       description:
-        "Read the /resume page configuration (config/resume.config.yml): enabled flag, general profile (name, avatar, jobTitle, website, about, contacts) and content sections (Work Experience, Education, ...). The page is served at {APP_URL}/resume only when enabled is true.",
+        "Read the /about page configuration (config/resume.config.yml): enabled flag, general profile (name, avatar, jobTitle, website, about, contacts) and content sections (Work Experience, Education, ...). The page is served at {APP_URL}/about only when enabled is true.",
       inputSchema: {},
     },
     async () => {
@@ -52,9 +52,9 @@ export function registerResumeTools(
     {
       title: "Enable or disable resume page",
       description:
-        "Toggle the /resume page on or off by flipping the `enabled` key in config/resume.config.yml. All other data is preserved and `enabled` stays the first key. When disabled, /resume renders the not-found page and leaves the sitemap.",
+        "Toggle the /about page on or off by flipping the `enabled` key in config/resume.config.yml. All other data is preserved and `enabled` stays the first key. When disabled, /about renders the not-found page and leaves the sitemap.",
       inputSchema: {
-        enabled: z.boolean().describe("true to show /resume, false to hide it"),
+        enabled: z.boolean().describe("true to show /about, false to hide it"),
       },
     },
     async ({ enabled }) => {

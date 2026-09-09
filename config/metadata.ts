@@ -164,11 +164,11 @@ export function postMetadata(
   };
 }
 
-export function resumeMetadata(locale: Locale): Metadata {
-  const title = `Resume — ${app_config[locale].name}`;
-  const description = `Resume of ${app_config[locale].name}`;
+export function aboutMetadata(locale: Locale): Metadata {
+  const title = `About — ${app_config[locale].name}`;
+  const description = `About ${app_config[locale].name}`;
 
-  // The resume page is indexable only when both the whole app is indexable
+  // The about page is indexable only when both the whole app is indexable
   // (NEXT_PUBLIC_ALLOW_INDEXING) and the page itself is enabled in
   // resume.config.yml.
   const allowIndexing =
@@ -181,8 +181,23 @@ export function resumeMetadata(locale: Locale): Metadata {
     robots: allowIndexing
       ? { index: true, follow: true }
       : { index: false, follow: false },
+    openGraph: {
+      title,
+      description,
+      url: `${app_url}/about`,
+      siteName: siteName(locale),
+      locale,
+      type: "profile",
+      images: ogImages(OG_IMAGE, title),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [OG_IMAGE],
+    },
     alternates: {
-      canonical: `${app_url}/resume`,
+      canonical: `${app_url}/about`,
     },
   };
 }

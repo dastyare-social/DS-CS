@@ -73,7 +73,7 @@ Every post you publish should work for you — not pad someone else's engagement
 | **`/os/register`**     | **Login** — two-step email/password sign-in via Better Auth. Email first, password fades in.                                                                                                                                                    |
 | **`/explore`**         | **Explore** — dual-pane TikTok-style content explorer. Left: Shorts (vertical fullscreen video feed with double-tap like). Right: Threads (horizontal text+image/video feed with reactions). Auto-polls for new threads every 30s.              |
 | **`/posts/[post_id]`** | **Single post** — permalink page for sharing individual posts. Tracks views, includes SEO ArticleSchema structured data, and generates a dynamic OG image for social media previews.                                                            |
-| **`/resume`**          | **Resume / CV** — driven entirely by `config/resume.config.yml`. Toggle on/off without rebuild. Shows profile, experience, education, and contact sections.                                                                                     |
+| **`/about`**          | **About / Resume** — driven entirely by `config/resume.config.yml`. Toggle on/off without rebuild. Shows profile, experience, education, and contact sections.                                                                                     |
 | **`/docs`**            | **API reference** — interactive Scalar UI for the REST API.                                                                                                                                                                                     |
 | **`/sitemap.xml`**     | **Sitemap** — dynamic XML sitemap including all published posts.                                                                                                                                                                                |
 | **`/robots.txt`**      | **Robots** — allows public routes, blocks `/os/` and `/api/`.                                                                                                                                                                                   |
@@ -372,14 +372,14 @@ Edit `config/app.config.yml` to set your name, description, and email, then rege
 bun run generate:config
 ```
 
-### Resume Page
+### About Page
 
-The optional `/resume` page is driven entirely by `config/resume.config.yml` — no rebuild or restart needed, changes apply on the next request:
+The optional `/about` page is driven entirely by `config/resume.config.yml` — no rebuild or restart needed, changes apply on the next request:
 
-- **`enabled` must be the first key**: `true` activates the page, `false` (or a missing/invalid file) makes `/resume` render the not-found page
+- **`enabled` must be the first key**: `true` activates the page, `false` (or a missing/invalid file) makes `/about` render the not-found page
 - Below it, define `general` (name, avatar, jobTitle, website, about, contacts) and any number of `content` sections (e.g. Work Experience, Education) following the commented template in the file
 
-Indexing follows the global SEO switch: `/resume` is only indexable when `NEXT_PUBLIC_ALLOW_INDEXING=true` **and** `enabled: true`; otherwise it gets `noindex` and stays out of `sitemap.xml`.
+Indexing follows the global SEO switch: `/about` is only indexable when `NEXT_PUBLIC_ALLOW_INDEXING=true` **and** `enabled: true`; otherwise it gets `noindex` and stays out of `sitemap.xml`.
 
 ---
 
@@ -409,7 +409,7 @@ src/
 │   │   ├── (main)/           # / — home feed, pinned bar, story avatar, newsletter CTA
 │   │   ├── explore/          # /explore — dual-pane Shorts + Threads explorer
 │   │   ├── posts/[id]/       # /posts/:id — single post permalink + OG image metadata
-│   │   ├── resume/           # /resume — CV page from YAML config
+│   │   ├── about/            # /about — about/resume page from YAML config
 │   │   └── register/         # /register — auth (sign up / sign in)
 │   ├── api/
 │   │   ├── auth/             # Better Auth handler

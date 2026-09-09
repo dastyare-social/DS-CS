@@ -40,12 +40,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 1,
     },
-    // The resume page joins the sitemap only when it is enabled in
+    // The about page joins the sitemap only when it is enabled in
     // resume.config.yml (global indexing is already checked above).
     ...(isResumeEnabled()
       ? [
           {
-            url: `${app_url}/resume`,
+            url: `${app_url}/about`,
             lastModified: new Date(),
             changeFrequency: 'monthly' as const,
             priority: 0.6,

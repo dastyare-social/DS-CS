@@ -30,7 +30,7 @@ export interface ResumeSection {
 }
 
 export interface ResumeConfig {
-  /** Must be the first key in resume.config.yml — true activates /resume. */
+  /** Must be the first key in resume.config.yml — true activates /about. */
   enabled: boolean;
   general: ResumeGeneral;
   content?: ResumeSection[];

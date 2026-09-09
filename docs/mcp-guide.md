@@ -165,7 +165,7 @@ Response:
 | `list_stories` | List stories with pagination | `page`, `limit`, `search`, `type` (image/video) |
 | `get_story` | Get a single story | `id` |
 | `count_stories` | Get total story count | (none) |
-| `get_resume_config` | Read the `/resume` page config (enabled flag, profile, sections) | (none) |
+| `get_resume_config` | Read the `/about` page config (enabled flag, profile, sections) | (none) |
 
 ### Write tools (API key required)
 
@@ -178,7 +178,7 @@ Response:
 | `update_story` | Update a story | `id`, `type`, `views`, `likes`, `media` |
 | `delete_story` | Delete a story | `id` |
 | `update_resume_config` | Replace the whole resume config with new YAML (first key must be `enabled:`) | `yaml` |
-| `set_resume_enabled` | Show/hide the `/resume` page, preserving all data | `enabled` |
+| `set_resume_enabled` | Show/hide the `/about` page, preserving all data | `enabled` |
 
 ---
 

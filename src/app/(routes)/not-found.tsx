@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 import NotFoundGetBackHomeButton from "@/components/not-found-get-back-home-button";
 
 // Mirrors the global-not-found page for notFound() calls within routes
-// (e.g. /resume when disabled in resume.config.yml).
+// (e.g. /about when disabled in resume.config.yml).
 const NotFound = async () => {
   const tNotFound = await getTranslations("not_found");
 

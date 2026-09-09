@@ -1,36 +1,47 @@
 enabled: true
 general:
-  name: Omid Shabab
+  name: Omid Shabab — Founder
   avatar: /profile-image.png
-  jobTitle: Builder of Dastyare Social
+  jobTitle: Founder & CEO of Dastyare Social
   website: https://omidshabab.com
-  about: Hey there! I'm Omid — I build things for the web and share the journey on
-    my own channel.
+  about: hey there! i'm Omid — i build things for web and share my journey on
+    this channel
   contacts:
-    - label: Email
+    - label: email
       value: hey@omidshabab.com
       href: mailto:hey@omidshabab.com
-    - label: Github
+    - label: github
       value: omidshabab
       href: https://github.com/omidshabab
-    - label: Twitter
-      value: omidshabab
-      href: https://twitter.com/omidshabab
+    - label: x
+      value: omidshabab_com
+      href: https://x.com/omidshabab_com
+    - label: instagram
+      value: omidshabab_channel
+      href: https://instagram.com/omidshabab_channel
+    - label: tiktok
+      value: omidshabab_channel
+      href: https://tiktok.com/omidshabab_channel
 content:
   - title: Work Experience
     items:
-      - title: Creator of Dastyare Social
-        subTitle: Self-hosted publishing platform
-        date: 2024 - Present
-        description: Building an open-source, self-hosted channel for both humans and AI
-          agents.
       - title: Freelance Developer
         subTitle: Remote
         date: 2020 - 2024
-        description: Design and development for clients around the world.
+        description: Design and development for clients around the world
+      - title: Founder of Dastyare Social
+        subTitle: Self-hosted publishing platform
+        date: 2025 - Present
+        description:
+          Building an open-source, self-hosted channel for both humans and AI
+          agents
   - title: Education
     items:
-      - title: Bachelor's Degree
+      - title: Bachelor of Computer Engineering
         subTitle: University
-        date: 2016 - 2020
-        description: Computer engineering.
+        date: 2022 - 2025
+        description: Was studying, quit because my mindset shifted
+      - title: Bachelor of Management
+        subTitle: University
+        date: 2026 - Present
+        description: Now studying

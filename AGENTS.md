@@ -318,7 +318,7 @@ docker compose -f docker-compose.dev.yml up -d --build
 
 ## MCP integration
 
-The app ships a real MCP server exposing posts, stories, and the resume config as tools. Read tools (`list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories`, `get_resume_config`) are public. Write tools (`create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story`, `update_resume_config`, `set_resume_enabled`) require API-key auth. Resume tools read/edit `config/resume.config.yml` (the `/resume` page); its first key must be `enabled:`.
+The app ships a real MCP server exposing posts, stories, and the resume config as tools. Read tools (`list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories`, `get_resume_config`) are public. Write tools (`create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story`, `update_resume_config`, `set_resume_enabled`) require API-key auth. Resume tools read/edit `config/resume.config.yml` (the `/about` page); its first key must be `enabled:`.
 
 Two transports are provided:
 
