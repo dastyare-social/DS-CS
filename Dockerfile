@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile
 # Build stage uses Bun to run TypeScript helpers and install dependencies
-FROM node:20-bullseye AS builder
+FROM node:22-bookworm AS builder
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ ENV NODE_ENV=production
 RUN bun run generate:config && bun run generate:icons && bunx next build
 
 ## Production image
-FROM node:20-slim
+FROM node:22-bookworm-slim
 WORKDIR /app
 
 ENV NODE_ENV=production
