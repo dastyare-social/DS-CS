@@ -55,12 +55,10 @@ Every post you publish should work for you — not pad someone else's engagement
 ## Demo
 
 <p align="center">
-  <video controls playsinline width="480" src="https://cdn.jsdelivr.net/gh/dastyare-social/DS-CS@main/public/screenshots/demo.mp4">
-    <a href="https://github.com/dastyare-social/DS-CS/blob/main/public/screenshots/demo.mp4">▶ Watch the demo video</a>
-  </video>
+  <img src="public/screenshots/demo.gif" alt="Dastyare Social — CS demo walkthrough" width="480" />
 </p>
 
-> **<a href="https://cs.dastyare.social" target="_blank" rel="noopener noreferrer">▶ Try the live demo →</a>** <sup>opens in new tab</sup>
+> **[Try the live demo →](https://cs.dastyare.social)**
 >
 > See how the creator studio feels before you deploy it yourself.
 
