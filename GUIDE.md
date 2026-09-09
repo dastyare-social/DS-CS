@@ -15,7 +15,7 @@ Dastyare Social CS is a single Next.js app that serves:
 
 - **Public creator site** — home feed, explore (shorts + threads), post pages, resume page.
 - **Operator dashboard** (`/os`) — manage posts, stories, media, and admin account.
-- **REST API** — OpenAPI-documented endpoints for posts, stories, media, push, and auth.
+- **REST API** — OpenAPI-documented endpoints for posts, stories, webhooks, media, push, and auth.
 - **tRPC layer** — used internally by the frontend for reads and writes.
 - **MCP server** — lets AI agents interact with the content via stdio or HTTP.
 - **Web push notifications** — browser push to opted-in subscribers via VAPID + Web Push.
@@ -66,13 +66,14 @@ public/
 src/
   app/
     (routes)/            # pages: (main) feed, explore, os (admin), posts/[post_id], resume
-    api/                 # REST: posts, stories, media, upload, push, auth, trpc, mcp, og, .well-known/mcp
+    api/                 # REST: posts, stories, webhooks, media, upload, push, auth, trpc, mcp, og, .well-known/mcp
     manifest.ts          # PWA web app manifest
     robots.ts, sitemap.ts, llms.txt, agents.md, docs/readme
   components/            # UI components + modals (notifications, profile)
   config/                # generated app config, routes, constants, locale
   lib/
     api/posts|stories/   # mutations.ts + queries.ts + index.ts (shared business logic)
+webhooks/            # outbound event delivery: WEBHOOK_EVENTS, emitWebhookEvent, HMAC signing, retries
     auth/                # Better Auth server/client + API key auth
     db/                  # drizzle schema, migrations, migrate.ts
     filters/             # content sanitization pipeline (NSFW, HTML)
@@ -207,10 +208,12 @@ The key rule: **`src/lib/api/*` is the single source of truth for business logic
 UI (React) ──► tRPC procedures ──┐
 External ────► REST handlers ────┼──► src/lib/api/{posts,stories}/mutations.ts & queries.ts ──► Drizzle ──► Postgres
 AI agents ───► MCP tools ────────┘
+                                    └──► src/lib/webhooks/index.ts ──► emitWebhookEvent ──► signed HTTP POST ──► your endpoint
 ```
 
 - **`src/lib/api/posts/mutations.ts`**: `createPost`, `updatePost`, `deletePostById`, `viewPost`, `batchIncrementViews`, `addReaction`, plus `sendPushNotification` on new content.
 - **`src/lib/api/stories/mutations.ts`**: `createStory`, `updateStory`, `deleteStoryById`, `incrementStoryViews`, `toggleStoryLike`.
+- **`src/lib/webhooks/index.ts`**: `emitWebhookEvent(event, data)` — fires after the matching mutations, delivers JSON envelopes to subscribed webhooks with HMAC signature (`x-ds-webhook-signature: t=…,v1=…`), retries on failure (up to 3 attempts, backoff), and records `lastStatus`/`lastAttemptAt`/`failureCount` on the webhook row. Events: `post.created|updated|deleted|reacted|viewed`, `story.created|updated|deleted|viewed|liked`.
 - **`src/lib/api/*/queries.ts`**: reads — lists with pagination/search, counts, by-id.
 - **REST handlers** (`src/app/api/...`) validate input with zod and call the same functions; mutations are additionally guarded by API-key auth where appropriate.
 - **tRPC** (`src/lib/trpc/router.ts`) exposes `posts.*` and `stories.*` procedures (list, count, getById, create, update, delete, view, like, reaction, batchView). The frontend hooks (`src/lib/hooks/use-posts.ts`, `use-media-upload.ts`) consume these.
@@ -237,7 +240,14 @@ AI agents ───► MCP tools ────────┘
 - Stories support image/video, likes, and views.
 - Publishing triggers `sendPushNotification` to active subscribers.
 
-### 10.4 PWA — Install To Home Screen
+### 10.4 Webhooks — Outbound Event Delivery
+
+- Register a webhook via `POST /api/webhooks` with `{ "url": "...", "events": [...] }`; get/patch/delete via `GET|PATCH|DELETE /api/webhooks/{webhook_id}`. List at `GET /api/webhooks`.
+- Events: `post.created|post.updated|post.deleted|post.reacted|post.viewed`, `story.created|story.updated|story.deleted|story.viewed|story.liked` (mutations call `emitWebhookEvent(event, data)`; the `*_viewed` events are fired after view-count increments).
+- Delivery: one JSON `POST` per event — envelope `{ id, event, timestamp, data }` — signed with the webhook secret as an HMAC-SHA256 over `t.<unix>.<rawBody>` and sent in the `x-ds-webhook-signature: t=<unix>,v1=<hex>` header. Verify with the secret returned once at webhook creation.
+- Reliability: per-event retry with backoff (up to 3 attempts) and a 10s timeout per attempt; deliveries run in `after()` (or fire-and-forget on serverless), so API responses are not blocked. Each webhook row tracks `lastStatus`, `lastAttemptAt`, and `failureCount`.
+
+### 10.5 PWA — Install To Home Screen
 
 - `src/app/manifest.ts` serves a valid web app manifest (name, standalone display, 192/512 icons).
 - `public/sw.js` is a self-contained service worker with `install`/`activate`/`fetch` handlers (runtime caching, network-first navigations) plus `push`/`notificationclick`.
@@ -246,12 +256,12 @@ AI agents ───► MCP tools ────────┘
 
 > The SW is hand-maintained in `public/sw.js`. Do not rely on a build step to generate it (Serwist was removed because Next 16's Turbopack build does not run its webpack plugin).
 
-### 10.5 OS Admin Dashboard — Manage Posts And Stories
+### 10.6 OS Admin Dashboard — Manage Posts And Stories
 
 - `/os` is the operator panel (`src/app/(routes)/os/`). It requires admin sign-in (Better Auth) and exposes post management: create, edit, pin/unpin, delete, plus stories and media management.
 - Route handlers and mutations apply the same business logic and guards as the public surface (including demo mode).
 
-### 10.6 SEO, Analytics & Metadata
+### 10.7 SEO, Analytics & Metadata
 
 - `src/app/robots.ts` + `src/app/sitemap.ts` generate `robots.txt` and `sitemap.xml`; `src/app/llms.txt` and `agents.md` serve agent-oriented docs.
 - `src/components/seo.tsx` and `next.config.ts` `headers()` control `X-Robots-Tag`. Indexing is blocked unless `NEXT_PUBLIC_ALLOW_INDEXING=true`.
@@ -261,7 +271,7 @@ AI agents ───► MCP tools ────────┘
 > [!WARNING]
 > SEO & LLM discovery is **experimental** — this machinery improves findability but can't guarantee indexing, ranking, or agent surfacing.
 
-### 10.7 MCP — AI Agent Integration
+### 10.8 MCP — AI Agent Integration
 
 Two entrypoints:
 
@@ -270,7 +280,7 @@ Two entrypoints:
 
 `src/mcp/server.ts` builds the server with post + story tools. Write tools honor a `canWrite` callback wired to demo mode and/or `MCP_API_KEY`/`API_KEY`.
 
-### 10.8 Demo Mode — Read-Only Switch
+### 10.9 Demo Mode — Read-Only Switch
 
 An **operator-only** switch (set `DEMO_MODE=true` in the server `.env`):
 

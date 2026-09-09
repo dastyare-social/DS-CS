@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CONTEXT.md` served at `/context.md` — compact agent context surfaced in `llms.txt`
 - MCP tool call error tracking — `mcp_tool_called` now carries `tool` + `isError`
 - Client error tracking — `window.onerror` / `unhandledrejection` → `client_error` event
+- Outbound webhooks — register endpoints and receive signed real-time events
+  (`post.created|updated|deleted|reacted|viewed`,
+  `story.created|updated|deleted|viewed|liked`), with HMAC signature
+  verification, automatic retries with backoff, and per-webhook delivery status
+  (`lastStatus`, `lastAttemptAt`, `failureCount`)
 
 ## [0.1.0] - Initial release
 

@@ -4,6 +4,7 @@ import { getServerPostHogClient } from "@/lib/analytics/server";
 import { registerPostTools } from "./tools/posts";
 import { registerStoryTools } from "./tools/stories";
 import { registerResumeTools } from "./tools/resume";
+import { registerWebhookTools } from "./tools/webhooks";
 
 export interface McpServerOptions {
   canWrite?: () => boolean;
@@ -20,6 +21,7 @@ export function createMcpServer(options: McpServerOptions = {}): McpServer {
   registerPostTools(server, { canWrite });
   registerStoryTools(server, { canWrite });
   registerResumeTools(server, { canWrite });
+  registerWebhookTools(server, { canWrite });
 
   // Wrap the server with @posthog/mcp so every MCP request emits native
   // $mcp_* analytics events ($mcp_initialize, $mcp_tool_call, $mcp_tools_list,

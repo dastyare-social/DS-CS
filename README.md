@@ -237,6 +237,11 @@ Every feature in the dashboard is also available through the REST API. Protect y
 | `GET`    | `/api/stories/{id}` | Get a story by ID       |
 | `PATCH`  | `/api/stories/{id}` | Update a story          |
 | `DELETE` | `/api/stories/{id}` | Delete a story          |
+| `GET`    | `/api/webhooks`     | List webhooks           |
+| `POST`   | `/api/webhooks`     | Create a webhook        |
+| `GET`    | `/api/webhooks/{id}`| Get a webhook by ID     |
+| `PATCH`  | `/api/webhooks/{id}`| Update a webhook        |
+| `DELETE` | `/api/webhooks/{id}`| Delete a webhook        |
 
 ### Example
 
@@ -254,6 +259,67 @@ curl -X POST https://app.dastyare.social/api/posts \
   -F "content=Check out this photo" \
   -F "media=@photo.jpg"
 ```
+
+### Webhooks
+
+Outbound webhooks let you react to channel activity in real time. Register an endpoint URL, and DS-CS delivers an HTTP POST for each subscribed event.
+
+Supported events:
+
+| Event            | Fires when               |
+| ---------------- | ------------------------ |
+| `post.created`   | A post is published      |
+| `post.updated`   | A post is edited         |
+| `post.deleted`   | A post is deleted        |
+| `post.reacted`   | A reaction is added      |
+| `post.viewed`    | A post is viewed         |
+| `story.created`  | A story is published     |
+| `story.updated`  | A story is edited        |
+| `story.deleted`  | A story is deleted       |
+| `story.viewed`   | A story is viewed        |
+| `story.liked`    | A story is liked         |
+
+```bash
+# Register a webhook
+curl -X POST https://app.dastyare.social/api/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "url": "https://example.com/hook",
+        "events": ["post.created", "story.created"]
+      }'
+```
+
+**Delivery envelope** — each delivery is a JSON POST with the event name, a timestamp, and the payload:
+
+```json
+{
+  "id": "d0e5b58f-2a24-4f47-9a3a-7bb2f92d5e63",
+  "event": "post.created",
+  "timestamp": "2026-09-09T15:29:15.000Z",
+  "data": { "id": "8370e5b2-fcad-4afc-bc70-7ae143f0bbca", "content": "..." }
+}
+```
+
+**Signature verification** — every request carries an `x-ds-webhook-signature` header so you can confirm it really came from DS-CS:
+
+```
+x-ds-webhook-signature: t=1725900000,v1=8f4f467a1d7b5d1f2a3297d0c3e6f0a4139f6b20b9d8a3a1b9c8d7e6f5a4b3c2d1
+```
+
+Compute the HMAC-SHA256 of the literal string `t.<timestamp>.<rawBody>` using the webhook's secret (returned once at creation):
+
+```js
+const crypto = require("crypto");
+const rawBody = <the raw request body as a string>;
+const [, t, v1] = req.headers["x-ds-webhook-signature"].match(/^t=(\d+),v1=([0-9a-f]+)$/);
+const expected = crypto.createHmac("sha256", secret)
+  .update(`t.${t}.${rawBody}`)
+  .digest("hex");
+const valid = crypto.timingSafeEqual(Buffer.from(v1, "hex"), Buffer.from(expected));
+```
+
+Retries are automatic on failure (backoff up to 3 attempts per event, ~10s timeout per attempt). Delivery status is exposed on each webhook as `lastStatus`, `lastAttemptAt`, and `failureCount`.
 
 ### Documentation
 
@@ -417,6 +483,7 @@ src/
 │   │   ├── og/               # Dynamic OpenGraph image generation (takumi-js)
 │   │   ├── posts/            # REST API for posts (OpenAPI-documented)
 │   │   ├── stories/          # REST API for stories
+│   │   ├── webhooks/         # Outbound webhook management (REST API)
 │   │   ├── push/             # Web push notification endpoints
 │   │   ├── upload/           # File upload + presigned S3 URLs
 │   │   └── trpc/             # Internal tRPC (used by dashboard)

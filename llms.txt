@@ -53,6 +53,18 @@ Story types: image, video
 - `POST /api/push/send` — Send browser push notifications to active subscribers. Requires `Authorization: Bearer <API_KEY>`.
 - Use this for self-hosted web push delivery to browsers that have enabled notifications.
 
+### Webhooks
+
+- `GET /api/webhooks` — List registered webhooks (with events and delivery status). Requires API key.
+- `POST /api/webhooks` — Register a webhook: `{ "url": "...", "events": [...] }`. Requires API key. Returns the webhook with its secret (only shown once).
+- `GET /api/webhooks/{id}` — Get a single webhook. Requires API key.
+- `PATCH /api/webhooks/{id}` — Update URL/events/active. Requires API key.
+- `DELETE /api/webhooks/{id}` — Delete a webhook. Requires API key.
+
+Events: `post.created`, `post.updated`, `post.deleted`, `post.reacted`, `post.viewed`, `story.created`, `story.updated`, `story.deleted`, `story.viewed`, `story.liked`.
+
+Deliveries are signed HTTP POSTs (`x-ds-webhook-signature: t=<unix>,v1=<hmac-sha256-hex>` over `t.<unix>.<rawBody>` using the webhook secret) with envelope `{ id, event, timestamp, data }`. Failed deliveries retry with backoff (up to 3 attempts); delivery status is tracked per webhook (`lastStatus`, `lastAttemptAt`, `failureCount`).
+
 ## MCP (Model Context Protocol)
 
 This app exposes an MCP server so AI agents can call posts/stories as tools instead of raw HTTP.
@@ -60,7 +72,7 @@ This app exposes an MCP server so AI agents can call posts/stories as tools inst
 - Endpoint: `{APP_URL}/api/mcp` (Streamable HTTP, JSON responses)
 - Discovery: `{APP_URL}/.well-known/mcp` — returns an `mcpServers` manifest
 - Guide: `{APP_URL}/docs` includes MCP tool documentation
-- Tools: `list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories`, `get_resume_config` (public); `create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story`, `update_resume_config`, `set_resume_enabled` (require `Authorization: Bearer <API_KEY>`). Resume tools read/edit `config/about.config.yml` — the `/about` page reflects changes on the next request.
+- Tools: `list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories`, `list_webhooks`, `get_webhook`, `get_resume_config` (public); `create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story`, `create_webhook`, `update_webhook`, `delete_webhook`, `update_resume_config`, `set_resume_enabled` (require `Authorization: Bearer <API_KEY>`). Webhook tools manage the same endpoints as `GET/POST /api/webhooks` (`list_webhooks`, `get_webhook`, `create_webhook`, `update_webhook`, `delete_webhook`). Resume tools read/edit `config/about.config.yml` — the `/about` page reflects changes on the next request.
 
 Connect a remote MCP client:
 

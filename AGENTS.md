@@ -7,7 +7,7 @@ Guide for AI agents consuming or extending this project. **Primary audience: ext
 
 ## Project summary
 
-Dastyare Social CS is a Next.js creator studio. It exposes a REST API for posts and stories, with Better Auth for authentication. The frontend uses tRPC internally; external agents should prefer the documented REST endpoints.
+Dastyare Social CS is a Next.js creator studio. It exposes a REST API for posts, stories, and outgoing webhooks, with Better Auth for authentication. The frontend uses tRPC internally; external agents should prefer the documented REST endpoints.
 
 - **Runtime:** Bun, Node 20+, PostgreSQL, S3-compatible storage
 - **Dev port:** 8729
@@ -166,6 +166,25 @@ POST /api/stories/{story_id}
 { "action": "like", "direction": "inc" | "dec" }
 ```
 
+## REST API — Webhooks
+
+Register endpoints to receive real-time events for posts and stories. Requires `Authorization: Bearer <API_KEY>`.
+
+```
+GET    /api/webhooks                     → list webhooks (with delivery status)
+POST   /api/webhooks                     body: { "url": "https://...", "events": [...] }
+GET    /api/webhooks/{webhook_id}        → single webhook
+PATCH  /api/webhooks/{webhook_id}        body: partial { url?, events?, active? }
+DELETE /api/webhooks/{webhook_id}
+```
+
+Events: `post.created | post.updated | post.deleted | post.reacted | post.viewed | story.created | story.updated | story.deleted | story.viewed | story.liked`
+
+- `POST /api/webhooks` returns the webhook with its `secret` (only shown this once).
+- Each event is delivered as a signed HTTP POST to the webhook URL with envelope `{ id, event, timestamp, data }`.
+- Signature: `x-ds-webhook-signature: t=<unix>,v1=<hex>` = HMAC-SHA256 over `t.<unix>.<rawBody>` using the webhook `secret` (not the API key).
+- Failed deliveries retry with backoff (up to 3 attempts). Status tracked per webhook: `lastStatus`, `lastAttemptAt`, `failureCount`.
+
 ## Data models (summary)
 
 **PostWithReactions:** `id`, `type`, `content`, `views`, `pinnedAt`, `media` (JSONB), `createdAt`, `updatedAt`, `reactions[]` (`emoji`, `count`)
@@ -182,6 +201,7 @@ Full schemas: `/openapi.json` → `components.schemas`
 | `src/lib/api/` | Business logic (queries, mutations, S3 uploads) |
 | `src/lib/db/schema/` | Drizzle tables + Zod schemas via drizzle-zod |
 | `src/lib/trpc/router.ts` | tRPC procedures mirroring posts/stories logic |
+| `src/lib/webhooks/` | Outbound webhook delivery (emit + HMAC signing + retries) |
 | `src/lib/auth/` | Better Auth server config and React client |
 | `src/lib/filters/` | Content filtering (NSFW words, HTML sanitization) |
 
@@ -318,7 +338,7 @@ docker compose -f docker-compose.dev.yml up -d --build
 
 ## MCP integration
 
-The app ships a real MCP server exposing posts, stories, and the resume config as tools. Read tools (`list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories`, `get_resume_config`) are public. Write tools (`create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story`, `update_resume_config`, `set_resume_enabled`) require API-key auth. Resume tools read/edit `config/about.config.yml` (the `/about` page); its first key must be `enabled:`.
+The app ships a real MCP server exposing posts, stories, webhooks, and the resume config as tools. Read tools (`list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories`, `list_webhooks`, `get_webhook`, `get_resume_config`) are public. Write tools (`create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story`, `create_webhook`, `update_webhook`, `delete_webhook`, `update_resume_config`, `set_resume_enabled`) require API-key auth. Webhook tools manage the same endpoints as `GET/POST /api/webhooks` and `GET/PATCH/DELETE /api/webhooks/{id}`. Resume tools read/edit `config/about.config.yml` (the `/about` page); its first key must be `enabled:`.
 
 Two transports are provided:
 
