@@ -32,7 +32,7 @@ keeps that reach working for you on your own infrastructure.
 ## Key conventions (drives all decisions)
 
 - **Config is YAML.** Edit `config/app.config.yml`, never hand-edit `app.config.json`.
-  `config/resume.config.yml` is parsed fresh on every request; its **first key must
+  `config/about.config.yml` is parsed fresh on every request; its **first key must
   be `enabled:`** and a `general.name` is required.
 - **Import alias:** `@/` → `src/`.
 - **Business logic lives in `src/lib/api/`**, not in route handlers.

@@ -11,7 +11,7 @@ Dastyare Social CS is a Next.js creator studio. It exposes a REST API for posts 
 
 - **Runtime:** Bun, Node 20+, PostgreSQL, S3-compatible storage
 - **Dev port:** 8729
-- **Config:** `config/app.config.yml` → generated JSON at build time; `config/resume.config.yml` → read at request time (no generation step)
+- **Config:** `config/app.config.yml` → generated JSON at build time; `config/about.config.yml` → read at request time (no generation step)
 
 ## API entry points
 
@@ -191,7 +191,7 @@ Full schemas: `/openapi.json` → `components.schemas`
 - **API logic:** Keep in `src/lib/api/`, not in route handlers
 - **Schemas:** Drizzle schema → drizzle-zod → route validation
 - **OpenAPI:** Annotate route handlers with JSDoc; run `bun run openapi:generate`
-- **Config:** Edit YAML, never hand-edit `app.config.json`; `resume.config.yml` is parsed fresh on every request — keep its `enabled` key first
+- **Config:** Edit YAML, never hand-edit `app.config.json`; `about.config.yml` is parsed fresh on every request — keep its `enabled` key first
 - **Do not** refactor unrelated code; match existing patterns
 
 ## Environment variables
@@ -227,7 +227,7 @@ See `.env.example`. Critical vars:
 	- `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE_CONTENT` — optional exact file contents.
 	- `NEXT_PUBLIC_ALLOW_INDEXING=true` — when set in production, allows search engines to index the site; default behavior blocks indexing with `X-Robots-Tag`.
 - The `verification.google` field in `src/app/(routes)/layout.tsx` (Next.js metadata API) injects `google-site-verification` only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` is set.
-- `src/app/[file]/route.ts` serves a verification file only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and matching filename env vars are present.
+- `src/app/google-verification/route.ts` (reached only via a scoped rewrite for the exact verification filename in `next.config.ts`) serves a verification file only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and matching filename env vars are present.
 - `src/app/sitemap.ts` generates `/sitemap.xml` based on `app_url` and posts; ensure `NEXT_PUBLIC_APP_URL` is correct in production.
  - The app explicitly blocks indexing for sensitive routes (see `next.config.ts` `alwaysNoIndex`). By default these include `/os/*`, `/api/*`, `/agents.md`, and `/docs/*`.
 
@@ -318,7 +318,7 @@ docker compose -f docker-compose.dev.yml up -d --build
 
 ## MCP integration
 
-The app ships a real MCP server exposing posts, stories, and the resume config as tools. Read tools (`list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories`, `get_resume_config`) are public. Write tools (`create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story`, `update_resume_config`, `set_resume_enabled`) require API-key auth. Resume tools read/edit `config/resume.config.yml` (the `/about` page); its first key must be `enabled:`.
+The app ships a real MCP server exposing posts, stories, and the resume config as tools. Read tools (`list_posts`, `get_post`, `list_stories`, `get_story`, `count_stories`, `get_resume_config`) are public. Write tools (`create_post`, `update_post`, `delete_post`, `create_story`, `update_story`, `delete_story`, `update_resume_config`, `set_resume_enabled`) require API-key auth. Resume tools read/edit `config/about.config.yml` (the `/about` page); its first key must be `enabled:`.
 
 Two transports are provided:
 

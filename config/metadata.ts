@@ -170,7 +170,7 @@ export function aboutMetadata(locale: Locale): Metadata {
 
   // The about page is indexable only when both the whole app is indexable
   // (NEXT_PUBLIC_ALLOW_INDEXING) and the page itself is enabled in
-  // resume.config.yml.
+  // about.config.yml.
   const allowIndexing =
     process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true" && isResumeEnabled();
 

@@ -108,6 +108,28 @@ const nextConfig: NextConfig = {
     const s3Endpoint = process.env.S3_ENDPOINT?.replace(/\/+$/, "");
     const s3Bucket = process.env.S3_BUCKET_NAME || "";
 
+    const rewrites: Array<{
+      source: string;
+      destination: string;
+      has?: Array<{ type: "header"; key: string; value: string }>;
+    }> = [];
+
+    const searchConsoleEnabled =
+      process.env.NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE === "true";
+    const token =
+      process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ||
+      process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_TOKEN;
+    const verificationFilename =
+      process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE ||
+      process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILENAME ||
+      (token ? `google${token}.html` : undefined);
+    if (searchConsoleEnabled && verificationFilename) {
+      rewrites.push({
+        source: `/${verificationFilename}`,
+        destination: "/google-verification",
+      });
+    }
+
     // Derive the public base URL for animated emoji .webp files
     let emojiBaseUrl: string | null = null;
     if (s3PublicBase) {
@@ -116,10 +138,8 @@ const nextConfig: NextConfig = {
       emojiBaseUrl = `${s3Endpoint}/${s3Bucket}`;
     }
 
-    if (!emojiBaseUrl) return [];
-
-    return [
-      {
+    if (emojiBaseUrl) {
+      rewrites.push({
         source: "/animated-emojies/:path*",
         destination: `${emojiBaseUrl}/animated-emojies/:path*`,
         has: [
@@ -129,8 +149,10 @@ const nextConfig: NextConfig = {
             value: ".*",
           },
         ],
-      },
-    ];
+      });
+    }
+
+    return rewrites;
   },
   async headers() {
     const allowIndexing = process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true";
@@ -175,6 +197,9 @@ const nextConfig: NextConfig = {
     return [...alwaysNoIndex, swHeaders];
   },
   devIndicators: false,
+  experimental: {
+    globalNotFound: true,
+  },
 };
 
 // Upload browser source maps to PostHog during `next build` so error tracking

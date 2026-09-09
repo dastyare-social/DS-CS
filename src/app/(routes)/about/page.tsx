@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getResumeConfig } from "@/config/resume";
 import { Button } from "@/components/button";
 
-// Read resume.config.yml per request so the enabled toggle applies live.
+// Read about.config.yml per request so the enabled toggle applies live.
 export const dynamic = "force-dynamic";
 
 const Section = ({

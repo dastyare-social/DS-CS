@@ -41,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     // The about page joins the sitemap only when it is enabled in
-    // resume.config.yml (global indexing is already checked above).
+    // about.config.yml (global indexing is already checked above).
     ...(isResumeEnabled()
       ? [
           {

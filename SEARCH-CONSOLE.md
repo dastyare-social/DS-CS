@@ -36,7 +36,7 @@ NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION="1234567890abcdef"
 NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE_CONTENT="<the-exact-file-content-google-provided>"
 ```
 
-- The app includes a route that serves the verification file at `https://yourdomain/<filename>` via `src/app/[file]/route.ts`. This route is disabled unless `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true`.
+- The app serves the verification file at `https://yourdomain/<filename>` via a scoped rewrite in `next.config.ts` that maps the exact verification filename to `src/app/google-verification/route.ts`. This rewrite is only added when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true`, so other unmatched URLs keep rendering the global not-found page.
 
 3) Submit sitemap
 
@@ -76,7 +76,7 @@ npx lighthouse https://yourdomain.example --only-categories=performance,accessib
 7) Notes for AI agents
 
 - The `verification.google` field in `src/app/(routes)/layout.tsx` injects the meta tag only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` is set.
-- `src/app/[file]/route.ts` serves a verification file only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE` or `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` is set.
+- `src/app/google-verification/route.ts` serves a verification file only when `NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE=true` and `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_FILE` or `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` is set. The path for it is created by a scoped rewrite in `next.config.ts` (whose `source` is exactly the verification filename), so it no longer shadows arbitrary URLs.
 - `src/app/sitemap.ts` and `src/app/robots.ts` already use `app_url` from `src/config/app.ts` — ensure `NEXT_PUBLIC_APP_URL` is correct in production.
 - `src/app/sitemap.ts` and `src/app/robots.ts` honor `NEXT_PUBLIC_ALLOW_INDEXING`: when set to anything other than `true`, the sitemap returns empty and robots.txt disallows all crawling. `next.config.ts` also emits `X-Robots-Tag: noindex` on sensitive routes (`/os/*`, `/api/*`, `/agents.md`, `/docs/*`) — note these stay crawlable by robots for LLM agents but are excluded from search results.
-- The optional `/about` page (see `config/resume.config.yml`) is indexable only when it is enabled **and** global indexing is on; otherwise it serves with `noindex, nofollow` and is omitted from the sitemap. When disabled it renders the not-found page instead.
+- The optional `/about` page (see `config/about.config.yml`) is indexable only when it is enabled **and** global indexing is on; otherwise it serves with `noindex, nofollow` and is omitted from the sitemap. When disabled it renders the not-found page instead.

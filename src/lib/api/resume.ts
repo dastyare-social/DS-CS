@@ -30,7 +30,7 @@ export interface ResumeSection {
 }
 
 export interface ResumeConfig {
-  /** Must be the first key in resume.config.yml — true activates /about. */
+  /** Must be the first key in about.config.yml — true activates /about. */
   enabled: boolean;
   general: ResumeGeneral;
   content?: ResumeSection[];
@@ -39,7 +39,7 @@ export interface ResumeConfig {
 export const RESUME_CONFIG_PATH = path.join(
   process.cwd(),
   "config",
-  "resume.config.yml"
+  "about.config.yml"
 );
 
 const DISABLED_FALLBACK: ResumeConfig = { enabled: false, general: { name: "" } };
@@ -82,7 +82,7 @@ export function readResumeYaml(): string | null {
 }
 
 /**
- * Reads resume.config.yml fresh on every call so flipping `enabled` takes
+ * Reads about.config.yml fresh on every call so flipping `enabled` takes
  * effect on the next request — no rebuild or server restart required.
  * A missing or invalid file disables the page rather than crashing the app.
  */
@@ -103,7 +103,7 @@ export function writeResumeYaml(raw: string): string | null {
   if (!raw.trim()) return "YAML content is empty";
   // `enabled` must stay the first key of the document.
   if (!/^enabled\s*:/.test(raw.trimStart()))
-    return "The first key of resume.config.yml must be `enabled:`";
+    return "The first key of about.config.yml must be `enabled:`";
   if (!parseResumeConfig(raw))
     return "Invalid resume config — needs boolean `enabled`, a `general` object with a non-empty `name`, and optional array `content` sections with title/items";
   try {
@@ -117,11 +117,11 @@ export function writeResumeYaml(raw: string): string | null {
 /** Flip `enabled` while keeping it the first key and preserving all other data. */
 export function setResumeEnabled(enabled: boolean): string | null {
   const raw = readResumeYaml();
-  if (!raw) return enabled ? "resume.config.yml not found" : null;
+  if (!raw) return enabled ? "about.config.yml not found" : null;
 
   const parsed = YAML.parse(raw);
   if (!parsed || typeof parsed !== "object")
-    return "Existing resume.config.yml is not a valid mapping";
+    return "Existing about.config.yml is not a valid mapping";
 
   // Rebuild with `enabled` pinned first; YAML.stringify preserves key order.
   const ordered: Record<string, unknown> = { enabled };

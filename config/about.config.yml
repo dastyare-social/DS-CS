@@ -25,23 +25,24 @@ general:
 content:
   - title: Work Experience
     items:
-      - title: Freelance Developer
-        subTitle: Remote
-        date: 2020 - 2024
-        description: Design and development for clients around the world
       - title: Founder of Dastyare Social
         subTitle: Self-hosted publishing platform
         date: 2025 - Present
         description:
           Building an open-source, self-hosted channel for both humans and AI
           agents
+      - title: Freelance Developer
+        subTitle: Remote
+        date: 2020 - 2024
+        description: Design and development for clients around the world
+
   - title: Education
     items:
-      - title: Bachelor of Computer Engineering
-        subTitle: University
-        date: 2022 - 2025
-        description: Was studying, quit because my mindset shifted
       - title: Bachelor of Management
         subTitle: University
         date: 2026 - Present
         description: Now studying
+      - title: Bachelor of Computer Engineering
+        subTitle: University
+        date: 2022 - 2025
+        description: Was studying, quit because my mindset shifted
