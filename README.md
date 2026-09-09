@@ -55,7 +55,7 @@ Every post you publish should work for you — not pad someone else's engagement
 ## Demo
 
 <p align="center">
-  <img src="public/screenshots/demo.gif" alt="Dastyare Social — CS demo walkthrough" width="480" />
+  <img src="public/screenshots/demo.gif" alt="Dastyare Social — CS demo walkthrough" width="100%" />
 </p>
 
 > **[Try the live demo →](https://cs.dastyare.social)**
@@ -100,7 +100,7 @@ Every post you publish should work for you — not pad someone else's engagement
 ### Post Context Menu
 
 <p align="center">
-  <img src="public/screenshots/context-menu.png" alt="Post context menu with emoji reactions" width="700" />
+  <img src="public/screenshots/context-menu-demo.gif" alt="Post context menu with emoji reactions — demo walkthrough" width="100%" />
 </p>
 
 A fully custom-built right-click / long-press context menu — zero dependencies, built with React Context, Portals, and pointer event tracking.
@@ -113,7 +113,7 @@ A fully custom-built right-click / long-press context menu — zero dependencies
 ### Stories
 
 <p align="center">
-  <img src="public/screenshots/stories.webp" alt="Stories" width="350" />
+  <img src="public/screenshots/stories.webp" alt="Stories" width="100%" />
 </p>
 
 Ephemeral image and video stories with a native-feeling viewer — not a horizontal avatar bar, but a full-screen vertical reel.
@@ -129,7 +129,7 @@ Ephemeral image and video stories with a native-feeling viewer — not a horizon
 ### Add Story Modal
 
 <p align="center">
-  <img src="public/screenshots/add-story-modal.png" alt="Add story modal with upload preview" width="700" />
+  <img src="public/screenshots/add-story-modal-demo.gif" alt="Add story modal with upload preview — demo walkthrough" width="100%" />
 </p>
 
 Two-stage upload flow: file selection → 9:16 preview → direct-to-S3 upload → story creation.
@@ -144,7 +144,7 @@ Two-stage upload flow: file selection → 9:16 preview → direct-to-S3 upload �
 ### Dynamic OG Images
 
 <p align="center">
-  <img src="public/screenshots/og-image.png" alt="Dynamic OG image for social media previews" width="600" />
+  <img src="public/screenshots/og-image.png" alt="Dynamic OG image for social media previews" width="100%" />
 </p>
 
 Every post gets a server-generated social media preview image — 2400×1260 PNG composed on-the-fly with `takumi-js`.
