@@ -1,9 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: ds-cs:latest
+    image: dastyaresocial/ds-cs:latest
     ports:
       - "8729:8729"
     env_file:
@@ -23,29 +20,6 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     restart: unless-stopped
-
-  # minio:
-  #   image: minio/minio:latest
-  #   command: server /data
-  #   environment:
-  #     MINIO_ROOT_USER: minioadmin
-  #     MINIO_ROOT_PASSWORD: minioadmin
-  #   ports:
-  #     - "9000:9000"
-  #   volumes:
-  #     - minio-data:/data
-  #   restart: unless-stopped
-
-  # minio-createbuckets:
-  #   image: minio/mc:latest
-  #   depends_on:
-  #     - minio
-  #   entrypoint: >
-  #     /bin/sh -c "
-  #     until (mc alias set local http://minio:9000 minioadmin minioadmin) do echo 'waiting for minio...' && sleep 1; done;
-  #     mc mb --ignore-existing local/ds-cs;
-  #     exit 0;
-  #     "
 
   rustfs:
     image: rustfs/rustfs:latest
@@ -76,5 +50,4 @@ services:
 
 volumes:
   db-data:
-  minio-data:
   rustfs-data:

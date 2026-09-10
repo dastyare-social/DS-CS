@@ -197,20 +197,27 @@ DS-CS is genuinely open-source — no license fee, no paid tier hiding the funct
 
 ## Getting Started
 
-**Step 1 — Deploy**
+Two options — pick one. Both use the prebuilt `dastyaresocial/ds-cs` image and bundle PostgreSQL + an S3-compatible object store.
 
-Docker multi-stage build, standard self-hosting setup.
+### Option A — One-command install (recommended)
 
 ```bash
-git clone https://github.com/dastyare-social/DS-CS.git
-cd DS-CS
-cp .env.example .env   # edit with your values
-docker compose up -d --build
+curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/scripts/install.sh | bash
 ```
 
-That's it. Migrations run automatically on first start, and an admin user is bootstrapped from your `.env` values.
+This downloads `docker-compose.yml`, generates a `.env` with sensible defaults, and starts the stack.
 
-**Step 2 — Start publishing**
+### Option B — Manual Docker Compose
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/docker-compose.yml -o docker-compose.yml
+cp .env.example .env   # edit with your values
+docker compose up -d
+```
+
+Migrations run automatically on first start, and an admin user is bootstrapped from your `.env` values.
+
+### Start publishing
 
 Open [http://localhost:8729](http://localhost:8729) and sign in with the admin credentials from your `.env`.
 
@@ -334,15 +341,12 @@ Retries are automatic on failure (backoff up to 3 attempts per event, ~10s timeo
 
 ## Self-Hosting
 
-DS-CS is designed to be self-hosted. Deploy it on:
+DS-CS is designed to be self-hosted. Two supported options, both using the prebuilt `dastyaresocial/ds-cs` image:
 
-- **Any VPS** — DigitalOcean, Hetzner, Linode, AWS EC2, etc.
-- **Vercel** — with an external PostgreSQL provider (Neon, Supabase, etc.)
-- **Railway** — add a PostgreSQL service, set the start command.
-- **Render** — Dockerfile or Node environment, add a managed database.
-- **Fly.io, CapRover, Portainer** — any Docker-compatible platform.
+- **One-command install** — `curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/scripts/install.sh | bash`
+- **Manual Docker Compose** — download `docker-compose.yml`, configure `.env`, run `docker compose up -d`
 
-For a complete deployment guide covering environment variables, reverse proxies, HTTPS, and platform-specific instructions, see **[SELF-HOSTING.md](./SELF-HOSTING.md)**.
+For environment variables, reverse proxies, HTTPS, browser push notifications, and a production checklist, see **[SELF-HOSTING.md](./SELF-HOSTING.md)**.
 
 ---
 

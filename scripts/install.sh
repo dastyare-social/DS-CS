@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL=${1:-"https://github.com/dastyare-social/DS-CS.git"}
-APP_DIR=${2:-"dastyare_social_cs"}
+APP_DIR=${1:-"."}
 ENV_FILE=".env"
 DOCKER_COMPOSE_FILE="docker-compose.yml"
+DOCKER_COMPOSE_URL="https://raw.githubusercontent.com/dastyare-social/DS-CS/main/docker-compose.yml"
 
 info() {
   printf '\033[1;34m%s\033[0m\n' "$*"
@@ -25,34 +25,30 @@ generate_secret() {
   elif command -v python3 >/dev/null 2>&1; then
     python3 -c 'import secrets; print(secrets.token_hex(32))'
   else
-    date +%s | sha256sum | cut -c1-64
+    error "Either openssl or python3 is required to generate secrets."
   fi
 }
-
-if [ ! -f package.json ] && [ ! -d .git ]; then
-  if ! command -v git >/dev/null 2>&1; then
-    error "git is required to clone the repository. Install git and rerun this script."
-  fi
-  info "Cloning repository from ${REPO_URL} into ${APP_DIR}..."
-  git clone --depth 1 "$REPO_URL" "$APP_DIR"
-  cd "$APP_DIR"
-else
-  info "Using existing repository in $(pwd)"
-fi
 
 if ! command -v docker >/dev/null 2>&1; then
   error "Docker is required for the install script. Install Docker and rerun this script."
 fi
 
-if ! command -v bun >/dev/null 2>&1; then
-  info "Bun not found. Installing Bun..."
-  curl -fsSL https://bun.sh/install | bash -s -- --yes
-  export BUN_INSTALL="$HOME/.bun"
-  export PATH="$BUN_INSTALL/bin:$PATH"
+if ! command -v curl >/dev/null 2>&1; then
+  error "curl is required for the install script. Install curl and rerun this script."
+fi
+
+if [ "$APP_DIR" != "." ]; then
+  mkdir -p "$APP_DIR"
+  cd "$APP_DIR"
+fi
+
+if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
+  info "Downloading docker-compose.yml..."
+  curl -fsSL "$DOCKER_COMPOSE_URL" -o "$DOCKER_COMPOSE_FILE"
 fi
 
 if [ ! -f "$ENV_FILE" ]; then
-  info "Creating a local .env file with safe defaults for Docker Compose..."
+  info "Creating a .env file with safe defaults for Docker Compose..."
   cat > "$ENV_FILE" <<EOF
 DATABASE_URL="postgresql://postgres:postgres@db:5432/dastyare_social_cs"
 ADMIN_EMAIL=admin@example.com
@@ -63,7 +59,7 @@ API_KEY_RATE_LIMIT_WINDOW_MS=60000
 BETTER_AUTH_URL="http://localhost:8729"
 BETTER_AUTH_SECRET=$(generate_secret)
 NEXT_PUBLIC_APP_URL="http://localhost:8729"
-S3_ENDPOINT="http://minio:9000"
+S3_ENDPOINT="http://rustfs:9000"
 S3_REGION="us-east-1"
 S3_ACCESS_KEY_ID="minioadmin"
 S3_SECRET_ACCESS_KEY="minioadmin"
@@ -81,10 +77,9 @@ else
   info ".env already exists, leaving it intact."
 fi
 
-info "Bootstrapping the project with Docker Compose..."
-
-docker compose -f "$DOCKER_COMPOSE_FILE" up -d --build
+info "Starting the app with Docker Compose (pulls the prebuilt dastyaresocial/ds-cs image)..."
+docker compose -f "$DOCKER_COMPOSE_FILE" up -d
 
 info "Installation complete."
 info "Open http://localhost:8729 after Docker Compose finishes starting the services."
-warn "Review .env and update secrets, database URL, and S3 values before using this in production."
+warn "Review .env and update secrets before using this in production."

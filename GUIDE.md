@@ -92,28 +92,25 @@ translations/en.json     # next-intl messages
 
 ## 4. Prerequisites & setup
 
-Requirements: **Bun**, Node.js 20+, **PostgreSQL**, an **S3-compatible storage** provider, and **FFmpeg/FFprobe** (for video dimension detection).
+Two supported ways to install and run the project — both use the prebuilt `dastyaresocial/ds-cs` image.
 
-```bash
-cp .env.example .env      # then fill in the values (see §5)
-bun install
-bun run dev               # http://localhost:8729
-```
-
-Useful one-time steps:
-
-```bash
-docker compose -f docker-compose.dev.yml up -d db minio   # local Postgres + MinIO
-bun run db:migrate                                         # apply schema
-bun run bootstrap:admin                                    # create admin account
-npx web-push generate-vapid-keys                           # for push (§8)
-```
-
-Or bootstrap a fresh server with one command:
+**Option A — One-command install**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/scripts/install.sh | bash
 ```
+
+Downloads `docker-compose.yml`, generates a `.env` with defaults, and starts the stack (app + PostgreSQL + rustfs).
+
+**Option B — Manual Docker Compose**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/docker-compose.yml -o docker-compose.yml
+cp .env.example .env      # then fill in the values (see §5)
+docker compose up -d
+```
+
+Contributors working on the codebase from source (Bun, `bun run dev`) should follow **CONTRIBUTING.md**.
 
 ---
 
@@ -315,9 +312,11 @@ Test locations: `src/components/__tests__/`, `src/lib/**/__tests__/` (e.g. `filt
 
 ## 13. Deployment
 
-- **Docker Compose** (`docker-compose.yml`): `app`, `db` (Postgres), `minio` (S3-compatible). Dev variant: `docker-compose.dev.yml`. `docker compose up -d --build`.
-- **VPS** — `scripts/install.sh` bootstraps env, DB, and services.
-- **Vercel / Railway / Render** — see `SELF-HOSTING.md` for per-provider steps (DB, S3/MinIO, VAPID, env).
+- **One-command install** — `curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/scripts/install.sh | bash` bootstraps env, DB, and services.
+- **Docker Compose** (`docker-compose.yml`) — `app`, `db` (Postgres), `rustfs` (S3-compatible). Download the file, configure `.env`, then `docker compose up -d`.
+
+Both options use the prebuilt `dastyaresocial/ds-cs` image. See `SELF-HOSTING.md` for env vars, HTTPS, and production hardening.
+
 - **Releases** — push a semantic version tag (`git tag v0.1.1 && git push origin v0.1.1`) to trigger a GitHub Release with generated notes.
 
 Production checklist (also in README/`SEARCH-CONSOLE.md`): HTTPS, `NEXT_PUBLIC_APP_URL=https://...`, indexing enabled, robots/sitemap reachable, VAPID keys set, admin bootstrapped.
