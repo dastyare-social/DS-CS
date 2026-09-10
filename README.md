@@ -223,6 +223,10 @@ Open [http://localhost:8729](http://localhost:8729) and sign in with the admin c
 
 Post through the UI or the REST API directly — built for both from day one.
 
+### Profile Image
+
+Drop your photo at `public/profile-image.png` — with that exact name — and nothing else is required. On every build the project automatically center-crops it to a square, rounds it for the favicon and app icon, and generates the other images it needs (browser-tab icon, Apple/Android home-screen icons, PWA manifest icons). In-app avatars are rounded automatically too. A square image is ideal, but any aspect ratio works — it gets center-cropped. The build fails if the file is missing.
+
 ---
 
 ## API
