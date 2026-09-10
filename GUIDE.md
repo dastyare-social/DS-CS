@@ -100,14 +100,14 @@ Two supported ways to install and run the project — both use the prebuilt `das
 curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/scripts/install.sh | bash
 ```
 
-Downloads `docker-compose.yml`, generates a `.env` with defaults, and starts the stack (app + PostgreSQL + rustfs).
+Downloads `docker-compose.yml`, generates a `.env` with defaults, and starts the stack (app + PostgreSQL + rustfs). The project name is pinned to `ds-cs`, so containers, volumes, and networks are prefixed `ds-cs-*` regardless of install directory.
 
 **Option B — Manual Docker Compose**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/docker-compose.yml -o docker-compose.yml
 cp .env.example .env      # then fill in the values (see §5)
-docker compose up -d
+docker compose up -d      # project name pinned to "ds-cs" → resources prefixed ds-cs-*
 ```
 
 Contributors working on the codebase from source (Bun, `bun run dev`) should follow **CONTRIBUTING.md**.
@@ -313,7 +313,7 @@ Test locations: `src/components/__tests__/`, `src/lib/**/__tests__/` (e.g. `filt
 ## 13. Deployment
 
 - **One-command install** — `curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/scripts/install.sh | bash` bootstraps env, DB, and services.
-- **Docker Compose** (`docker-compose.yml`) — `app`, `db` (Postgres), `rustfs` (S3-compatible). Download the file, configure `.env`, then `docker compose up -d`.
+- **Docker Compose** (`docker-compose.yml`) — `app`, `db` (Postgres), `rustfs` (S3-compatible). Download the file, configure `.env`, then `docker compose up -d`. The project name is pinned to `ds-cs`, so containers, volumes, and networks are prefixed `ds-cs-*`.
 
 Both options use the prebuilt `dastyaresocial/ds-cs` image. See `SELF-HOSTING.md` for env vars, HTTPS, and production hardening.
 

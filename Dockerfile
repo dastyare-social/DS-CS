@@ -35,6 +35,13 @@ ENV NODE_ENV=production
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
+# Runtime startup runs npm scripts (generate:config, db:migrate, bootstrap:admin)
+# via tsx, so they need the script sources, config, and the tsconfig paths (for
+# the "@/*" alias used by bootstrap-admin.ts and the db helpers).
+COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/config ./config
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/AGENTS.md ./AGENTS.md
 COPY --from=builder /app/README.md ./README.md

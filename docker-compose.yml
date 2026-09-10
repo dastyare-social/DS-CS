@@ -1,3 +1,5 @@
+name: ds-cs
+
 services:
   app:
     image: dastyaresocial/ds-cs:latest
@@ -9,7 +11,7 @@ services:
       - db
       - rustfs
     restart: unless-stopped
-    command: sh -c "bun run generate:config && bun run db:migrate && bun run bootstrap:admin && bun run start"
+    command: sh -c "npm run generate:config && npm run db:migrate && npm run bootstrap:admin && npm run start"
 
   db:
     image: postgres:16
@@ -25,8 +27,8 @@ services:
     image: rustfs/rustfs:latest
     command: /data
     environment:
-      RUSTFS_ACCESS_KEY: minioadmin
-      RUSTFS_SECRET_KEY: minioadmin
+      RUSTFS_ACCESS_KEY: 442c201224d92fbd5df5aa9d
+      RUSTFS_SECRET_KEY: ea8d22810ade922c73ada6bc0c446c5de465db49454c02b8
       RUSTFS_ADDRESS: 0.0.0.0:9000
       RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
       RUSTFS_CONSOLE_ENABLE: "true"
@@ -43,7 +45,7 @@ services:
       - rustfs
     entrypoint: >
       /bin/sh -c "
-      until (mc alias set local http://rustfs:9000 minioadmin minioadmin) do echo 'waiting for rustfs...' && sleep 1; done;
+      until (mc alias set local http://rustfs:9000 442c201224d92fbd5df5aa9d ea8d22810ade922c73ada6bc0c446c5de465db49454c02b8) do echo 'waiting for rustfs...' && sleep 1; done;
       mc mb --ignore-existing local/ds-cs;
       exit 0;
       "

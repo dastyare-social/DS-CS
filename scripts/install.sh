@@ -61,8 +61,8 @@ BETTER_AUTH_SECRET=$(generate_secret)
 NEXT_PUBLIC_APP_URL="http://localhost:8729"
 S3_ENDPOINT="http://rustfs:9000"
 S3_REGION="us-east-1"
-S3_ACCESS_KEY_ID="minioadmin"
-S3_SECRET_ACCESS_KEY="minioadmin"
+S3_ACCESS_KEY_ID="442c201224d92fbd5df5aa9d"
+S3_SECRET_ACCESS_KEY="ea8d22810ade922c73ada6bc0c446c5de465db49454c02b8"
 S3_BUCKET_NAME="ds-cs"
 S3_FORCE_PATH_STYLE=true
 NEXT_PUBLIC_ANIMATED_EMOJIES=false
@@ -78,6 +78,7 @@ else
 fi
 
 info "Starting the app with Docker Compose (pulls the prebuilt dastyaresocial/ds-cs image)..."
+info "The compose project is pinned to \"ds-cs\", so containers/volumes are prefixed ds-cs- regardless of the install directory."
 docker compose -f "$DOCKER_COMPOSE_FILE" up -d
 
 info "Installation complete."

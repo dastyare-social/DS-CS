@@ -24,6 +24,7 @@ The script:
 - downloads `docker-compose.yml` (if not already present)
 - creates a `.env` file with safe local defaults (or leaves an existing one intact)
 - starts the stack with `docker compose up -d` (no build step — the prebuilt image is pulled)
+- runs the stack under the pinned project name `ds-cs` — containers, volumes, and networks are prefixed `ds-cs-*` no matter where you install
 
 To install into a specific directory, run the script locally with a target directory:
 
@@ -53,6 +54,8 @@ Then start the stack (pulls `dastyaresocial/ds-cs:latest` plus `postgres:16` and
 ```bash
 docker compose up -d
 ```
+
+`docker-compose.yml` pins the Compose project name to `ds-cs`, so containers, volumes, and networks are named `ds-cs-*` regardless of the directory you run from.
 
 The app container runs migrations and bootstraps the admin user automatically on startup.
 
@@ -110,7 +113,7 @@ WEBPUSH_SUBJECT="mailto:you@example.com"
 - `BETTER_AUTH_SECRET`: Generate with `openssl rand -base64 32`.
 - `NEXT_PUBLIC_APP_URL`: Your public app URL (used for SEO, metadata, and client links).
 - `S3_ENDPOINT`: Endpoint from your S3-compatible provider. With the bundled rustfs service, use `http://rustfs:9000`.
-- `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY`: Storage credentials. The bundled rustfs defaults to `minioadmin` / `minioadmin`.
+- `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY`: Storage credentials. The bundled rustfs defaults to `442c201224d92fbd5df5aa9d` / `ea8d22810ade922c73ada6bc0c446c5de465db49454c02b8` (the `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` in `docker-compose.yml`).
 - `S3_BUCKET_NAME`: Name of your media bucket. The bundled stack creates `ds-cs` automatically.
 - `S3_FORCE_PATH_STYLE`: Set `true` for rustfs/MinIO/path-style endpoints, `false` for AWS standard endpoints.
 - `NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY` / `WEBPUSH_PRIVATE_KEY`: Generate with `npx web-push generate-vapid-keys`.

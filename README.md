@@ -205,7 +205,7 @@ Two options — pick one. Both use the prebuilt `dastyaresocial/ds-cs` image and
 curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/scripts/install.sh | bash
 ```
 
-This downloads `docker-compose.yml`, generates a `.env` with sensible defaults, and starts the stack.
+This downloads `docker-compose.yml`, generates a `.env` with sensible defaults, and starts the stack. The compose project name is pinned to `ds-cs`, so containers, volumes, and networks are prefixed `ds-cs-*` regardless of which directory you run Compose from.
 
 ### Option B — Manual Docker Compose
 
@@ -215,7 +215,7 @@ cp .env.example .env   # edit with your values
 docker compose up -d
 ```
 
-Migrations run automatically on first start, and an admin user is bootstrapped from your `.env` values.
+Migrations run automatically on first start, and an admin user is bootstrapped from your `.env` values. The compose project name is pinned to `ds-cs`, so containers, volumes, and networks are prefixed `ds-cs-*` (same as Option A).
 
 ### Start publishing
 
