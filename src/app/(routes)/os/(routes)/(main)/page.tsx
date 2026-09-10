@@ -31,7 +31,6 @@ import Header from "@/components/header";
 import PinnedBar from "@/components/pinned-bar";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
 import type { MediaPayload, PostWithReactions } from "@/lib/api/posts";
-import { app_config } from "@/config/app";
 import { Locale } from "@/config/locale";
 import {
   buildMediaInputs,
@@ -1139,12 +1138,7 @@ const Page = () => {
 
             {!isLoading && posts.length === 0 && (
               <div className="w-full h-full flex justify-center items-center text-xl text-center">
-                {t.rich("general.wait_for_first_content", {
-                  owner_name: app_config[locale].name,
-                  highlight: (chunks) => (
-                    <span className="text-primary">&nbsp;{chunks}&nbsp;</span>
-                  ),
-                })}
+                {t("general.publish_first_content")}
               </div>
             )}
 

@@ -10,6 +10,7 @@
     "new_posts": "New Posts",
     "not_posted_any_content_yet": "Not Posted Any Content Yet",
     "wait_for_first_content": "Wait For <highlight>{owner_name}</highlight> To Publish First Content",
+    "publish_first_content": "Publish Your First Content To Show On Your Channel",
     "copy_post_link": "Copy Post Link",
     "copy_text": "Copy Text",
     "delete_post": "Delete Post",
