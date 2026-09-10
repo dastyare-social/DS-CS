@@ -165,7 +165,7 @@ export function postMetadata(
 }
 
 export function aboutMetadata(locale: Locale): Metadata {
-  const title = `About — ${app_config[locale].name}`;
+  const title = appName(locale);
   const description = `About ${app_config[locale].name}`;
 
   // The about page is indexable only when both the whole app is indexable
@@ -176,7 +176,7 @@ export function aboutMetadata(locale: Locale): Metadata {
 
   return {
     metadataBase: new URL(app_url),
-    title,
+    title: { absolute: title },
     description,
     robots: allowIndexing
       ? { index: true, follow: true }
