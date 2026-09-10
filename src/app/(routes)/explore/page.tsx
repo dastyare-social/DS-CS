@@ -117,9 +117,11 @@ export default function Page() {
   const filterThreadPost = useCallback((m: PostWithReactions) => {
     if (m.type === "text") return true;
     if (m.type === "image" || m.type === "video") {
-      const w = m.media?.width || 0;
-      const h = m.media?.height || 0;
-      return w >= h;
+      const media = m.media;
+      if (media && "width" in media && media["height"]) {
+        return (media["width"] || 0) >= media["height"];
+      }
+      return false;
     }
     return false;
   }, []);
@@ -136,9 +138,9 @@ export default function Page() {
       setThreads(refreshedThreads);
       setThreadsPage(1);
       setHasMoreThreads(fetchedRaw.length >= 10);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to refresh threads", error);
-      setThreadsError(error?.message ?? "Unknown error");
+      setThreadsError(error instanceof Error ? error.message : "Unknown error");
     } finally {
       setIsRefreshingThreads(false);
       setPullDistance(0);
@@ -164,7 +166,7 @@ export default function Page() {
         }
         setLikedStates(fetchedShorts.map(() => false));
         setLikeCounts(fetchedShorts.map((s) => {
-          const heart = s.reactions?.find((r: any) => r.emoji === "❤️");
+          const heart = s.reactions?.find((r: { emoji: string; count: number }) => r.emoji === "❤️");
           return heart ? heart.count : 0;
         }));
         setVideoLoadingStates(fetchedShorts.map(() => true));
@@ -174,9 +176,9 @@ export default function Page() {
         setThreads(initialThreads);
         setHasMoreThreads(initialThreadsRaw.length >= 10);
         setThreadsPage(1);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Failed to fetch explore data", error);
-        setThreadsError(error?.message ?? "Unknown error");
+        setThreadsError(error instanceof Error ? error.message : "Unknown error");
         setHasMoreThreads(false);
       } finally {
         setIsLoading(false);
@@ -364,9 +366,9 @@ export default function Page() {
       setThreads((prev) =>
         prev.map((t) => {
           if (t.id !== threadId) return t;
-          const existing = t.reactions.find((r: any) => r.emoji === emoji);
+          const existing = t.reactions.find((r: { emoji: string; count: number }) => r.emoji === emoji);
           const newReactions = existing
-            ? t.reactions.map((r: any) =>
+            ? t.reactions.map((r: { emoji: string; count: number }) =>
               r.emoji === emoji ? { ...r, count: r.count + 1 } : r
             )
             : [...t.reactions, { emoji, count: 1 }];
@@ -524,9 +526,9 @@ export default function Page() {
       setThreads((prev) => [...prev, ...moreThreads]);
       setThreadsPage(nextPage);
       if (fetchedRaw.length < 10) setHasMoreThreads(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to load more threads", error);
-      setThreadsError(error?.message ?? "Unknown error");
+      setThreadsError(error instanceof Error ? error.message : "Unknown error");
       setHasMoreThreads(false);
     } finally {
       setIsLoadingMoreThreads(false);
@@ -607,7 +609,7 @@ export default function Page() {
             return unique;
           });
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Failed to check new threads", error);
       } finally {
         setIsCheckingNewThreads(false);

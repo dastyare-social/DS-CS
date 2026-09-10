@@ -23,7 +23,7 @@
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
     "openapi:generate": "bunx next-openapi-gen generate",
-    "validate:sitemap": "node scripts/validate-sitemap.js",
+    "validate:sitemap": "node scripts/validate-sitemap.mjs",
     "mcp": "tsx scripts/mcp-server.ts",
     "bootstrap:posthog": "tsx scripts/posthog-bootstrap.ts"
   },

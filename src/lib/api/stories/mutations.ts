@@ -171,6 +171,7 @@ async function insertStory({
 
   return {
     ...inserted,
+    media: inserted.media as StoryMediaPayload,
   };
 }
 
@@ -254,6 +255,7 @@ async function updateStoryInternal({
   emitWebhookEvent("story.updated", { ...updated });
   return {
     ...updated,
+    media: updated.media as StoryMediaPayload,
   };
 }
 

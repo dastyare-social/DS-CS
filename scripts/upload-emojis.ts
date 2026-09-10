@@ -179,8 +179,10 @@ async function main() {
     try {
       await downloadToS3(client, bucket, s3Key, githubUrl);
       uploaded++;
-    } catch (err: any) {
-      console.error(`  FAILED: ${file.name} - ${err.message}`);
+    } catch (err: unknown) {
+      console.error(
+        `  FAILED: ${file.name} - ${err instanceof Error ? err.message : String(err)}`
+      );
       failed++;
     }
 

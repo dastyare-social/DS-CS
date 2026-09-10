@@ -111,10 +111,10 @@ export async function PATCH(req: NextRequest, context: RouteParams) {
     }
 
     return NextResponse.json(updated);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("PATCH /api/posts/[post_id] error", err);
     return NextResponse.json(
-      { error: err?.message ?? "Bad Request" },
+      { error: err instanceof Error ? err.message : "Bad Request" },
       { status: 400 }
     );
   }
@@ -173,7 +173,7 @@ export async function POST(req: NextRequest, context: RouteParams) {
     }
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("POST /api/posts/[post_id] error", err);
     return NextResponse.json(
       { error: "Internal server error" },

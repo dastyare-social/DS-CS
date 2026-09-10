@@ -76,8 +76,9 @@ export default function ThreadItem({
 
             {/* Media Content */}
             {thread.type === "image" && thread.media?.url && (() => {
-              const aspectRatio = thread.media["width"] && thread.media["height"]
-                ? thread.media["width"] / thread.media["height"]
+              const media = thread.media;
+              const aspectRatio = "width" in media && media["width"] && media["height"]
+                ? media["width"] / media["height"]
                 : 16 / 9;
               return (
                 <div
@@ -112,8 +113,8 @@ export default function ThreadItem({
             <div className="flex flex-col sm:flex-row gap-x-1.5 gap-y-1.5 sm:items-end mt-2">
               <div className="flex-1 flex flex-wrap text-[12px] ml-[-1px] gap-x-1 gap-y-1">
                 {(thread.reactions ?? [])
-                  .filter((r: any) => (r.count || 0) > 0)
-                  .map((r: any) => (
+                  .filter((r: { emoji: string; count: number }) => (r.count || 0) > 0)
+                  .map((r: { emoji: string; count: number }) => (
                     <div
                       key={r.emoji}
                       onClick={(e) => {

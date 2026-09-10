@@ -50,9 +50,9 @@ export const usePostsStore = create<PostsState>((set, get) => ({
         isLoading: false,
         _initialized: true,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load posts", err);
-      set({ error: err.message ?? "Failed to load posts", isLoading: false, _initialized: true });
+      set({ error: err instanceof Error ? err.message : "Failed to load posts", isLoading: false, _initialized: true });
     }
   },
 
@@ -69,7 +69,7 @@ export const usePostsStore = create<PostsState>((set, get) => ({
         page: data.page,
         isLoadingMore: false,
       }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load more posts", err);
       set({ isLoadingMore: false });
     }
@@ -83,7 +83,7 @@ export const usePostsStore = create<PostsState>((set, get) => ({
         countPosts(),
       ]);
       set({ posts: data.items, total, hasMore: data.hasMore });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to refetch posts", err);
     }
   },

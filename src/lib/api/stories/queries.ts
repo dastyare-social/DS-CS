@@ -1,4 +1,5 @@
 import { and, desc, eq, ilike, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { stories } from "@/lib/db/schema/stories";
 
@@ -28,7 +29,7 @@ export type StoryItem = {
   type: StoryType;
   views: string;
   likes: string;
-  media: any;
+  media: StoryMediaPayload;
   createdAt: Date | null;
   updatedAt: Date | null;
 };
@@ -55,12 +56,11 @@ export async function getStories({
   const offset = (page - 1) * limit;
 
   const where = (() => {
-    const conditions: any[] = [];
+    const conditions: SQL[] = [];
 
     if (search) {
       conditions.push(
         ilike(
-          // @ts-ignore
           sql`(stories.media ->> 'caption')`,
           `%${search}%`
         )
@@ -95,6 +95,7 @@ export async function getStories({
 
   const items: StoryItem[] = rows.map((story) => ({
     ...story,
+    media: story.media as StoryMediaPayload,
   }));
 
   return { items, page, limit, total, hasMore };
@@ -110,5 +111,8 @@ export async function countStories(): Promise<number> {
 export async function getStoryById(id: string): Promise<StoryItem | null> {
   const [row] = await db.select().from(stories).where(eq(stories.id, id));
   if (!row) return null;
-  return { ...row };
+  return {
+    ...row,
+    media: row.media as StoryMediaPayload,
+  };
 }

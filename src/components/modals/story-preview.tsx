@@ -90,9 +90,9 @@ export default function StoryPreviewModal({
       clear();
       onOpenChange(false);
       onStoryCreated?.();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to create story", err);
-      setError(err.message ?? "Failed to publish story");
+      setError(err instanceof Error ? err.message : "Failed to publish story");
     } finally {
       setPublishing(false);
     }

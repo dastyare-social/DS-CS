@@ -46,29 +46,43 @@ export default async function Layout({
   const { post_id } = await params;
   const post = await getPostById(post_id);
 
-  let videoData: any = null;
-  let imageData: any = null;
+  let videoData: {
+    url: string;
+    name: string;
+    description?: string;
+    thumbnailUrl?: string;
+    uploadDate?: string;
+    duration?: string;
+    width?: number;
+    height?: number;
+  } | undefined;
+  let imageData: {
+    url: string;
+    width?: number;
+    height?: number;
+    caption?: string;
+  } | null = null;
 
   if (post?.media) {
-    const media = post.media as any;
+    const media = post.media;
     if (post.type === "video" && media.url) {
       videoData = {
         url: media.url,
         name: post.content?.substring(0, 60) || "Video",
         description: post.content || undefined,
-        thumbnailUrl: media.thumbnail || undefined,
+        thumbnailUrl: "thumbnail" in media ? media.thumbnail || undefined : undefined,
         uploadDate: post.createdAt?.toISOString(),
-        duration: media.duration ? `PT${media.duration}S` : undefined,
-        width: media.width,
-        height: media.height,
+        duration: "duration" in media && media.duration ? `PT${media.duration}S` : undefined,
+        width: "width" in media ? media.width : undefined,
+        height: "height" in media ? media.height : undefined,
       };
     }
     if (post.type === "image" && media.url) {
       imageData = {
         url: media.url,
-        width: media.width,
-        height: media.height,
-        caption: media.caption || post.content?.substring(0, 100),
+        width: "width" in media ? media.width : undefined,
+        height: "height" in media ? media.height : undefined,
+        caption: ("caption" in media ? media.caption : undefined) || post.content?.substring(0, 100),
       };
     }
   }

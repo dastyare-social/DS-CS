@@ -30,4 +30,4 @@ jobs:
           bunx next build
       - name: Validate sitemap
         run: |
-          node scripts/validate-sitemap.js
+          node scripts/validate-sitemap.mjs

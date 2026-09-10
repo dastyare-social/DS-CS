@@ -1,8 +1,18 @@
 import { trpc } from "@/lib/trpc/client";
-import type { PostWithReactions } from "@/lib/api/posts";
+import type { PostWithReactions, PostType } from "@/lib/api/posts";
 import { captureClientEvent } from "@/lib/analytics/client";
 
 export type { PostWithReactions };
+
+export type PostMediaInput = {
+  url?: string | null;
+  type?: PostType | null;
+  dimensions?: {
+    width: number;
+    height: number;
+    duration?: number;
+  };
+};
 
 export type GetPostsParams = {
   page?: number;
@@ -41,7 +51,10 @@ export async function getPostById(id: string) {
   return trpc.posts.getById.query({ id });
 }
 
-export async function createPost(content: string | null, media?: any[] | undefined) {
+export async function createPost(
+  content: string | null,
+  media?: PostMediaInput[] | undefined
+) {
   const result = await trpc.posts.create.mutate({ content, media });
   void captureClientEvent("post_created", {
     post_type: result.type,

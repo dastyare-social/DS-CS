@@ -148,7 +148,7 @@ export async function GET(
                       letterSpacing: "-2.5px",
                     }}
                   >
-                    {appName}'s Channel
+                    {appName}&#39;s Channel
                   </h1>
 
                   <div

@@ -48,7 +48,7 @@ export type PostWithReactions = {
   content: string | null;
   views: string;
   pinnedAt: Date | null;
-  media: any;
+  media: MediaPayload;
   createdAt: Date | null;
   updatedAt: Date | null;
   reactions: {
@@ -60,7 +60,7 @@ export type PostWithReactions = {
   /** Preserve content for retry after error */
   _pendingContent?: string | null;
   /** Preserve media inputs for retry after error */
-  _pendingMedia?: any[];
+  _pendingMedia?: PendingMediaInput[];
 };
 
 export type GetPostsParams = {
@@ -81,20 +81,31 @@ type PostsCacheEntry = {
   ts: number;
 };
 
+type PendingMediaInput = {
+  url?: string | null;
+  type?: PostType | null;
+  dimensions?: {
+    width: number;
+    height: number;
+    duration?: number;
+  };
+};
+
+declare global {
+  var _postsCountCache: { value: number; ts: number } | undefined;
+  var _postsWithReactionsCache: Record<string, PostsCacheEntry> | undefined;
+}
+
 function getPostsCacheKey({ page = 1, limit = 20, search }: GetPostsParams) {
   return `page=${page},limit=${limit},search=${search ?? ""}`;
 }
 
 export function invalidatePostsCache() {
-  // @ts-ignore
-  if ((global as any)._postsCountCache) {
-    // @ts-ignore
-    (global as any)._postsCountCache = { value: 0, ts: 0 };
+  if (globalThis._postsCountCache) {
+    globalThis._postsCountCache = { value: 0, ts: 0 };
   }
-  // @ts-ignore
-  if ((global as any)._postsWithReactionsCache) {
-    // @ts-ignore
-    (global as any)._postsWithReactionsCache = {};
+  if (globalThis._postsWithReactionsCache) {
+    globalThis._postsWithReactionsCache = {};
   }
 }
 
@@ -112,13 +123,11 @@ export async function getPostsWithReactions({
 }> {
   const cacheKey = getPostsCacheKey({ page, limit, search });
   const TTL = 10_000; // 10 seconds
-  // @ts-ignore
-  if (!(global as any)._postsWithReactionsCache) {
-    // @ts-ignore
-    (global as any)._postsWithReactionsCache = {};
+  let cache = globalThis._postsWithReactionsCache;
+  if (!cache) {
+    cache = {};
+    globalThis._postsWithReactionsCache = cache;
   }
-  // @ts-ignore
-  const cache = (global as any)._postsWithReactionsCache as Record<string, PostsCacheEntry>;
   const now = Date.now();
   if (!bypassCache && cache[cacheKey] && now - cache[cacheKey].ts < TTL) {
     return cache[cacheKey].value;
@@ -166,6 +175,7 @@ export async function getPostsWithReactions({
 
   const items: PostWithReactions[] = rows.map((m) => ({
     ...m,
+    media: m.media as MediaPayload,
     reactions: grouped[m.id] ?? [],
   }));
 
@@ -176,12 +186,11 @@ export async function getPostsWithReactions({
 
 export async function countPosts(): Promise<number> {
   const TTL = 30_000; // 30 seconds
-  // @ts-ignore
-  if (!(global as any)._postsCountCache) {
-    // @ts-ignore
-    (global as any)._postsCountCache = { value: 0, ts: 0 };
+  let cache = globalThis._postsCountCache;
+  if (!cache) {
+    cache = { value: 0, ts: 0 };
+    globalThis._postsCountCache = cache;
   }
-  const cache = (global as any)._postsCountCache as { value: number; ts: number };
   const now = Date.now();
   if (now - cache.ts < TTL) return cache.value;
 
@@ -193,8 +202,12 @@ export async function countPosts(): Promise<number> {
     cache.value = val;
     cache.ts = Date.now();
     return val;
-  } catch (err: any) {
-    console.error("countPosts DB error:", err?.message ?? err, err?.stack ?? "");
+  } catch (err: unknown) {
+    console.error(
+      "countPosts DB error:",
+      err instanceof Error ? err.message : String(err),
+      err instanceof Error ? err.stack ?? "" : ""
+    );
     return cache.value ?? 0;
   }
 }
@@ -215,6 +228,7 @@ export async function getPostById(
 
   return {
     ...post,
+    media: post.media as MediaPayload,
     reactions: reactionsRows,
   };
 }
@@ -246,6 +260,7 @@ export async function getPinnedPosts(): Promise<PostWithReactions[]> {
 
   return rows.map((m) => ({
     ...m,
+    media: m.media as MediaPayload,
     reactions: grouped[m.id] ?? [],
   }));
 }

@@ -568,7 +568,7 @@ const FileDownload = ({
 /* -------------------- MAIN MESSAGE COMPONENT -------------------- */
 
 const Post = memo(
-  ({
+  function Post({
     post,
     can_pin_post = false,
     can_edit_post = false,
@@ -581,11 +581,11 @@ const Post = memo(
     onPin,
     onEdit,
     onRetry,
-  }: PostProps) => {
+  }: PostProps) {
     const t = useTranslations();
 
     const { id, content, createdAt, views, reactions, type, media } = post;
-    const postStatus = (post as any)._status as "sending" | "error" | undefined;
+    const postStatus = post._status;
 
     const hasMedia = media != null && type !== "text";
 
@@ -608,7 +608,9 @@ const Post = memo(
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
     const getCount = (emoji: string) =>
-      (localReactions ?? []).find((r: any) => r.emoji === emoji)?.count ?? 0;
+      (localReactions ?? []).find(
+        (r: { emoji: string; count: number }) => r.emoji === emoji,
+      )?.count ?? 0;
 
     // Move a single emoji count by `delta`, dropping it when it reaches zero
     const bumpReaction = (emoji: string, delta: number) =>
@@ -730,7 +732,7 @@ const Post = memo(
     }, [hasMedia, media, type]);
 
     const normalizedReactions = (localReactions ?? []).filter(
-      (r: any) => getCount(r.emoji) > 0,
+      (r: { emoji: string; count: number }) => getCount(r.emoji) > 0,
     );
 
     const renderMedia = () => {
@@ -738,11 +740,13 @@ const Post = memo(
 
       // Check if media is an array (multiple images)
       if (Array.isArray(media) && media.length > 0) {
-        const normalizedMedia = media.map((item: any) => ({
-          url: normalizeMediaUrl(item.url),
-          width: item.width || 0,
-          height: item.height || 0,
-        }));
+        const normalizedMedia = media.map(
+          (item: { url: string; width?: number; height?: number }) => ({
+            url: normalizeMediaUrl(item.url),
+            width: item.width || 0,
+            height: item.height || 0,
+          }),
+        );
         return <ImageSlider media={normalizedMedia} content={content} />;
       }
 
@@ -752,8 +756,8 @@ const Post = memo(
 
       if (type === "image") {
         const aspectRatio =
-          post.media["width"] && post.media["height"]
-            ? post.media["width"] / post.media["height"]
+          "width" in media && media["width"] && media["height"]
+            ? media["width"] / media["height"]
             : 16 / 9;
 
         return (
@@ -796,8 +800,8 @@ const Post = memo(
 
       if (type === "video") {
         const aspectRatio =
-          post.media["width"] && post.media["height"]
-            ? post.media["width"] / post.media["height"]
+          "width" in media && media["width"] && media["height"]
+            ? media["width"] / media["height"]
             : 16 / 9;
 
         return (
@@ -862,18 +866,19 @@ const Post = memo(
         return (
           <VoicePlayer
             src={src}
-            storedDurationMs={post.media?.["duration"] ?? null}
+            storedDurationMs={"duration" in media ? media["duration"] : null}
           />
         );
       }
 
       if (type === "file") {
+        const fileMedia = "filename" in media ? media : null;
         return (
           <FileDownload
             src={src}
-            filename={media.filename}
-            filesize={media.filesize}
-            mimeType={media.mimeType}
+            filename={fileMedia?.filename ?? null}
+            filesize={fileMedia?.filesize ?? null}
+            mimeType={fileMedia?.mimeType ?? null}
           />
         );
       }

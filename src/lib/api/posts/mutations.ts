@@ -198,6 +198,7 @@ async function insertPost({
 
   return {
     ...inserted,
+    media: inserted.media as MediaPayload,
     reactions: [],
   };
 }
@@ -305,6 +306,7 @@ async function updatePostInternal({
 
   return {
     ...updated,
+    media: updated.media as MediaPayload,
     reactions: reactionsRows,
   };
 }

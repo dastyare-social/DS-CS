@@ -86,10 +86,10 @@ const Page = () => {
         if (!cancelled) {
           setMessage(data);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (cancelled) return;
         console.error("Failed to fetch message", err);
-        setError(err?.message ?? "Failed to load message");
+        setError(err instanceof Error ? err.message : "Failed to load message");
       } finally {
         if (!cancelled) {
           setIsLoading(false);

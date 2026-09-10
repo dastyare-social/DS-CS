@@ -86,9 +86,9 @@ const Page = () => {
       //   // In case the callback didn't trigger a redirect, we do it ourselves.
       //   window.location.href = "/os"; // or use Next.js router
       // }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
-        err.message || t("general.login_error") || "Invalid credentials",
+        err instanceof Error ? err.message : t("general.login_error") || "Invalid credentials",
       );
     } finally {
       setLoading(false);

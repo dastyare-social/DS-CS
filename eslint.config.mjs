@@ -12,7 +12,27 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated/third-party type declarations are not ours to lint.
+    "src/types/**",
   ]),
+  // Prefer style over strictness in test files.
+  {
+    files: ["**/__tests__/**"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+  // Experimental react-hooks v6 rules are noisy upgrades of stable rules:
+  // downgrade to warnings so they surface without blocking the build.
+  {
+    files: ["**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/immutability": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/purity": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;

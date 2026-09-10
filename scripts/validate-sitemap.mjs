@@ -1,7 +1,9 @@
-const fs = require('fs')
-const path = require('path')
+import { readFileSync, existsSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const sitemapPath = path.join(__dirname, '..', 'src', 'app', 'sitemap.ts')
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const sitemapPath = join(__dirname, '..', 'src', 'app', 'sitemap.ts')
 // These patterns are checked only inside template-literal URL strings (backtick expressions),
 // so import paths like '@/lib/api/...' are not false-positives.
 const blockedRoutes = ['/os/', '/api/', '/agents.md', '/docs/']
@@ -21,12 +23,12 @@ const requiredPatterns = [
 ]
 
 function run() {
-  if (!fs.existsSync(sitemapPath)) {
+  if (!existsSync(sitemapPath)) {
     console.error('Dynamic sitemap source not found at', sitemapPath)
     process.exit(1)
   }
 
-  const sitemap = fs.readFileSync(sitemapPath, 'utf8')
+  const sitemap = readFileSync(sitemapPath, 'utf8')
   const missing = requiredPatterns.filter(({ pattern }) => !pattern.test(sitemap))
   // Extract only the URL strings from template literals (e.g. `${app_url}/posts/...`)
   // to avoid false positives from import paths like '@/lib/api/posts/queries'.

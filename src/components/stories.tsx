@@ -203,7 +203,10 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
           id: item.id,
           type: item.type,
           url: normalizeMediaUrl(item.media?.url ?? legacy.url),
-          duration: item.media?.duration ?? legacy.duration,
+          duration:
+            item.media && "duration" in item.media
+              ? item.media.duration
+              : legacy.duration,
           likes: Number(item.likes ?? 0),
           views: Number(item.views ?? 0),
           createdAt: new Date(item.createdAt ?? 0),

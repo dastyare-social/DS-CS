@@ -125,18 +125,21 @@ export const ContextMenuTrigger = React.forwardRef<
   };
 
   if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(children as React.ReactElement<any, any>, {
-      ref,
-      onContextMenu: handleContextMenu,
-      onTouchStart: handleTouchStart,
-      onTouchEnd: handleTouchEnd,
-      ...props,
-    });
+    return React.cloneElement(
+      children as React.ReactElement<Record<string, unknown>>,
+      {
+        ref,
+        onContextMenu: handleContextMenu,
+        onTouchStart: handleTouchStart,
+        onTouchEnd: handleTouchEnd,
+        ...props,
+      },
+    );
   }
 
   return (
     <div
-      ref={ref as any}
+      ref={ref as React.Ref<HTMLDivElement>}
       onContextMenu={handleContextMenu}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -332,8 +335,7 @@ export const ContextMenuLabel = React.forwardRef<
 });
 
 // Separator
-interface ContextMenuSeparatorProps
-  extends React.LiHTMLAttributes<HTMLHRElement> {}
+type ContextMenuSeparatorProps = React.LiHTMLAttributes<HTMLHRElement>;
 
 export const ContextMenuSeparator = React.forwardRef<
   HTMLHRElement,
@@ -557,8 +559,7 @@ export const ContextMenuSubTrigger = React.forwardRef<
   );
 });
 
-interface ContextMenuSubContentProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
+type ContextMenuSubContentProps = React.HTMLAttributes<HTMLDivElement>;
 
 export const ContextMenuSubContent = React.forwardRef<
   HTMLDivElement,

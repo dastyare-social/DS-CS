@@ -1,23 +1,12 @@
 import { trpc } from "@/lib/trpc/client";
 import { captureClientEvent } from "@/lib/analytics/client";
+import type {
+  GetStoriesParams,
+  StoryItem,
+  StoryType,
+} from "@/lib/api/stories";
 
-export type StoryType = "image" | "video";
-export type StoryItem = {
-  id: string;
-  type: StoryType;
-  views: string;
-  likes: string;
-  media: any;
-  createdAt: Date | null;
-  updatedAt: Date | null;
-};
-
-export type GetStoriesParams = {
-  page?: number;
-  limit?: number;
-  search?: string;
-  type?: StoryType;
-};
+export type { GetStoriesParams, StoryItem, StoryType };
 
 export async function getStories(params?: GetStoriesParams | null) {
   const safe = {

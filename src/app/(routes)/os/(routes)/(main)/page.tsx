@@ -30,7 +30,7 @@ import { filterString } from "@/lib/filters";
 import Header from "@/components/header";
 import PinnedBar from "@/components/pinned-bar";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
-import type { PostWithReactions } from "@/lib/api/posts";
+import type { MediaPayload, PostWithReactions } from "@/lib/api/posts";
 import { app_config } from "@/config/app";
 import { Locale } from "@/config/locale";
 import {
@@ -876,7 +876,7 @@ const Page = () => {
       content: trimmed || null,
       views: "0",
       pinnedAt: null,
-      media: validUrls.length > 0 ? ({ url: validUrls[0] } as any) : null,
+      media: validUrls.length > 0 ? ({ url: validUrls[0] } as MediaPayload) : null,
       createdAt: new Date(),
       updatedAt: null,
       reactions: [],
@@ -911,15 +911,7 @@ const Page = () => {
       );
 
       // 4) Atomically replace the optimistic post with the real one
-      if ((createdPost as any)._multiple) {
-        const multipleResult = createdPost as any;
-        removePost(tempId);
-        multipleResult.posts.forEach((post: PostWithReactions) =>
-          addPost(post),
-        );
-      } else {
-        replacePost(tempId, createdPost);
-      }
+      replacePost(tempId, createdPost);
     } catch (err) {
       console.error("Error sending message", err);
       // Mark optimistic post as error instead of removing it
@@ -948,13 +940,7 @@ const Page = () => {
 
       // Remove the failed post and add the real one
       removePost(post.id);
-
-      if ((createdPost as any)._multiple) {
-        const multipleResult = createdPost as any;
-        multipleResult.posts.forEach((p: PostWithReactions) => addPost(p));
-      } else {
-        addPost(createdPost);
-      }
+      addPost(createdPost);
     } catch (err) {
       console.error("Retry failed", err);
       updatePost({ ...post, _status: "error" });

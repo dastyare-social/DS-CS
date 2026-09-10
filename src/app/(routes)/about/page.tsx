@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getResumeConfig } from "@/config/resume";
 import { Button } from "@/components/button";
@@ -153,7 +154,7 @@ const Page = () => {
             asChild
             className="text-sm md:text-sm px-3.5 py-1.5 backdrop-blur-3xl text-nowrap"
           >
-            <a href="/">View My Channel</a>
+            <Link href="/">View My Channel</Link>
           </Button>
         </div>
       </div>

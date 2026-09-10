@@ -1,17 +1,19 @@
 import client_config from "../../config/app.config.json";
 
+export interface LocaleConfig {
+  name: string;
+  desc: string;
+}
+
 export interface AppConfig {
   general: {
     username: string;
     email: string;
   };
 
-  en: {
-    name: string;
-    desc: string;
-  };
+  en: LocaleConfig;
 
-  [locale: string]: any;
+  [locale: string]: LocaleConfig | { username: string; email: string };
 }
 
 export const app_config: AppConfig = client_config;

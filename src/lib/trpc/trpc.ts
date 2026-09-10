@@ -1,7 +1,7 @@
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 
-export type Context = {};
+export type Context = object;
 
 export const createContext = (): Context => ({});
 
