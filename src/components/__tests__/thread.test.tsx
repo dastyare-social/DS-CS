@@ -68,7 +68,7 @@ describe('Thread', () => {
     const onThreadReact = vi.fn()
     const { getByText, getByTestId } = render(
       <Thread
-        thread={{ id: 't1', content: 'hello there', type: 'image', media: { url: '/image.png', width: 800, height: 600 }, reactions: [], views: '5', createdAt: new Date().toISOString() } as any}
+        thread={{ id: 't1', content: 'hello there', type: 'image', media: { url: '/image.png', width: 800, height: 600 }, reactions: [{ emoji: '👍', count: 1 }], views: '5', createdAt: new Date().toISOString() } as any}
         index={0}
         threadVideoRef={() => {}}
         onThreadReact={onThreadReact}
