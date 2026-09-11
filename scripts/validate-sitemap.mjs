@@ -14,7 +14,7 @@ const requiredPatterns = [
   },
   {
     description: 'include the application home page',
-    pattern: /url:\s*app_url/,
+    pattern: /url:\s*(?:baseUrl|app_url)/,
   },
   {
     description: 'include public post URLs',
