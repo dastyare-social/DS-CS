@@ -82,9 +82,10 @@ async function main() {
 
   if (!matchingUser) {
     const existingSummary = existingUsers.map((user) => user.email).join(", ");
-    throw new Error(
-      `An admin bootstrap user already exists with a different email. Expected ${normalizedEmail}, found: ${existingSummary || "none"}.`
+    console.warn(
+      `[bootstrap-admin] An admin already exists with a different email. Expected ${normalizedEmail}, found: ${existingSummary || "none"}. Keeping the existing admin and skipping bootstrap.`
     );
+    return;
   }
 
   const ctx = await auth.$context;
