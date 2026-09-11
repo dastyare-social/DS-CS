@@ -15,6 +15,9 @@
  *   - PH_HOST                  (optional) defaults to https://us.i.posthog.com
  *   - PH_PROJECT_TOKEN         (optional) phc_ project token — used only to
  *                              sanity-check/report; NOT required to provision.
+ *   - NEXT_PUBLIC_APP_URL      (optional) app base URL from `.env`; its host is
+ *                              the default/example for the deployed-URL prompt.
+ *   - PH_DEPLOYED_URL          (optional) full deployed URL — skips the prompt.
  *
  * The dashboard label is a hardcoded constant (DASHBOARD_LABEL) below — every
  * dashboard and insight name is suffixed with " — {label}" so per-project
@@ -500,6 +503,25 @@ function normalizeDeployedUrl(input: string): string | null {
   return (url.origin + url.pathname).replace(/\/+$/, "");
 }
 
+/**
+ * Host part of the app's base URL, taken from NEXT_PUBLIC_APP_URL in `.env`
+ * (loaded via dotenv). Used as the default/example in the deployed-URL prompt
+ * so the target stays in sync with wherever the app is actually deployed.
+ * Falls back to the historical CS demo domain when unset or unparseable.
+ */
+function defaultDeployedDomain(): string {
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim();
+  if (appUrl) {
+    try {
+      const url = /^https?:\/\//i.test(appUrl) ? new URL(appUrl) : new URL("https://" + appUrl);
+      return url.hostname;
+    } catch {
+      /* fall through to the fallback domain */
+    }
+  }
+  return "cs.dastyare.social";
+}
+
 function readLine(question: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => {
@@ -640,7 +662,7 @@ async function main() {
     process.exit(1);
   }
 
-  const deployedUrl = await promptDeployedUrl("cs.dastyare.social");
+  const deployedUrl = await promptDeployedUrl(defaultDeployedDomain());
   console.log("  → heatmaps will target: " + deployedUrl);
 
   console.log("\nProvisioning …\n");
