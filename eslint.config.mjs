@@ -27,6 +27,12 @@ const eslintConfig = defineConfig([
   {
     files: ["**/*.{ts,tsx}"],
     rules: {
+      // Ignore underscore-prefixed function args (e.g. proxy(_request)) so
+      // intentionally-unused handler signatures stay warning-free.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_" },
+      ],
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/immutability": "warn",
       "react-hooks/refs": "warn",

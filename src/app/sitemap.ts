@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { headers } from 'next/headers'
 import { app_url } from '@/config/app'
 import { isResumeEnabled } from '@/config/resume'
 import { getPostsWithReactions } from '@/lib/api/posts/queries'
@@ -14,6 +15,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return []
   }
 
+  // Derive the site URL from the actual request so sitemap URLs match the host
+  // a crawler is hitting (falling back to the configured URL).
+  const requestHeaders = await headers()
+  const proto = requestHeaders.get('x-forwarded-proto') ?? 'http'
+  const host = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host')
+  const baseUrl = host ? `${proto}://${host}` : app_url
+
   // Get all posts
   const allPosts = []
   let page = 1
@@ -27,7 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const postEntries: MetadataRoute.Sitemap = allPosts.map((post) => ({
-    url: `${app_url}/posts/${post.id}`,
+    url: `${baseUrl}/posts/${post.id}`,
     lastModified: post.updatedAt || post.createdAt || new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
@@ -35,7 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     {
-      url: app_url,
+      url: baseUrl,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 1,
@@ -45,7 +53,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...(isResumeEnabled()
       ? [
           {
-            url: `${app_url}/about`,
+            url: `${baseUrl}/about`,
             lastModified: new Date(),
             changeFrequency: 'monthly' as const,
             priority: 0.6,
