@@ -4,7 +4,7 @@ import {
   MediaValidationError,
   validateFile,
 } from "../config";
-import { buildPublicFileUrl } from "../s3";
+import { buildPublicFileUrl, getPublicS3Endpoint } from "../s3";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -114,6 +114,36 @@ describe("media s3", () => {
       expect(buildPublicFileUrl("media/image/c.png")).toBe(
         "https://s3.us-east-1.amazonaws.com/dastyare/media/image/c.png"
       );
+    });
+  });
+
+  describe("getPublicS3Endpoint", () => {
+    it("should strip the trailing bucket path from the public base URL", () => {
+      process.env.S3_PUBLIC_BASE_URL = "http://localhost:9000/ds-cs/";
+      process.env.S3_BUCKET_NAME = "ds-cs";
+      process.env.S3_ENDPOINT = "http://rustfs:9000";
+      expect(getPublicS3Endpoint()).toBe("http://localhost:9000");
+    });
+
+    it("should fall back to S3_ENDPOINT when the public base URL has no bucket path", () => {
+      process.env.S3_PUBLIC_BASE_URL = "https://cdn.example.com/";
+      process.env.S3_BUCKET_NAME = "ds-cs";
+      process.env.S3_ENDPOINT = "http://rustfs:9000";
+      expect(getPublicS3Endpoint()).toBe("http://rustfs:9000");
+    });
+
+    it("should fall back to S3_ENDPOINT when no public base URL is set", () => {
+      process.env.S3_PUBLIC_BASE_URL = "";
+      process.env.S3_BUCKET_NAME = "ds-cs";
+      process.env.S3_ENDPOINT = "http://rustfs:9000";
+      expect(getPublicS3Endpoint()).toBe("http://rustfs:9000");
+    });
+
+    it("should return a non-bucket endpoint unchanged even with a trailing bucket suffix on another host", () => {
+      process.env.S3_PUBLIC_BASE_URL = "https://cdn.example.com/ds-cs";
+      process.env.S3_BUCKET_NAME = "ds-cs";
+      process.env.S3_ENDPOINT = "http://rustfs:9000";
+      expect(getPublicS3Endpoint()).toBe("https://cdn.example.com");
     });
   });
 });

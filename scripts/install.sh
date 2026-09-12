@@ -50,7 +50,7 @@ fi
 if [ ! -f "$ENV_FILE" ]; then
   info "Creating a .env file with safe defaults for Docker Compose..."
   cat > "$ENV_FILE" <<EOF
-DATABASE_URL="postgresql://postgres:postgres@db:5432/dastyare_social_cs"
+DATABASE_URL="postgresql://postgres:postgres@db:5432/ds_cs"
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=change-this-password
 API_KEY=$(generate_secret)

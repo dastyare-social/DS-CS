@@ -1,6 +1,7 @@
 import { S3Client } from "@aws-sdk/client-s3";
 
 let client: S3Client | null = null;
+let publicClient: S3Client | null = null;
 
 export function getS3Client(): S3Client {
   if (!client) {
@@ -18,6 +19,34 @@ export function getS3Client(): S3Client {
 }
 
 export const S3_BUCKET = () => process.env.S3_BUCKET_NAME || "";
+
+export function getPublicS3Endpoint(): string {
+  const publicBase = process.env.S3_PUBLIC_BASE_URL?.trim();
+  const bucket = S3_BUCKET();
+  if (publicBase && bucket) {
+    const base = publicBase.replace(/\/+$/, "");
+    const suffix = `/${bucket}`;
+    if (base.endsWith(suffix)) {
+      return base.slice(0, base.length - suffix.length);
+    }
+  }
+  return process.env.S3_ENDPOINT || "";
+}
+
+export function getPublicS3Client(): S3Client {
+  if (!publicClient) {
+    publicClient = new S3Client({
+      region: process.env.S3_REGION || "us-east-1",
+      endpoint: getPublicS3Endpoint() || undefined,
+      credentials: {
+        accessKeyId: process.env.S3_ACCESS_KEY_ID || "",
+        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || "",
+      },
+      forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
+    });
+  }
+  return publicClient;
+}
 
 export function joinUrl(base: string, ...parts: string[]): string {
   const trimmedBase = base.replace(/\/+$/, "");

@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { S3_BUCKET, buildPublicFileUrl, getS3Client } from "./s3";
+import { S3_BUCKET, buildPublicFileUrl, getPublicS3Client, getS3Client } from "./s3";
 import { MediaValidationError, classifyMediaType, mediaConfig, validateFile } from "./config";
 import type { MediaKind } from "./config";
 import { getMediaDimensions } from "@/lib/utils/media";
@@ -86,7 +86,7 @@ export async function presignUpload(
     ContentType: mimeType,
   });
 
-  const uploadUrl = await getSignedUrl(getS3Client(), command, {
+  const uploadUrl = await getSignedUrl(getPublicS3Client(), command, {
     expiresIn: 3600,
   });
 
