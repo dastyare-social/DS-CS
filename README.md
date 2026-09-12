@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="#getting-started">Get Started</a> · <a href="#self-hosting">Self-Host</a> · <a href="#api">API</a> · <a href="https://github.com/dastyare-social/DS-CS">View on GitHub</a> · <a href="./docs/posthog-dashboard-guide.md">Analytics</a>
+  <a href="#getting-started">Get Started</a> · <a href="#self-hosting">Self-Host</a> · <a href="#api">API</a> · <a href="https://github.com/dastyare-social/DS-CS">View on GitHub</a> · <a href="./docs/posthog-dashboard-guide.md">Analytics</a> · <a href="./docs/deploying-to-vercel.md">Vercel</a>
 </p>
 
 <p align="center">

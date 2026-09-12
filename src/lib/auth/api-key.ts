@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 const RATE_LIMIT_STORE = new Map<string, { count: number; resetAt: number }>();
 
@@ -25,7 +25,7 @@ export const requireApiKeyAuth = (req: NextRequest) => {
   const { apiKey, rateLimitMaxRequests, rateLimitWindowMs } = getApiKeyConfig();
 
   if (!apiKey) {
-    return NextResponse.json(
+    return Response.json(
       { error: "API key is not configured on the server" },
       { status: 500 }
     );
@@ -37,7 +37,7 @@ export const requireApiKeyAuth = (req: NextRequest) => {
     : "";
 
   if (providedToken !== apiKey) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const key = getRateLimitKey(req);
@@ -46,7 +46,7 @@ export const requireApiKeyAuth = (req: NextRequest) => {
 
   if (current && current.resetAt > now) {
     if (current.count >= rateLimitMaxRequests) {
-      return NextResponse.json(
+      return Response.json(
         { error: "Too many requests" },
         { status: 429 }
       );

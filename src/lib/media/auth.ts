@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { requireApiKeyAuth } from "@/lib/auth/api-key";
 import { auth } from "@/lib/auth";
 
 export async function requireMediaAuth(
   req: NextRequest
-): Promise<NextResponse | null> {
+): Promise<Response | null> {
   // 1) Shared API key (with per-client rate limiting).
   const apiKeyResult = requireApiKeyAuth(req);
   if (!apiKeyResult) return null;

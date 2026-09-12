@@ -1,6 +1,9 @@
 import { describe, expect, it, beforeEach, afterEach } from "bun:test";
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { requireApiKeyAuth, getApiKeyRateLimitState } from "../api-key";
+
+const makeReq = (pathname = "/api/posts", headers?: HeadersInit): NextRequest =>
+  ({ headers: new Headers(headers), nextUrl: { pathname } }) as unknown as NextRequest;
 
 describe("requireApiKeyAuth", () => {
   const originalApiKey = process.env.API_KEY;
@@ -28,9 +31,7 @@ describe("requireApiKeyAuth", () => {
   });
 
   it("rejects requests without a bearer token", () => {
-    const req = new NextRequest("http://localhost/api/posts", {
-      method: "POST",
-    });
+    const req = makeReq();
 
     const result = requireApiKeyAuth(req);
 
@@ -39,11 +40,8 @@ describe("requireApiKeyAuth", () => {
   });
 
   it("accepts the configured bearer token", () => {
-    const req = new NextRequest("http://localhost/api/posts", {
-      method: "POST",
-      headers: {
-        authorization: "Bearer shared-secret",
-      },
+    const req = makeReq("/api/posts", {
+      authorization: "Bearer shared-secret",
     });
 
     const result = requireApiKeyAuth(req);
@@ -52,23 +50,14 @@ describe("requireApiKeyAuth", () => {
   });
 
   it("rate limits repeated requests from the same client", () => {
-    const req1 = new NextRequest("http://localhost/api/posts", {
-      method: "POST",
-      headers: {
-        authorization: "Bearer shared-secret",
-      },
+    const req1 = makeReq("/api/posts", {
+      authorization: "Bearer shared-secret",
     });
-    const req2 = new NextRequest("http://localhost/api/posts", {
-      method: "POST",
-      headers: {
-        authorization: "Bearer shared-secret",
-      },
+    const req2 = makeReq("/api/posts", {
+      authorization: "Bearer shared-secret",
     });
-    const req3 = new NextRequest("http://localhost/api/posts", {
-      method: "POST",
-      headers: {
-        authorization: "Bearer shared-secret",
-      },
+    const req3 = makeReq("/api/posts", {
+      authorization: "Bearer shared-secret",
     });
 
     expect(requireApiKeyAuth(req1)).toBe(null);
