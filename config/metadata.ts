@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
-import { app_config, app_url } from "../src/config/app";
+import { app_url } from "../src/config/app";
+import { get_app_config } from "../src/config/runtime";
 import { isResumeEnabled } from "../src/config/resume";
 import type { Locale } from "../src/config/locale";
+
+// Server-side only module (imported by route handlers / server layouts), so a
+// module-scope read of the runtime config is safe here.
+const app_config = get_app_config();
 
 // ---------------------------------------------------------------------------
 // Helpers

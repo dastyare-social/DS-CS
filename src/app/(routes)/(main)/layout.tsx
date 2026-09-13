@@ -1,6 +1,7 @@
 import React from "react";
 import { Metadata } from "next";
-import { app_config, app_url } from "@/config/app";
+import { app_url } from "@/config/app";
+import { get_app_config } from "@/config/runtime";
 import { Locale } from "@/config/locale";
 import { getLocale } from "next-intl/server";
 import { PersonSchema, CollectionPageSchema, WebSiteSchema } from "@/components/seo";
@@ -18,6 +19,7 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   const locale = (await getLocale()) as Locale;
+  const app_config = get_app_config();
 
   return (
     <>

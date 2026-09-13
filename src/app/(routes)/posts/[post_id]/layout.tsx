@@ -1,7 +1,8 @@
 import { Metadata } from "next";
 import { getLocale } from "next-intl/server";
 import React from "react";
-import { app_config, app_url } from "@/config/app";
+import { app_url } from "@/config/app";
+import { get_app_config } from "@/config/runtime";
 import { Locale } from "@/config/locale";
 import { getPostById } from "@/lib/api/posts/queries";
 import { ArticleSchema } from "@/components/seo";
@@ -14,6 +15,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const locale = (await getLocale()) as Locale;
   const { post_id } = await params;
+  const app_config = get_app_config();
 
   let pageTitle = "Message";
   let description = app_config[locale].desc;
@@ -44,6 +46,7 @@ export default async function Layout({
 }) {
   const locale = (await getLocale()) as Locale;
   const { post_id } = await params;
+  const app_config = get_app_config();
   const post = await getPostById(post_id);
 
   let videoData: {
