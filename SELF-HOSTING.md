@@ -22,6 +22,7 @@ curl -fsSL https://raw.githubusercontent.com/dastyare-social/DS-CS/main/scripts/
 The script:
 
 - downloads `docker-compose.yml` (if not already present)
+- downloads `config/app.config.yml`, `config/about.config.yml`, and `public/profile-image.png` (if not already present) — these are the editable brand files described in [Make the channel yours](#make-the-channel-yours)
 - creates a `.env` file with safe local defaults (or leaves an existing one intact)
 - starts the stack with `docker compose up -d` (no build step — the prebuilt image is pulled)
 - runs the stack under the pinned project name `ds-cs` — containers, volumes, and networks are prefixed `ds-cs-*` no matter where you install
@@ -60,6 +61,16 @@ docker compose up -d
 The app container runs migrations and bootstraps the admin user automatically on startup.
 
 After both options, open `http://localhost:8729` (or `https://your-domain.com`).
+
+### Make the channel yours
+
+The install drops three editable files into the project directory; `docker-compose.yml` bind-mounts them into the container so the app uses *your* files, not the identity baked into the image.
+
+| File | Controls | How to apply changes |
+| --- | --- | --- |
+| `config/app.config.yml` | Username, email, channel name, description (built into the site shell, meta, header) | `docker compose restart app` (re-runs `generate:config`, and the app reads the result at runtime) |
+| `config/about.config.yml` | The `/about` page (enabled flag, bio, contacts, work/education sections) | Applies **live** — just refresh `/about` |
+| `public/profile-image.png` | The avatar shown on `/about` (`avatar: /profile-image.png`) | Replace the file, then `docker compose restart app` for cached copies |
 
 ## 4) Reverse proxy
 

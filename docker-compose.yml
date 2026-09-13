@@ -7,6 +7,14 @@ services:
       - "8729:8729"
     env_file:
       - .env
+    volumes:
+      # Brand files shipped into the project by scripts/install.sh. Edit these
+      # on the host and `docker compose restart app` — generate:config runs on
+      # boot and app.ts now reads the generated JSON at runtime, so the channel
+      # name/desc/email and /about content follow your files.
+      - ./config/app.config.yml:/app/config/app.config.yml:ro
+      - ./config/about.config.yml:/app/config/about.config.yml:ro
+      - ./public/profile-image.png:/app/public/profile-image.png:ro
     depends_on:
       db:
         condition: service_healthy

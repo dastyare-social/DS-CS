@@ -5,6 +5,17 @@ APP_DIR=${1:-"."}
 ENV_FILE=".env"
 DOCKER_COMPOSE_FILE="docker-compose.yml"
 DOCKER_COMPOSE_URL="https://raw.githubusercontent.com/dastyare-social/DS-CS/main/docker-compose.yml"
+BASE_URL="https://raw.githubusercontent.com/dastyare-social/DS-CS/main"
+
+# Editable assets the installer drops into the project so the app is your own:
+# the brand config files and the profile image shown on /about.
+CONFIG_FILES=(
+  "config/app.config.yml"
+  "config/about.config.yml"
+)
+BINARY_FILES=(
+  "public/profile-image.png"
+)
 
 info() {
   printf '\033[1;34m%s\033[0m\n' "$*"
@@ -77,10 +88,22 @@ else
   info ".env already exists, leaving it intact."
 fi
 
+for FILE in "${CONFIG_FILES[@]}" "${BINARY_FILES[@]}"; do
+  if [ -f "$FILE" ]; then
+    info "$FILE already exists, leaving it intact."
+  else
+    info "Downloading $FILE (edit this file to change how your channel looks)..." 
+    mkdir -p "$(dirname "$FILE")"
+    curl -fsSL "$BASE_URL/$FILE" -o "$FILE"
+  fi
+done
+
 info "Starting the app with Docker Compose (pulls the prebuilt dastyaresocial/ds-cs image)..."
 info "The compose project is pinned to \"ds-cs\", so containers/volumes are prefixed ds-cs- regardless of the install directory."
 docker compose -f "$DOCKER_COMPOSE_FILE" up -d
 
 info "Installation complete."
 info "Open http://localhost:8729 after Docker Compose finishes starting the services."
+info "Make this channel yours: edit config/app.config.yml and config/about.config.yml,"
+info "swap public/profile-image.png, then run: docker compose restart app"
 warn "Review .env and update secrets before using this in production."
