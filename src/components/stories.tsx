@@ -687,6 +687,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
         <DialogTrigger asChild>
           <SafeImage
             src="/profile-image.png"
+            unoptimized
             alt=""
             width={size}
             height={size}

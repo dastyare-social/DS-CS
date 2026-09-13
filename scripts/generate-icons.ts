@@ -4,7 +4,27 @@ import sharp from "sharp";
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 const APP_DIR = path.join(process.cwd(), "src", "app");
-const SOURCE_IMAGE = path.join(PUBLIC_DIR, "profile-image.png");
+
+// Source lookup mirrors the /profile-image.png route: brand (mounted live avatar)
+// → public → defaults. In the container the live file lives at /app/brand and the
+// image has no /app/public copy, so the seed guard must run before this.
+function resolve_source_image(): string {
+  const candidates = [
+    path.join(process.cwd(), "brand", "profile-image.png"),
+    path.join(PUBLIC_DIR, "profile-image.png"),
+    path.join(process.cwd(), "defaults", "profile-image.png"),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  throw new Error(
+    `Source image not found. Looked for profile-image.png at: ${candidates.join(", ")}`
+  );
+}
+
+let SOURCE_IMAGE = path.join(process.cwd(), "brand", "profile-image.png");
 
 const FAVICON_SIZES = [16, 32, 48] as const;
 
@@ -108,7 +128,8 @@ async function write_favicon_ico(square: Buffer) {
 }
 
 async function main() {
-  console.log("Generating favicon + PWA icons from public/profile-image.png...");
+  SOURCE_IMAGE = resolve_source_image();
+  console.log(`Generating favicon + PWA icons from ${SOURCE_IMAGE}...`);
 
   assert_source_exists();
   const square = await crop_to_square();

@@ -3,21 +3,29 @@ import path from "node:path";
 
 // Live channel avatar, served at the canonical /profile-image.png URL.
 //
-// The project's ./public is bind-mounted into the container at /app/brand (a
-// directory mount, so editors that save via rename-over cannot orphan the
-// inode). The user's public/profile-image.png therefore takes priority and is
-// streamed fresh on every request, with the default baked into the image at
-// /app/defaults/profile-image.png as the fallback. No restart is needed after
-// replacing the file — just reload the page.
+// Source priority is the user's project ./public (bind-mounted into the
+// container, e.g. /app/public in dev or /app/brand in production), then the
+// default baked into the image at /app/defaults/profile-image.png. Replacing
+// the file needs no restart and no copying — the next request streams the new
+// bytes.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const SOURCE_CANDIDATES = [
+  () => path.join(process.cwd(), "brand", "profile-image.png"),
+  () => path.join(process.cwd(), "public", "profile-image.png"),
+  () => path.join(process.cwd(), "defaults", "profile-image.png"),
+];
+
 async function readAvatar(): Promise<Buffer> {
-  try {
-    return await readFile(path.join(process.cwd(), "brand", "profile-image.png"));
-  } catch {
-    return readFile(path.join(process.cwd(), "defaults", "profile-image.png"));
+  for (const candidate of SOURCE_CANDIDATES) {
+    try {
+      return await readFile(candidate());
+    } catch {
+      // try next priority level
+    }
   }
+  throw new Error("no avatar source found");
 }
 
 export async function GET(): Promise<Response> {
