@@ -74,7 +74,7 @@ The sample `docker-compose.yml` bind-mounts the whole `./config` directory (not 
 | --- | --- | --- |
 | `config/app.config.yml` | Username, email, channel name, description (site shell, meta/titles, header, profile) | Edit, save, then reload the page (hard-refresh to bypass caching) |
 | `config/about.config.yml` | The `/about` page (enabled flag, bio, contacts, work/education sections) | Edit, save, then refresh `/about` |
-| `public/profile-image.png` | The channel avatar (served at `/profile-image.png`: your file wins over the baked default, streamed with no-store) | Replace the file, then reload — applies live |
+| `public/profile-image.png` | The channel avatar (served at `/profile-image.png`: your file wins over the baked default, streamed with no-store). `docker compose up` never copies or overwrites it; if the file is missing at startup the baked default is seeded in so the URL always resolves | Replace the file, then reload — applies live |
 
 ## 4) Reverse proxy
 
