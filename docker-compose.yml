@@ -14,6 +14,10 @@ services:
       # (A per-file mount would break when an editor saves atomically, i.e.
       # rename-over, which orphans the mounted inode.)
       - ./config:/app/config:ro
+      # Brand public dir, directory-mounted at /app/brand: serves the live
+      # /profile-image.png (user file wins over the baked default) via a route
+      # handler, and survives editors that save by rename-over.
+      - ./public:/app/brand:ro
       - ./public/profile-image.png:/app/public/profile-image.png:ro
     depends_on:
       db:

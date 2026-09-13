@@ -32,8 +32,19 @@ export async function GET(
   );
   const fontData = await readFile(fontPath);
 
-  const profileImagePath = join(process.cwd(), "public/profile-image.png");
-  const profileImageData = await readFile(profileImagePath);
+  const profileImagePath = join(
+    process.cwd(),
+    "brand",
+    "profile-image.png",
+  );
+  let profileImageData: Buffer;
+  try {
+    profileImageData = await readFile(profileImagePath);
+  } catch {
+    profileImageData = await readFile(
+      join(process.cwd(), "public", "profile-image.png"),
+    );
+  }
   const profileImageBase64 = `data:image/png;base64,${profileImageData.toString("base64")}`;
 
   const bgImagePath = join(process.cwd(), "public/bg-image.png");
