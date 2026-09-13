@@ -94,6 +94,8 @@ S3_BUCKET_NAME="ds-cs"
 S3_FORCE_PATH_STYLE=true
 ```
 
+> **CORS is required for media uploads.** Media is uploaded directly from the browser to the S3 endpoint (`PUT` to the presigned URL), which is cross-origin to the app. The bundled rustfs service in `docker-compose.yml` sets `RUSTFS_CORS_ALLOWED_ORIGINS` from `NEXT_PUBLIC_APP_URL` automatically. With an external S3 provider, you must enable CORS for your app origin on the bucket yourself — otherwise uploads fail silently in the browser (see Troubleshooting).
+
 ### Optional web push variables
 
 See the [browser push notifications](#6-browser-push-notifications) section to generate VAPID keys.
@@ -106,7 +108,7 @@ WEBPUSH_SUBJECT="mailto:you@example.com"
 
 ### How to generate or obtain every required value
 
-- `DATABASE_URL`: Copy the full connection URL from your PostgreSQL provider. With the bundled compose Postgres, keep `postgresql://postgres:postgres@db:5432/dastyare_social_cs`.
+- `DATABASE_URL`: Copy the full connection URL from your PostgreSQL provider. With the bundled compose Postgres, keep `postgresql://postgres:postgres@db:5432/ds_cs`.
 - `ADMIN_EMAIL`: A valid email address for the bootstrap admin user.
 - `ADMIN_PASSWORD`: Choose a strong password.
 - `API_KEY`: Generate a secure API key with `openssl rand -hex 32`.
@@ -116,6 +118,7 @@ WEBPUSH_SUBJECT="mailto:you@example.com"
 - `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY`: Storage credentials. The bundled rustfs defaults to `442c201224d92fbd5df5aa9d` / `ea8d22810ade922c73ada6bc0c446c5de465db49454c02b8` (the `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` in `docker-compose.yml`).
 - `S3_BUCKET_NAME`: Name of your media bucket. The bundled stack creates `ds-cs` automatically.
 - `S3_FORCE_PATH_STYLE`: Set `true` for rustfs/MinIO/path-style endpoints, `false` for AWS standard endpoints.
+- `RUSTFS_CORS_ALLOWED_ORIGINS`: rustfs-side variable (set in `docker-compose.yml`, not `.env`) that allows browser uploads. It is wired to `NEXT_PUBLIC_APP_URL` automatically — your app origin must match it or media uploads fail with a browser CORS error.
 - `NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY` / `WEBPUSH_PRIVATE_KEY`: Generate with `npx web-push generate-vapid-keys`.
 
 ## 6) Browser push notifications
@@ -150,6 +153,7 @@ WEBPUSH_SUBJECT="mailto:you@example.com"
 - Point `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` at your public domain
 - Serve the app over HTTPS and forward traffic to port `8729`
 - Confirm `S3_ENDPOINT` / credentials match your storage (bundled rustfs or an external provider)
+- Confirm storage CORS allows your app origin (`NEXT_PUBLIC_APP_URL`) — bundled rustfs handles this automatically; external providers must be configured manually. Uploads fail silently otherwise.
 - Confirm the admin account was bootstrapped (container runs migrations + admin bootstrap on startup)
 - Test creating a post and a story after deployment
 - Check `/docs` and `/openapi.json` after the first startup

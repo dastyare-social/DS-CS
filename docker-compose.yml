@@ -46,6 +46,10 @@ services:
       RUSTFS_ADDRESS: 0.0.0.0:9000
       RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
       RUSTFS_CONSOLE_ENABLE: "true"
+      # Required for browser media uploads (they PUT straight from the browser to
+      # rustfs). Must be the app's origin (NEXT_PUBLIC_APP_URL) or uploads fail
+      # silently with a CORS error in the browser console.
+      RUSTFS_CORS_ALLOWED_ORIGINS: "${NEXT_PUBLIC_APP_URL:-http://localhost:8729}"
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -61,6 +65,7 @@ services:
       /bin/sh -c "
       until (mc alias set local http://rustfs:9000 442c201224d92fbd5df5aa9d ea8d22810ade922c73ada6bc0c446c5de465db49454c02b8) do echo 'waiting for rustfs...' && sleep 1; done;
       mc mb --ignore-existing local/ds-cs;
+      mc anonymous set download local/ds-cs;
       exit 0;
       "
 

@@ -222,7 +222,7 @@ AI agents ───► MCP tools ────────┘
 
 ### 10.1 Media Upload — Upload Files For Posts And Stories
 
-- **Presigned upload (recommended)**: `POST /api/upload/presign` returns a presigned S3 PUT URL. Browser uploads directly to S3 via XHR PUT, giving real upload progress. Then `POST /api/upload/confirm` with `{ key, mimeType, filename, size, width, height, duration }` returns the full media object.
+- **Presigned upload (recommended)**: `POST /api/upload/presign` returns a presigned S3 PUT URL. Browser uploads directly to S3 via XHR PUT, giving real upload progress. Then `POST /api/upload/confirm` with `{ key, mimeType, filename, size, width, height, duration }` returns the full media object. Because the PUT is cross-origin, the S3 endpoint must allow the app's origin via CORS (see SELF-HOSTING.md — the bundled rustfs sets `RUSTFS_CORS_ALLOWED_ORIGINS` from `NEXT_PUBLIC_APP_URL`).
 - **Server-side upload (API clients)**: `POST /api/upload` accepts multipart `file`. Use for curl, MCP tools, and server-to-server integrations.
 - `src/lib/media/upload.ts` validates size/MIME (see `MEDIA_*` env), probes dimensions (sharp / ffmpeg-probe), uploads to the S3-compatible bucket, and returns `{ url, key, kind, mimeType, size, width, height, duration }`.
 - Use the returned `url` as `media` when creating posts/stories. `src/lib/media/config.ts` builds the bucket client; `src/lib/media/auth.ts` guards access where needed.
@@ -339,5 +339,6 @@ Production checklist (also in README/`SEARCH-CONSOLE.md`): HTTPS, `NEXT_PUBLIC_A
 | 403 on writes | Demo mode active, or missing/wrong `Authorization: Bearer <API_KEY>`. |
 | Build fails on `bootstrap:admin` | `ADMIN_EMAIL` / `ADMIN_PASSWORD` not set. |
 | Media upload 400 | MIME/size exceeds `MEDIA_MAX_*_SIZE_MB` / `MEDIA_ALLOWED_MIME_TYPES`. |
+| Media upload fails silently in the browser ("Failed to fetch" / blocked PUT) | S3/rustfs CORS not configured for your app origin. Bundled rustfs: `RUSTFS_CORS_ALLOWED_ORIGINS` set to `NEXT_PUBLIC_APP_URL` in `docker-compose.yml`. External S3: enable CORS for the app origin on the bucket. Check the console for a CORS error. |
 | No install icon in Chrome | Ensure `public/sw.js` is served with a fetch handler and the manifest is valid on HTTPS. |
 | SEO not indexed | `NEXT_PUBLIC_ALLOW_INDEXING` not `true`; check `X-Robots-Tag` in network tab. |
