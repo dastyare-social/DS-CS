@@ -123,8 +123,8 @@ const VoiceAttachment = ({
     <div
       dir="ltr"
       className={cn(
-        "relative rounded-2xl border bg-primary/5 px-3 py-2 flex items-center gap-3",
-        error ? "cursor-pointer" : "border-primary/5",
+        "relative rounded-2xl border border-primary/5 bg-primary/5 px-3 py-2 flex items-center gap-3",
+        error && "cursor-pointer",
       )}
       onClick={error ? onRetry : undefined}
     >
@@ -282,8 +282,8 @@ const FileAttachment = ({
       dir="ltr"
       onClick={error ? onRetry : undefined}
       className={cn(
-        "relative rounded-2xl border bg-primary/5 px-3 py-3 flex items-center gap-3 min-w-[200px] max-w-full self-center",
-        error ? "cursor-pointer" : "border-primary/5",
+        "relative rounded-2xl border border-primary/5 bg-primary/5 px-3 py-3 flex items-center gap-3 min-w-[200px] max-w-full self-center",
+        error && "cursor-pointer",
       )}
     >
       {/* Progress circle — same ring as voice/posts download circle */}
@@ -399,11 +399,11 @@ const ErrorOverlay = ({ onRetry }: { onRetry: () => void }) => (
         e.stopPropagation();
         onRetry();
       }}
-      className="progress-ring progress-ring-sm text-white bg-white/10 backdrop-blur-xs rounded-full px-1.5 py-0.5 text-[10px] leading-none whitespace-nowrap transition-all duration-300 flex items-center gap-x-1 cursor-pointer outline-none"
+      className="progress-ring progress-ring-sm text-white bg-white/10 backdrop-blur-xs rounded-full px-1.5 py-0.5 text-[10px] leading-none transition-all duration-300 flex items-center gap-x-1 cursor-pointer outline-none max-w-full"
       style={{ "--ring-progress": "0%" } as React.CSSProperties}
     >
-      <RotateCcwIcon className="size-2.5 stroke-[1.5]" />
-      Failed — Try Again
+      <RotateCcwIcon className="size-2.5 stroke-[1.5] shrink-0" />
+      <span className="truncate">Failed — Try Again</span>
     </button>
   </div>
 );
@@ -1138,7 +1138,11 @@ const Page = () => {
 
             {!isLoading && posts.length === 0 && (
               <div className="w-full h-full flex justify-center items-center text-xl text-center">
-                {t("general.publish_first_content")}
+                {t.rich("general.publish_first_content", {
+                  highlight: (chunks) => (
+                    <span className="text-primary">&nbsp;{chunks}&nbsp;</span>
+                  ),
+                })}
               </div>
             )}
 
