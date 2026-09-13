@@ -184,6 +184,33 @@ export async function unregisterPushSubscription(): Promise<boolean> {
 }
 
 /**
+ * Resolve the VAPID public key.
+ *
+ * The prebuilt image ships without the key baked into the browser bundle (each
+ * install generates its own VAPID pair, so the value isn't known at build
+ * time), so `process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY` alone is not enough.
+ * Fetch it from the runtime config endpoint instead; fall back to the
+ * build-time env value, which covers deployments compiled with the key set.
+ */
+async function getVapidPublicKey(): Promise<string | null> {
+  try {
+    const response = await fetch("/api/push/config", { cache: "no-store" });
+    if (response.ok) {
+      const data = (await response.json()) as {
+        configured: boolean;
+        publicKey: string | null;
+      };
+      const runtimeKey = data.configured ? data.publicKey : null;
+      if (runtimeKey) return runtimeKey;
+    }
+  } catch (error) {
+    console.error("Failed to load VAPID public key from runtime config:", error);
+  }
+
+  return process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY || null;
+}
+
+/**
  * Toggle push subscription - subscribe if not subscribed, unsubscribe if subscribed
  * @returns Promise<PushStatus | null> indicating the new status
  */
@@ -213,7 +240,8 @@ export async function registerPushSubscription(): Promise<PushStatus | null> {
     return isIOS() ? "ios" : "unsupported-browser";
   }
 
-  if (!process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY) {
+  const vapidPublicKey = await getVapidPublicKey();
+  if (!vapidPublicKey) {
     return "missing-vapid";
   }
 
@@ -268,7 +296,7 @@ export async function registerPushSubscription(): Promise<PushStatus | null> {
     // Subscribe to push
     const subscription = await swRegistration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY),
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
     });
 
     const response = await fetch("/api/push", {

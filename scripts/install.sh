@@ -16,6 +16,12 @@ CONFIG_FILES=(
 BINARY_FILES=(
   "public/profile-image.png"
 )
+# A pull-only Vercel blueprint (FROM dastyaresocial/ds-cs:latest + PORT-aware
+# CMD) dropped at the project root so the installed folder can be deployed to
+# Vercel Fluid compute without touching the app source repo.
+VERCEL_FILES=(
+  "Dockerfile.vercel"
+)
 
 info() {
   printf '\033[1;34m%s\033[0m\n' "$*"
@@ -87,7 +93,7 @@ restore_echo() {
 }
 
 if [ ! -f "$ENV_FILE" ]; then
-  printf '\033[1;36m--- Dastyare Social Installer ---\033[0m\n'
+  printf '\033[1;36m--- Dastyare Social — CS — INSTALLER ---\033[0m\n'
 
   if [ -r /dev/tty ] 2>/dev/null; then
     trap restore_echo EXIT INT TERM
@@ -166,8 +172,19 @@ for FILE in "${CONFIG_FILES[@]}" "${BINARY_FILES[@]}"; do
   fi
 done
 
-info "Starting the app with Docker Compose (pulls the prebuilt dastyaresocial/ds-cs image)..."
+for FILE in "${VERCEL_FILES[@]}"; do
+  if [ -f "$FILE" ]; then
+    info "$FILE already exists, leaving it intact."
+  else
+    info "Downloading $FILE (use it to deploy this folder to Vercel Fluid compute)..."
+    mkdir -p "$(dirname "$FILE")"
+    curl -fsSL "$BASE_URL/$FILE" -o "$FILE"
+  fi
+done
+
+info "Starting the app with Docker Compose (pulls the latest prebuilt dastyaresocial/ds-cs image)..."
 info "The compose project is pinned to \"ds-cs\", so containers/volumes are prefixed ds-cs- regardless of the install directory."
+docker compose -f "$DOCKER_COMPOSE_FILE" pull
 docker compose -f "$DOCKER_COMPOSE_FILE" up -d
 
 info "Installation complete."
