@@ -88,7 +88,7 @@ Run `bun run mcp` to start a stdio MCP server that talks directly to your databa
     "ds-cs": {
       "command": "bun",
       "args": ["run", "mcp"],
-      "cwd": "/path/to/dastyare_social_cs"
+      "cwd": "/path/to/ds_cs"
     }
   }
 }
