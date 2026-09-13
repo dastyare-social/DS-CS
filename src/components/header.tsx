@@ -13,7 +13,7 @@ import { createPortal } from "react-dom";
 import { Button } from "./button";
 import Link from "next/link";
 import { routes } from "@/config/routes";
-import { app_config } from "@/config/app";
+import { useSiteConfig } from "@/components/site-config-provider";
 import { Locale } from "@/config/locale";
 import type { PostWithReactions } from "@/lib/api/posts";
 
@@ -42,6 +42,7 @@ const Header = ({
   const t = useTranslations();
 
   const locale = useLocale() as Locale;
+  const app_config = useSiteConfig();
 
   // Fallback to usePosts only if props are not provided
   const hookData = usePosts(postsData ? 0 : 1);

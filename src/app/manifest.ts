@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
-import { app_config } from "@/config/app";
+import { get_app_config } from "@/config/runtime";
 import { getLocale } from "next-intl/server";
 import { Locale } from "@/config/locale";
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const locale = (await getLocale()) as Locale;
+  const app_config = get_app_config();
   const appName = app_config[locale].name;
   const appDescription = app_config[locale].desc;
 

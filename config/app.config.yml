@@ -1,3 +1,12 @@
+# Dastyare Social — channel config (config/app.config.yml)
+# Edits apply live: save this file, then reload the page. No rebuild and no
+# `docker compose restart` is needed.
+#
+# general.username - the account handle (@username)
+# general.email    - contact email shown in the site footer / contact links
+# en.name          - the channel/site name shown in the browser tab, header, SEO
+# en.desc          - short description used in meta tags and the /about page
+#                    (other locales follow the same "name"/"desc" shape)
 general:
   username: "omidshabab"
   email: "hey@omidshabab.com"

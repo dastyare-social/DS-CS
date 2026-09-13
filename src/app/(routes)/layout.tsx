@@ -9,8 +9,10 @@ import NextTopLoader from "nextjs-toploader";
 import { cn } from "@/lib/utils";
 import { Locale } from "@/config/locale";
 import { rootMetadata } from "../../../config/metadata";
+import { get_app_config } from "@/config/runtime";
 import Analytics from "@/components/analytics";
 import RegisterPWA from "@/components/register-pwa";
+import { SiteConfigProvider } from "@/components/site-config-provider";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -57,7 +59,9 @@ export default async function RootLayout({
           />
           <Analytics />
           <RegisterPWA />
-          {children}
+          <SiteConfigProvider value={get_app_config()}>
+            {children}
+          </SiteConfigProvider>
         </NextIntlClientProvider>
       </body>
     </html>

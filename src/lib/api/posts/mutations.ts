@@ -7,7 +7,7 @@ import { insertReactionsSchema } from "@/lib/db/schema/reactions";
 import { z } from "zod";
 import { captureServerEvent, flushServerEvents } from "@/lib/analytics/server";
 import { randomUUID } from "crypto";
-import { app_config } from "@/config/app";
+import { get_app_config } from "@/config/runtime";
 import type { MediaPayload, PostType, PostWithReactions } from "./queries";
 import { getPostById, invalidatePostsCache } from "./queries";
 import { sendPushNotification } from "@/lib/notifications/push";
@@ -138,6 +138,7 @@ async function insertPost({
   push?: boolean;
 }): Promise<PostWithReactions> {
   const now = new Date();
+  const app_config = get_app_config();
 
   const processedContent = content ? await shortenContentUrls(content) : null;
 

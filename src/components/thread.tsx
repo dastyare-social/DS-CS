@@ -8,7 +8,7 @@ import {
 } from "@/components/context-menu";
 import Stories from "@/components/stories";
 import Reaction from "@/components/reaction";
-import { app_config } from "@/config/app";
+import { useSiteConfig } from "@/components/site-config-provider";
 import { Locale } from "@/config/locale";
 import { pally } from "@/lib/fonts";
 import { renderSimpleMarkdown } from "@/lib/render-post-markdown";
@@ -38,6 +38,7 @@ export default function ThreadItem({
 }: ThreadItemProps) {
   const t = useTranslations();
   const locale = useLocale() as Locale;
+  const app_config = useSiteConfig();
 
   return (
     <ContextMenu key={index}>

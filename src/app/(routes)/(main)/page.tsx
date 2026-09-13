@@ -13,7 +13,7 @@ import Header from "@/components/header";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { setUserLocale } from "@/services/locale";
-import { app_config } from "@/config/app";
+import { useSiteConfig } from "@/components/site-config-provider";
 import { Locale } from "@/config/locale";
 import { batchIncrementViews, getPinnedPosts } from "@/lib/actions/posts";
 import type { PostWithReactions } from "@/lib/api/posts";
@@ -23,6 +23,7 @@ const Page = () => {
 
   const router = useRouter();
   const locale = useLocale() as Locale;
+  const app_config = useSiteConfig();
 
   const headerRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);

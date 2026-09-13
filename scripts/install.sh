@@ -104,6 +104,6 @@ docker compose -f "$DOCKER_COMPOSE_FILE" up -d
 
 info "Installation complete."
 info "Open http://localhost:8729 after Docker Compose finishes starting the services."
-info "Make this channel yours: edit config/app.config.yml and config/about.config.yml,"
-info "swap public/profile-image.png, then run: docker compose restart app"
+info "Make this channel yours: edit config/app.config.yml, config/about.config.yml"
+info "and public/profile-image.png, then reload the page — no rebuild or restart needed."
 warn "Review .env and update secrets before using this in production."

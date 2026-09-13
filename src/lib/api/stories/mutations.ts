@@ -9,7 +9,7 @@ import { z } from "zod";
 import { randomUUID } from "crypto";
 import type { StoryItem, StoryMediaPayload, StoryType } from "./queries";
 import { getStoryById } from "./queries";
-import { app_config } from "@/config/app";
+import { get_app_config } from "@/config/runtime";
 import { sendPushNotification } from "@/lib/notifications/push";
 import { captureServerEvent, flushServerEvents } from "@/lib/analytics/server";
 import { getMediaDimensionsFromUrl } from "@/lib/utils/media";
@@ -132,6 +132,7 @@ async function insertStory({
   push: boolean;
 }): Promise<StoryItem> {
   const now = new Date();
+  const app_config = get_app_config();
 
   const parsedBase = insertStoriesSchema.parse({
     type,

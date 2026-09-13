@@ -16,7 +16,7 @@ import ProfileModal from "./modals/profile";
 import ConfirmDialog from "./confirm-dialog";
 import { useLocale, useTranslations } from "next-intl";
 import { LangDir } from "@/lib/fonts";
-import { app_config } from "@/config/app";
+import { useSiteConfig } from "@/components/site-config-provider";
 import { Locale } from "@/config/locale";
 import { useSession } from "@/lib/auth/client";
 import {
@@ -69,6 +69,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
 
   const locale = useLocale() as Locale;
   const dir = LangDir(locale);
+  const app_config = useSiteConfig();
 
   const [stories, setStories] = useState<StoryItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

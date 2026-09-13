@@ -66,11 +66,13 @@ After both options, open `http://localhost:8729` (or `https://your-domain.com`).
 
 The install drops three editable files into the project directory; `docker-compose.yml` bind-mounts them into the container so the app uses *your* files, not the identity baked into the image.
 
+All three are read from disk on every request, so rebranding is a simple edit-save-refresh — **no rebuild and no `docker compose restart` is needed**. `docker compose up -d` is only required for a fresh install, not for config edits.
+
 | File | Controls | How to apply changes |
 | --- | --- | --- |
-| `config/app.config.yml` | Username, email, channel name, description (built into the site shell, meta, header) | `docker compose restart app` (re-runs `generate:config`, and the app reads the result at runtime) |
-| `config/about.config.yml` | The `/about` page (enabled flag, bio, contacts, work/education sections) | Applies **live** — just refresh `/about` |
-| `public/profile-image.png` | The avatar shown on `/about` (`avatar: /profile-image.png`) | Replace the file, then `docker compose restart app` for cached copies |
+| `config/app.config.yml` | Username, email, channel name, description (site shell, meta/titles, header, profile) | Edit, save, then reload the page (hard-refresh to bypass caching) |
+| `config/about.config.yml` | The `/about` page (enabled flag, bio, contacts, work/education sections) | Edit, save, then refresh `/about` |
+| `public/profile-image.png` | The avatar shown on `/about` (`avatar: /profile-image.png`) | Replace the file, then hard-refresh (browsers cache images) |
 
 ## 4) Reverse proxy
 

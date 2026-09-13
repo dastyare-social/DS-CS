@@ -4,20 +4,15 @@ import { get_app_config } from "../src/config/runtime";
 import { isResumeEnabled } from "../src/config/resume";
 import type { Locale } from "../src/config/locale";
 
-// Server-side only module (imported by route handlers / server layouts), so a
-// module-scope read of the runtime config is safe here.
-const app_config = get_app_config();
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
+// Server-side only module (imported by route handlers / server layouts).
+// The config is read fresh on every request so mounted edits take effect
+// without a restart.
 const OG_IMAGE = `${app_url}/profile-image.png`;
 const OG_WIDTH = 1200;
 const OG_HEIGHT = 630;
 
 function appName(locale: Locale) {
-  return `${app_config[locale].name}'s Channel`;
+  return `${get_app_config()[locale].name}'s Channel`;
 }
 
 function siteName(locale: Locale) {
@@ -35,6 +30,7 @@ function ogImages(url: string, alt: string) {
 // ---------------------------------------------------------------------------
 
 export function rootMetadata(locale: Locale): Metadata {
+  const app_config = get_app_config();
   const title = appName(locale);
   const description = app_config[locale].desc;
 
@@ -75,6 +71,7 @@ export function rootMetadata(locale: Locale): Metadata {
 }
 
 export function homeMetadata(locale: Locale): Metadata {
+  const app_config = get_app_config();
   const title = appName(locale);
   const description = app_config[locale].desc;
 
@@ -104,6 +101,7 @@ export function homeMetadata(locale: Locale): Metadata {
 }
 
 export function exploreMetadata(locale: Locale): Metadata {
+  const app_config = get_app_config();
   const title = "Explore";
   const description = `Explore amazing content, shorts, and conversations from ${app_config[locale].name}!`;
 
@@ -170,6 +168,7 @@ export function postMetadata(
 }
 
 export function aboutMetadata(locale: Locale): Metadata {
+  const app_config = get_app_config();
   const title = appName(locale);
   const description = `About ${app_config[locale].name}`;
 

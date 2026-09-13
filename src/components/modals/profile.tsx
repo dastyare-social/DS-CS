@@ -5,7 +5,7 @@ import { Button } from "../button";
 import Stories from "../stories";
 import { pally } from "@/lib/fonts";
 import { useLocale, useTranslations } from "next-intl";
-import { app_config } from "@/config/app";
+import { useSiteConfig } from "@/components/site-config-provider";
 import { Locale } from "@/config/locale";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/lib/auth/client";
@@ -14,6 +14,7 @@ import { useState } from "react";
 const ProfileModal = ({ opened }: { opened?: boolean }) => {
   const t = useTranslations();
   const locale = useLocale() as Locale;
+  const app_config = useSiteConfig();
   const pathname = usePathname();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 

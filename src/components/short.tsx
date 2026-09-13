@@ -1,7 +1,7 @@
 "use client";
 
 import Loader from "@/components/loader";
-import { app_config } from "@/config/app";
+import { useSiteConfig } from "@/components/site-config-provider";
 import { Locale } from "@/config/locale";
 import { capitalize, cn, formatCount } from "@/lib/utils";
 import {
@@ -64,6 +64,7 @@ export default function ShortItem({
 }: ShortItemProps) {
   const t = useTranslations();
   const locale = useLocale() as Locale;
+  const app_config = useSiteConfig();
 
   return (
     <section
