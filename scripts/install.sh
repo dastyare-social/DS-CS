@@ -75,10 +75,44 @@ if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
   curl -fsSL "$DOCKER_COMPOSE_URL" -o "$DOCKER_COMPOSE_FILE"
 fi
 
+# Interactive answers come from the controlling terminal: under `curl ... | bash`
+# the script's stdin is the download pipe (already at EOF), so a plain `read`
+# would see an empty value. Prefer /dev/tty when one is attached, else stdin.
+# The password is hidden with `stty -echo` rather than `read -s` because macOS
+# ships bash 3.2, where `read -s -p` fails to disable echo (the password would
+# be printed in plain text as it is typed).
+restore_echo() {
+  stty echo < /dev/tty 2>/dev/null || true
+  stty echo 2>/dev/null || true
+}
+
 if [ ! -f "$ENV_FILE" ]; then
   printf '\033[1;36m--- Dastyare Social Installer ---\033[0m\n'
-  read -r -p "Email:    " ADMIN_EMAIL
-  read -r -s -p "Password: " ADMIN_PASSWORD && printf '\n'
+
+  if [ -r /dev/tty ] 2>/dev/null; then
+    trap restore_echo EXIT INT TERM
+    printf '%s' "Email:    "
+    read -r ADMIN_EMAIL < /dev/tty || true
+    stty -echo < /dev/tty
+    printf '%s' "Password: "
+    read -r ADMIN_PASSWORD < /dev/tty || true
+    printf '\n'
+    stty echo < /dev/tty
+  elif [ -t 0 ]; then
+    printf '%s' "Email:    "
+    read -r ADMIN_EMAIL || true
+    stty -echo
+    printf '%s' "Password: "
+    read -r ADMIN_PASSWORD || true
+    printf '\n'
+    stty echo
+  else
+    printf '%s' "Email:    "
+    read -r ADMIN_EMAIL || true
+    printf '%s' "Password: "
+    read -r ADMIN_PASSWORD || true
+    printf '\n'
+  fi
 
   if [ -z "$ADMIN_EMAIL" ]; then
     error "Email cannot be empty."
