@@ -107,6 +107,9 @@ S3_ACCESS_KEY_ID="442c201224d92fbd5df5aa9d"
 S3_SECRET_ACCESS_KEY="ea8d22810ade922c73ada6bc0c446c5de465db49454c02b8"
 S3_BUCKET_NAME="ds-cs"
 S3_FORCE_PATH_STYLE=true
+# Browser-reachable base for media URLs. Port 9000 is mapped to rustfs on the
+# host; keep this in sync with docker-compose.yml's rustfs ports.
+S3_PUBLIC_BASE_URL="http://localhost:9000/ds-cs"
 NEXT_PUBLIC_ANIMATED_EMOJIES=false
 DS_SH_URL=
 DS_SH_API_KEY=
