@@ -8,12 +8,12 @@ services:
     env_file:
       - .env
     volumes:
-      # Brand files shipped into the project by scripts/install.sh. Edit these
-      # on the host and `docker compose restart app` — generate:config runs on
-      # boot and app.ts now reads the generated JSON at runtime, so the channel
-      # name/desc/email and /about content follow your files.
-      - ./config/app.config.yml:/app/config/app.config.yml:ro
-      - ./config/about.config.yml:/app/config/about.config.yml:ro
+      # Brand files shipped into the project by scripts/install.sh. The config/
+      # directory is bind-mounted as a whole so edits apply live on reload — the
+      # app reads app.config.yml and about.config.yml from disk on every request.
+      # (A per-file mount would break when an editor saves atomically, i.e.
+      # rename-over, which orphans the mounted inode.)
+      - ./config:/app/config:ro
       - ./public/profile-image.png:/app/public/profile-image.png:ro
     depends_on:
       db:
@@ -21,7 +21,7 @@ services:
       rustfs:
         condition: service_started
     restart: unless-stopped
-    command: sh -c "npm run generate:config && npm run db:migrate && npm run bootstrap:admin && npm run start"
+    command: sh -c "npm run db:migrate && npm run bootstrap:admin && npm run start"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:8729/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       start_period: 90s

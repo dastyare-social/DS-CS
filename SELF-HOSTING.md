@@ -68,6 +68,8 @@ The install drops three editable files into the project directory; `docker-compo
 
 All three are read from disk on every request, so rebranding is a simple edit-save-refresh — **no rebuild and no `docker compose restart` is needed**. `docker compose up -d` is only required for a fresh install, not for config edits.
 
+The sample `docker-compose.yml` bind-mounts the whole `./config` directory (not individual files) so atomic rename-on-save editors (VS Code, most text editors) can't orphan the inode the container watches.
+
 | File | Controls | How to apply changes |
 | --- | --- | --- |
 | `config/app.config.yml` | Username, email, channel name, description (site shell, meta/titles, header, profile) | Edit, save, then reload the page (hard-refresh to bypass caching) |
