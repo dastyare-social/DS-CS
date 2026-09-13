@@ -42,7 +42,7 @@ export async function GET(
     profileImageData = await readFile(profileImagePath);
   } catch {
     profileImageData = await readFile(
-      join(process.cwd(), "public", "profile-image.png"),
+      join(process.cwd(), "defaults", "profile-image.png"),
     );
   }
   const profileImageBase64 = `data:image/png;base64,${profileImageData.toString("base64")}`;

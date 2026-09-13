@@ -34,6 +34,12 @@ ENV NODE_ENV=production
 # Copy built app and installed deps from builder
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+# The live channel avatar is served by the /profile-image.png route handler
+# (the user's ./public, dir-mounted at /app/brand, wins). Bake the default
+# avatar OUTSIDE public/ so the static self-host server cannot shadow the
+# route, and keep /app/public/profile-image.png out of the image entirely.
+COPY --from=builder /app/public/profile-image.png ./defaults/profile-image.png
+RUN rm -f ./public/profile-image.png
 COPY --from=builder /app/package.json ./package.json
 # Runtime startup runs npm scripts (generate:config, db:migrate, bootstrap:admin)
 # via tsx, so they need the script sources, config, and the tsconfig paths (for

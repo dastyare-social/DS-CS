@@ -18,7 +18,6 @@ services:
       # /profile-image.png (user file wins over the baked default) via a route
       # handler, and survives editors that save by rename-over.
       - ./public:/app/brand:ro
-      - ./public/profile-image.png:/app/public/profile-image.png:ro
     depends_on:
       db:
         condition: service_healthy
