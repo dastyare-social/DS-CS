@@ -40,6 +40,23 @@ generate_secret() {
   fi
 }
 
+# Generate a VAPID key pair (EC P-256, uncompressed point) via Node's built-in
+# crypto module — no external dependencies needed. The public key includes the
+# 0x04 prefix (65 bytes), matching the format `npx web-push generate-vapid-keys` emits.
+generate_vapid_keys() {
+  if ! command -v node >/dev/null 2>&1; then
+    error "Node.js is required to generate VAPID keys. Install Node and rerun this script."
+  fi
+  node <<'NODE'
+const { createECDH } = require("crypto");
+const ecdh = createECDH("prime256v1");
+ecdh.generateKeys();
+const pub = ecdh.getPublicKey().toString("base64url");
+const priv = ecdh.getPrivateKey().toString("base64url");
+console.log(pub + " " + priv);
+NODE
+}
+
 if ! command -v docker >/dev/null 2>&1; then
   error "Docker is required for the install script. Install Docker and rerun this script."
 fi
@@ -59,11 +76,25 @@ if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
 fi
 
 if [ ! -f "$ENV_FILE" ]; then
-  info "Creating a .env file with safe defaults for Docker Compose..."
+  printf '\033[1;36m--- Dastyare Social Installer ---\033[0m\n'
+  read -r -p "Email:    " ADMIN_EMAIL
+  read -r -s -p "Password: " ADMIN_PASSWORD && printf '\n'
+
+  if [ -z "$ADMIN_EMAIL" ]; then
+    error "Email cannot be empty."
+  fi
+
+  if [ -z "$ADMIN_PASSWORD" ]; then
+    error "Password cannot be empty."
+  fi
+
+  read -r VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY <<< "$(generate_vapid_keys)"
+
+  info "Creating .env..."
   cat > "$ENV_FILE" <<EOF
 DATABASE_URL="postgresql://postgres:postgres@db:5432/ds_cs"
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=change-this-password
+ADMIN_EMAIL=$ADMIN_EMAIL
+ADMIN_PASSWORD=$ADMIN_PASSWORD
 API_KEY=$(generate_secret)
 API_KEY_RATE_LIMIT_MAX_REQUESTS=30
 API_KEY_RATE_LIMIT_WINDOW_MS=60000
@@ -79,11 +110,11 @@ S3_FORCE_PATH_STYLE=true
 NEXT_PUBLIC_ANIMATED_EMOJIES=false
 DS_SH_URL=
 DS_SH_API_KEY=
-NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY=""
-WEBPUSH_PRIVATE_KEY=""
-WEBPUSH_SUBJECT="mailto:you@example.com"
+NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY=$VAPID_PUBLIC_KEY
+WEBPUSH_PRIVATE_KEY=$VAPID_PRIVATE_KEY
+WEBPUSH_SUBJECT="mailto:$ADMIN_EMAIL"
 EOF
-  warn "A .env file was created. Review and update its values before using this in production."
+  warn "A .env file was created with your credentials and auto-generated secrets."
 else
   info ".env already exists, leaving it intact."
 fi
