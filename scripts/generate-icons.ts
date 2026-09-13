@@ -3,11 +3,13 @@ import path from "node:path";
 import sharp from "sharp";
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
-const APP_DIR = path.join(process.cwd(), "src", "app");
 
 // Source lookup mirrors the /profile-image.png route: brand (mounted live avatar)
 // → public → defaults. In the container the live file lives at /app/brand and the
 // image has no /app/public copy, so the seed guard must run before this.
+// All generated icons go to public/ because `next start` serves public/ from disk,
+// so a startup refresh is picked up immediately — unlike the old src/app/*.ico
+// metadata files that are frozen into the build output.
 function resolve_source_image(): string {
   const candidates = [
     path.join(process.cwd(), "brand", "profile-image.png"),
@@ -124,7 +126,7 @@ async function write_favicon_ico(square: Buffer) {
     }))
   );
 
-  fs.writeFileSync(path.join(APP_DIR, "favicon.ico"), encode_ico(frames));
+  fs.writeFileSync(path.join(PUBLIC_DIR, "favicon.ico"), encode_ico(frames));
 }
 
 async function main() {
@@ -137,11 +139,11 @@ async function main() {
   await write_favicon_ico(square);
 
   fs.writeFileSync(
-    path.join(APP_DIR, "icon.png"),
+    path.join(PUBLIC_DIR, "icon.png"),
     await round_transparent(square, 512)
   );
   fs.writeFileSync(
-    path.join(APP_DIR, "apple-icon.png"),
+    path.join(PUBLIC_DIR, "apple-icon.png"),
     await square_icon(square, 180)
   );
   fs.writeFileSync(
@@ -154,9 +156,9 @@ async function main() {
   );
 
   console.log("Generated:");
-  console.log("  src/app/favicon.ico");
-  console.log("  src/app/icon.png");
-  console.log("  src/app/apple-icon.png");
+  console.log("  public/favicon.ico");
+  console.log("  public/icon.png");
+  console.log("  public/apple-icon.png");
   console.log("  public/web-app-manifest-192x192.png");
   console.log("  public/web-app-manifest-512x512.png");
 }

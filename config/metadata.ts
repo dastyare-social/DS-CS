@@ -41,6 +41,16 @@ export function rootMetadata(locale: Locale): Metadata {
       template: `%s — ${title}`,
     },
     description,
+    // Explicit icons served from public/ (disk, regenerated at startup from the
+    // mounted avatar). Declaring these disables app-dir auto-detection, so the
+    // build no longer bakes hashed copies into the output.
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "any", type: "image/x-icon" },
+        { url: "/icon.png", sizes: "512x512", type: "image/png" },
+      ],
+      apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+    },
     openGraph: {
       title,
       description,
