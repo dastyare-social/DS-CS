@@ -12,6 +12,7 @@ import { rootMetadata } from "../../../config/metadata";
 import { get_app_config } from "@/config/runtime";
 import Analytics from "@/components/analytics";
 import RegisterPWA from "@/components/register-pwa";
+import ImageInteractionGuard from "@/components/image-interaction-guard";
 import { SiteConfigProvider } from "@/components/site-config-provider";
 
 export const viewport: Viewport = {
@@ -59,6 +60,7 @@ export default async function RootLayout({
           />
           <Analytics />
           <RegisterPWA />
+          <ImageInteractionGuard />
           <SiteConfigProvider value={get_app_config()}>
             {children}
           </SiteConfigProvider>

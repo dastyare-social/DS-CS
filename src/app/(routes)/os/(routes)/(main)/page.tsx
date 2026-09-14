@@ -1137,12 +1137,14 @@ const Page = () => {
             )}
 
             {!isLoading && posts.length === 0 && (
-              <div className="w-full h-full flex justify-center items-center text-xl text-center">
-                {t.rich("general.publish_first_content", {
-                  highlight: (chunks) => (
-                    <span className="text-primary">&nbsp;{chunks}&nbsp;</span>
-                  ),
-                })}
+              <div className="w-full h-full flex justify-center items-center px-[25px]">
+                <p className="text-xl text-center w-full">
+                  {t.rich("general.publish_first_content", {
+                    highlight: (chunks) => (
+                      <span className="text-primary">{chunks}</span>
+                    ),
+                  })}
+                </p>
               </div>
             )}
 
@@ -1271,7 +1273,7 @@ const Page = () => {
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-2 mt-2 pb-2 border-b border-secondary/5">
                   {selectedFiles.map((item, index) => (
                     <MediaAttachmentThumb
-                      key={`${item.file.name}-${index}`}
+                      key={item.id ?? `${item.file.name}-${index}`}
                       item={item}
                       onRemove={() => handleRemoveFile(index)}
                       onRetry={() => retryFile(index)}
@@ -1323,7 +1325,7 @@ const Page = () => {
                     maxLength={4096}
                     disabled={isOffline}
                     className={cn(
-                      "text-start resize-none w-full flex py-2 pt-3 lg:pt-6 none-scroll-bar focus:outline-none active:outline-none overflow-y-hidden",
+                      "font-bidi text-start resize-none w-full flex py-2 pt-3 lg:pt-6 none-scroll-bar focus:outline-none active:outline-none overflow-y-hidden",
                       isOffline && "opacity-50 cursor-not-allowed",
                     )}
                   />
