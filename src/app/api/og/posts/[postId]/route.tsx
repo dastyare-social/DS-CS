@@ -28,7 +28,7 @@ export async function GET(
 
   const fontPath = join(
     process.cwd(),
-    "src/assets/fonts/en/Pally/Pally-Regular.ttf",
+    "src/assets/fonts/Pally/Pally-Regular.ttf",
   );
   const fontData = await readFile(fontPath);
 

@@ -6,7 +6,7 @@ import localFont from "next/font/local";
 export const pally = localFont({
   src: [
     {
-      path: "../assets/fonts/en/Pally/Pally-Regular.ttf",
+      path: "../assets/fonts/Pally/Pally-Regular.ttf",
     },
   ],
   variable: "--font-heading",
@@ -17,9 +17,9 @@ export const pally = localFont({
 export function LangFont(locale: string): string {
   switch (locale) {
     case "en":
-      return pally.className;
+      return `${pally.className} ${pally.variable}`;
     default:
-      return pally.className;
+      return `${pally.className} ${pally.variable}`;
   }
 }
 

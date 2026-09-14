@@ -1,7 +1,7 @@
 /* Pally — same font the app loads via `next/font/local` in src/lib/fonts.ts. */
 @font-face {
   font-family: "Pally";
-  src: url("../src/assets/fonts/en/Pally/Pally-Regular.ttf") format("truetype");
+  src: url("../src/assets/fonts/Pally/Pally-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;

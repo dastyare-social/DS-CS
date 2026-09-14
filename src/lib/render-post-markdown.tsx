@@ -84,7 +84,7 @@ export const renderSimpleMarkdown = (
   const lines = preprocessed.split("\n");
 
   return (
-    <div className="whitespace-pre-wrap break-words">
+    <div className="font-bidi whitespace-pre-wrap break-words">
       {lines.map((line, lineIndex) => (
         <div key={lineIndex}>
           {line === "" ? (
