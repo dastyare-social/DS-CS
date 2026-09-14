@@ -18,4 +18,5 @@ EXPOSE 80
 WORKDIR /app
 
 # Override the base image CMD (next start -p 8729) to honor Vercel's injected PORT.
-CMD ["sh", "-c", "node_modules/.bin/next start -h 0.0.0.0 -p ${PORT:-80}"]
+# NB: -H is hostname; lowercase -h is --help and would print help + exit (no server).
+CMD ["sh", "-c", "node_modules/.bin/next start -H 0.0.0.0 -p ${PORT:-80}"]
