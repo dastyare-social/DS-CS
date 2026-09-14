@@ -163,21 +163,38 @@ async function main() {
     return;
   }
 
-  // Skip the (expensive) clear + re-upload when emojis are already on S3.
-  // Used at container startup so every cold start doesn't re-upload everything.
+  // Skip the (expensive) clear + re-upload only when every expected emoji is
+  // already on S3. Used at container startup so cold starts don't re-upload
+  // everything, while a partial seed (e.g. an interrupted boot) still converges
+  // to the full set on the next boot instead of freezing incomplete.
   if (skipIfExists) {
-    const list = await client.send(
-      new ListObjectsV2Command({
-        Bucket: bucket,
-        Prefix: `${S3_PREFIX}/`,
-        MaxKeys: 1,
-      }),
-    );
-    if (list.Contents && list.Contents.length > 0) {
-      console.log("Animated emojis already present on S3; skipping upload.");
+    const present = new Set<string>();
+    let continuationToken: string | undefined;
+    do {
+      const list = await client.send(
+        new ListObjectsV2Command({
+          Bucket: bucket,
+          Prefix: `${S3_PREFIX}/`,
+          ContinuationToken: continuationToken,
+        }),
+      );
+      if (!list.Contents) break;
+      for (const obj of list.Contents) {
+        present.add(obj.Key!.slice(S3_PREFIX.length + 1));
+      }
+      continuationToken = list.NextContinuationToken;
+    } while (continuationToken);
+
+    const missing = files.filter((f) => !present.has(f.name));
+    if (missing.length === 0) {
+      console.log(
+        `All ${files.length} animated emojis already present on S3; skipping upload.`,
+      );
       return;
     }
-    console.log("No animated emojis found on S3 — uploading fresh.");
+    console.log(
+      `${missing.length}/${files.length} animated emojis missing on S3 — uploading.`,
+    );
   }
 
   // Clear existing emojis on S3
