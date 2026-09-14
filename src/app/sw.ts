@@ -35,6 +35,14 @@ const runtimeCaching: RuntimeCaching[] = [
     }),
   },
   {
+    matcher: /\/profile-image\.png$/i,
+    handler: new NetworkFirst({
+      cacheName: "profile-image",
+      networkTimeoutSeconds: 5,
+      plugins: [cacheable],
+    }),
+  },
+  {
     matcher: /\.(?:png|gif|jpg|jpeg|webp|svg|ico)$/i,
     handler: new StaleWhileRevalidate({
       cacheName: "images",

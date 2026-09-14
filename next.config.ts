@@ -104,10 +104,6 @@ const nextConfig: NextConfig = {
   },
   allowedDevOrigins: ["::1", "127.0.0.1", "cs.dastyare.social"],
   async rewrites() {
-    const s3PublicBase = process.env.S3_PUBLIC_BASE_URL?.replace(/\/+$/, "");
-    const s3Endpoint = process.env.S3_ENDPOINT?.replace(/\/+$/, "");
-    const s3Bucket = process.env.S3_BUCKET_NAME || "";
-
     const rewrites: Array<{
       source: string;
       destination: string;
@@ -127,28 +123,6 @@ const nextConfig: NextConfig = {
       rewrites.push({
         source: `/${verificationFilename}`,
         destination: "/google-verification",
-      });
-    }
-
-    // Derive the public base URL for animated emoji .webp files
-    let emojiBaseUrl: string | null = null;
-    if (s3PublicBase) {
-      emojiBaseUrl = s3PublicBase;
-    } else if (s3Endpoint) {
-      emojiBaseUrl = `${s3Endpoint}/${s3Bucket}`;
-    }
-
-    if (emojiBaseUrl) {
-      rewrites.push({
-        source: "/animated-emojies/:path*",
-        destination: `${emojiBaseUrl}/animated-emojies/:path*`,
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*",
-          },
-        ],
       });
     }
 

@@ -67,7 +67,7 @@ const displayUrl = (raw: string): string => {
 // Animated emoji rendering: text emoji always visible, animated .webp overlaid on top.
 // Falls back to text-only on image load error.
 const ANIMATED_EMOJIES_ENABLED =
-  process.env.NEXT_PUBLIC_ANIMATED_EMOJIES === "true";
+  process.env.NEXT_PUBLIC_ANIMATED_EMOJIES !== "false";
 
 const getAnimatedEmojiSrc = (mappedFilename: string): string =>
   `/animated-emojies/${mappedFilename}`;
