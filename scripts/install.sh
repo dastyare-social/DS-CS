@@ -98,7 +98,6 @@ restore_echo() {
 
 if [ ! -f "$ENV_FILE" ]; then
   printf '\033[1;36m--- Dastyare Social — CS — INSTALLER ---\033[0m\n'
-
   if [ -r /dev/tty ] 2>/dev/null; then
     trap restore_echo EXIT INT TERM
     printf '%s' "Email:    "
@@ -164,6 +163,36 @@ EOF
   warn "A .env file was created with your credentials and auto-generated secrets."
 else
   info ".env already exists, leaving it intact."
+fi
+
+# Protect the freshly written .env from ever being committed. The installer can
+# run into any directory (a git repo, a future repo, or plain disk), so we make
+# sure a .gitignore exists that keeps secrets, local state, and editor/Vercel
+# artifacts out of git — without clobbering a .gitignore the user already has.
+if [ ! -f ".gitignore" ]; then
+  info "Creating .gitignore to keep .env and local state out of git..."
+  cat > ".gitignore" <<'GITIGNORE'
+# Environment secrets and local state
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+.next/
+
+# Vercel
+.vercel/
+
+# OS / editor
+.DS_Store
+*.pem
+
+# Local docker compose overrides (machine-specific)
+docker-compose.override.yml
+GITIGNORE
+else
+  info ".gitignore already exists, leaving it intact."
 fi
 
 for CONFIG_FILE in "${CONFIG_FILES[@]}"; do
