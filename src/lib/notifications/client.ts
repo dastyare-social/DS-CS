@@ -28,6 +28,35 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 /**
+ * Whether an existing push subscription was created under the given VAPID
+ * public key (base64url string). When the key can't be read back from the
+ * subscription's options (Safari pre-16.4, most iOS), this returns false so
+ * the caller treats it as a mismatch and clears the stale subscription.
+ */
+function subscriptionUsesKey(subscription: PushSubscription, publicKeyB64: string): boolean {
+  const existingKey = subscription.options?.applicationServerKey;
+  if (!existingKey) {
+    return false;
+  }
+
+  const existing =
+    existingKey instanceof Uint8Array ? existingKey : new Uint8Array(existingKey);
+  const wanted = urlBase64ToUint8Array(publicKeyB64);
+
+  if (existing.length !== wanted.length) {
+    return false;
+  }
+
+  for (let i = 0; i < existing.length; i += 1) {
+    if (existing[i] !== wanted[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
  * Resolves to an active service worker registration, or null after a timeout.
  * `navigator.serviceWorker.ready` never resolves when no SW is registered (or a
  * stale one fails to activate), so we never want to await it without a timeout.
@@ -291,6 +320,30 @@ export async function registerPushSubscription(): Promise<PushStatus | null> {
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
       return "permission-denied";
+    }
+
+    // A subscription may already exist under a *different* VAPID key (e.g. one
+    // registered by an older build, or by another install of this app on the
+    // same origin/browser). The browser refuses to silently switch keys and
+    // throws InvalidStateError, so clear the stale subscription (locally and
+    // on the backend) before retrying.
+    let staleEndpoint: string | null = null;
+    try {
+      const existing = await swRegistration.pushManager.getSubscription();
+      if (existing && !subscriptionUsesKey(existing, vapidPublicKey)) {
+        staleEndpoint = existing.endpoint;
+        await existing.unsubscribe();
+      }
+    } catch (error) {
+      console.warn("Failed to inspect/clean a stale push subscription:", error);
+    }
+
+    if (staleEndpoint) {
+      void fetch(`/api/push/unsubscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: staleEndpoint }),
+      });
     }
 
     // Subscribe to push
