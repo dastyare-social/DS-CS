@@ -1,0 +1,24 @@
+/* Pally — same font the app loads via `next/font/local` in src/lib/fonts.ts. */
+@font-face {
+  font-family: "Pally";
+  src: url("../src/assets/fonts/en/Pally/Pally-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Real class backing the next/font/local mock (`.sb-font-pally`). */
+.sb-font-pally {
+  font-family: "Pally", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* The app exposes Pally as `--font-heading` via next/font/local. */
+:root {
+  --font-heading: "Pally", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Default every story's text to Pally unless a utility class overrides it. */
+#storybook-root,
+#storybook-root > body {
+  font-family: "Pally", ui-sans-serif, system-ui, sans-serif;
+}

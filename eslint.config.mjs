@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Generated/third-party type declarations are not ours to lint.
     "src/types/**",
+    // Storybook build output.
+    "storybook-static/**",
   ]),
   // Prefer style over strictness in test files.
   {
