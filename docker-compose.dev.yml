@@ -12,7 +12,7 @@ services:
       S3_ENDPOINT: http://rustfs:9000
       BETTER_AUTH_URL: http://localhost:8729
       NEXT_PUBLIC_APP_URL: http://localhost:8729
-      CI: "true"
+      # CI: "true"
     volumes:
       - .:/app
       - /app/node_modules
