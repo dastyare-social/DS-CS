@@ -30,6 +30,25 @@ export function configureWebPush() {
   return { publicKey };
 }
 
+// Legacy Google GCM/FCM hosts (e.g. jmt17.google.com) return HTTP 403 for all
+// requests now, but the tokens they issued still route fine on fcm.googleapis.com.
+// Rewrite the host at send time so legacy subscriptions keep working.
+function normalizePushEndpoint(endpoint: string): string {
+  try {
+    const url = new URL(endpoint);
+    if (
+      url.pathname.startsWith("/fcm/send/") &&
+      url.hostname !== "fcm.googleapis.com" &&
+      url.hostname.endsWith(".google.com")
+    ) {
+      url.hostname = "fcm.googleapis.com";
+    }
+    return url.toString();
+  } catch {
+    return endpoint;
+  }
+}
+
 export async function sendPushNotification(payload: PushPayload) {
   const configured = configureWebPush();
   if (!configured) {
@@ -55,7 +74,7 @@ export async function sendPushNotification(payload: PushPayload) {
   const promises = subscriptions.map((subscription) =>
     webPush.sendNotification(
       {
-        endpoint: subscription.endpoint,
+        endpoint: normalizePushEndpoint(subscription.endpoint),
         keys: {
           p256dh: subscription.p256dh,
           auth: subscription.auth,
