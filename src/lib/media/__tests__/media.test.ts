@@ -125,6 +125,16 @@ describe("media s3", () => {
       expect(getPublicS3Endpoint()).toBe("http://localhost:9000");
     });
 
+    it("should route Supabase object/public base URLs to the S3 write endpoint", () => {
+      process.env.S3_PUBLIC_BASE_URL =
+        "https://abc123.supabase.co/storage/v1/object/public/ds-cs";
+      process.env.S3_BUCKET_NAME = "ds-cs";
+      process.env.S3_ENDPOINT = "http://rustfs:9000";
+      expect(getPublicS3Endpoint()).toBe(
+        "https://abc123.supabase.co/storage/v1/s3"
+      );
+    });
+
     it("should fall back to S3_ENDPOINT when the public base URL has no bucket path", () => {
       process.env.S3_PUBLIC_BASE_URL = "https://cdn.example.com/";
       process.env.S3_BUCKET_NAME = "ds-cs";

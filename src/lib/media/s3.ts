@@ -25,6 +25,13 @@ export function getPublicS3Endpoint(): string {
   const bucket = S3_BUCKET();
   if (publicBase && bucket) {
     const base = publicBase.replace(/\/+$/, "");
+
+    const supabaseMarker = "/storage/v1/object/public";
+    const markerIndex = base.indexOf(supabaseMarker);
+    if (markerIndex !== -1) {
+      return `${base.slice(0, markerIndex)}/storage/v1/s3`;
+    }
+
     const suffix = `/${bucket}`;
     if (base.endsWith(suffix)) {
       return base.slice(0, base.length - suffix.length);
