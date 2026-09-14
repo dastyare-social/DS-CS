@@ -19,4 +19,10 @@ WORKDIR /app
 
 # Override the base image CMD (next start -p 8729) to honor Vercel's injected PORT.
 # NB: -H is hostname; lowercase -h is --help and would print help + exit (no server).
-CMD ["sh", "-c", "node_modules/.bin/next start -H 0.0.0.0 -p ${PORT:-80}"]
+#
+# Emojis are uploaded on container start (best-effort) so the Vercel deployment
+# seeds animated emojis too — the same fetch the self-host/compose stack runs.
+# CI=true forces upload-emojis.ts past its CI guard, --skip-if-exists keeps
+# per-instance cold starts from re-uploading everything, and `|| true` means a
+# missing S3 config never blocks the health check / app start.
+CMD ["sh", "-c", "CI=true npm run upload:emojis -- --skip-if-exists || true; node_modules/.bin/next start -H 0.0.0.0 -p ${PORT:-80}"]

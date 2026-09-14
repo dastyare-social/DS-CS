@@ -16,8 +16,9 @@ if (!process.env.CI) {
  * then all emojis are uploaded fresh.
  *
  * Usage:
- *   bun run upload:emojis          # clear + upload all emojis
- *   bun run upload:emojis --check  # check if emojis exist on S3 (no upload)
+ *   bun run upload:emojis              # clear + upload all emojis
+ *   bun run upload:emojis --check      # check if emojis exist on S3 (no upload)
+ *   bun run upload:emojis --skip-if-exists  # upload only when none exist on S3
  *
  * Env vars required:
  *   S3_ENDPOINT, S3_REGION, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY,
@@ -133,6 +134,7 @@ async function downloadToS3(
 
 async function main() {
   const checkOnly = process.argv.includes("--check");
+  const skipIfExists = process.argv.includes("--skip-if-exists");
 
   if (!process.env.S3_ENDPOINT && !process.env.S3_ACCESS_KEY_ID) {
     console.error("Missing S3 env vars. Set S3_ENDPOINT and S3_ACCESS_KEY_ID.");
@@ -159,6 +161,23 @@ async function main() {
     if (missing > 0) process.exit(1);
     console.log("All emojis present on S3.");
     return;
+  }
+
+  // Skip the (expensive) clear + re-upload when emojis are already on S3.
+  // Used at container startup so every cold start doesn't re-upload everything.
+  if (skipIfExists) {
+    const list = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: `${S3_PREFIX}/`,
+        MaxKeys: 1,
+      }),
+    );
+    if (list.Contents && list.Contents.length > 0) {
+      console.log("Animated emojis already present on S3; skipping upload.");
+      return;
+    }
+    console.log("No animated emojis found on S3 — uploading fresh.");
   }
 
   // Clear existing emojis on S3

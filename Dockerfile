@@ -55,5 +55,8 @@ COPY --from=builder /app/README.md ./README.md
 
 EXPOSE 8729
 
-# Start the Next.js app
-CMD ["sh", "-c", "node_modules/.bin/next start -p 8729"]
+# Upload animated emojis to S3 on startup (best-effort, skip-if-exists keeps
+# cold starts cheap), then start the Next.js app. Requires S3 env vars; if they
+# are missing the upload is skipped so the container still boots. CI=true is
+# needed because upload-emojis.ts bails out early when CI is not set.
+CMD ["sh", "-c", "CI=true npm run upload:emojis -- --skip-if-exists || true; node_modules/.bin/next start -p 8729"]
