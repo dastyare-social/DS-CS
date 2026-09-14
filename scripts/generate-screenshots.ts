@@ -5,7 +5,14 @@ import sharp from "sharp";
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 const SCREENSHOT_DIR = path.join(PUBLIC_DIR, "screenshots");
 const BACKGROUND = path.join(PUBLIC_DIR, "bg-image.png");
-const PROFILE_IMAGE = path.join(PUBLIC_DIR, "profile-image.png");
+// Mirrors the /profile-image.png route and generate-icons: brand (mounted live
+// avatar) -> public -> defaults (repo default). Lives OUTSIDE public/ so a bare
+// source checkout never trips the conflicting-public-file-page dev error.
+const PROFILE_IMAGE_CANDIDATES = [
+  path.join(process.cwd(), "brand", "profile-image.png"),
+  path.join(process.cwd(), "public", "profile-image.png"),
+  path.join(process.cwd(), "defaults", "profile-image.png"),
+];
 const APP_NAME = "Omid Shabab";
 
 type Shot = {
@@ -39,20 +46,27 @@ const SHOTS: Shot[] = [
   },
 ];
 
+function resolve_profile_image(): string {
+  const found = PROFILE_IMAGE_CANDIDATES.find((candidate) => fs.existsSync(candidate));
+  if (!found) {
+    throw new Error(`Source image not found. Looked for profile-image.png at: ${PROFILE_IMAGE_CANDIDATES.join(", ")}`);
+  }
+  return found;
+}
+
 function assert_source_exists() {
-  for (const file of [BACKGROUND, PROFILE_IMAGE]) {
-    if (!fs.existsSync(file)) {
-      throw new Error(`Source image not found: ${file}`);
-    }
+  if (!fs.existsSync(BACKGROUND)) {
+    throw new Error(`Source image not found: ${BACKGROUND}`);
   }
 }
 
 async function crop_profile_square(): Promise<Buffer> {
-  const image = sharp(PROFILE_IMAGE);
+  const profile = resolve_profile_image();
+  const image = sharp(profile);
   const { width, height } = await image.metadata();
 
   if (!width || !height) {
-    throw new Error(`Could not read dimensions of ${PROFILE_IMAGE}`);
+    throw new Error(`Could not read dimensions of ${profile}`);
   }
 
   const size = Math.min(width, height);

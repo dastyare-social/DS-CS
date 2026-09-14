@@ -8,13 +8,17 @@ DOCKER_COMPOSE_URL="https://raw.githubusercontent.com/dastyare-social/DS-CS/main
 BASE_URL="https://raw.githubusercontent.com/dastyare-social/DS-CS/main"
 
 # Editable assets the installer drops into the project so the app is your own:
-# the brand config files and the profile image shown on /about.
+# the brand config files and the profile image shown on /about. For binary
+# assets the repo path differs from the local destination: the default avatar
+# lives at defaults/ in the repo (so a source checkout has no public/
+# profile-image.png shadowing the route), but installed folders keep it at
+# public/profile-image.png (bind-mounted to /app/brand in the container).
 CONFIG_FILES=(
   "config/app.config.yml"
   "config/about.config.yml"
 )
 BINARY_FILES=(
-  "public/profile-image.png"
+  "defaults/profile-image.png|public/profile-image.png"
 )
 # A pull-only Vercel blueprint (FROM dastyaresocial/ds-cs:latest + PORT-aware
 # CMD) dropped at the project root so the installed folder can be deployed to
@@ -162,13 +166,25 @@ else
   info ".env already exists, leaving it intact."
 fi
 
-for FILE in "${CONFIG_FILES[@]}" "${BINARY_FILES[@]}"; do
-  if [ -f "$FILE" ]; then
-    info "$FILE already exists, leaving it intact."
+for CONFIG_FILE in "${CONFIG_FILES[@]}"; do
+  if [ -f "$CONFIG_FILE" ]; then
+    info "$CONFIG_FILE already exists, leaving it intact."
   else
-    info "Downloading $FILE (edit this file to change how your channel looks)..." 
-    mkdir -p "$(dirname "$FILE")"
-    curl -fsSL "$BASE_URL/$FILE" -o "$FILE"
+    info "Downloading $CONFIG_FILE (edit this file to change how your channel looks)..."
+    mkdir -p "$(dirname "$CONFIG_FILE")"
+    curl -fsSL "$BASE_URL/$CONFIG_FILE" -o "$CONFIG_FILE"
+  fi
+done
+
+for BINARY_MAP in "${BINARY_FILES[@]}"; do
+  SOURCE_FILE="${BINARY_MAP%%|*}"
+  DEST_FILE="${BINARY_MAP##*|}"
+  if [ -f "$DEST_FILE" ]; then
+    info "$DEST_FILE already exists, leaving it intact."
+  else
+    info "Downloading $DEST_FILE (edit this file to change how your channel looks)..."
+    mkdir -p "$(dirname "$DEST_FILE")"
+    curl -fsSL "$BASE_URL/$SOURCE_FILE" -o "$DEST_FILE"
   fi
 done
 

@@ -13,7 +13,6 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-      - /tmp/ds-empty:/app/src/app/profile-image.png
     depends_on:
       db:
         condition: service_healthy

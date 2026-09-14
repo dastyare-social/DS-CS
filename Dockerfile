@@ -35,11 +35,12 @@ ENV NODE_ENV=production
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 # The live channel avatar is served by the /profile-image.png route handler
-# (the user's ./public, dir-mounted at /app/brand, wins). Bake the default
+# (the user's brand dir, dir-mounted at /app/brand, wins). Bake the default
 # avatar OUTSIDE public/ so the static self-host server cannot shadow the
 # route, and keep /app/public/profile-image.png out of the image entirely.
-COPY --from=builder /app/public/profile-image.png ./defaults/profile-image.png
-RUN rm -f ./public/profile-image.png
+# In the repo the default also lives at defaults/ (not public/) so a bare
+# `bun run dev` checkout never hits the conflicting-public-file-page build.
+COPY --from=builder /app/defaults ./defaults
 COPY --from=builder /app/package.json ./package.json
 # Runtime startup runs npm scripts (generate:config, db:migrate, bootstrap:admin)
 # via tsx, so they need the script sources, config, and the tsconfig paths (for
