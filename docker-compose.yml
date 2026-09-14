@@ -7,6 +7,8 @@ services:
       - "8729:8729"
     env_file:
       - .env
+    environment:
+      CI: "true"
     volumes:
       # Brand files shipped into the project by scripts/install.sh. The config/
       # directory is bind-mounted as a whole so edits apply live on reload — the
@@ -29,7 +31,7 @@ services:
     # Self-healing avatar: if ./public/profile-image.png is absent, seed the
     # baked default into it so the avatar URL always resolves. A custom file is
     # never touched (docker compose up does NOT copy/overwrite it).
-    command: sh -c "npm run db:migrate && npm run bootstrap:admin && { [ -f /app/brand/profile-image.png ] || cp /app/defaults/profile-image.png /app/brand/profile-image.png; } && npm run generate:icons && npm run start"
+    command: sh -c "npm run db:migrate && npm run bootstrap:admin && { [ -f /app/brand/profile-image.png ] || cp /app/defaults/profile-image.png /app/brand/profile-image.png; } && npm run upload:emojis && npm run generate:icons && npm run start"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:8729/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       start_period: 90s
