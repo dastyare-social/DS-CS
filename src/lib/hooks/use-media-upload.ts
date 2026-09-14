@@ -19,6 +19,7 @@ export type UploadedMedia = {
 export type PostType = "text" | "image" | "video" | "voice" | "file";
 
 export type MediaUploadItem = {
+  id?: string;
   file: File;
   progress: number;
   error: string | null;
@@ -123,7 +124,7 @@ export const presignedTransport: UploadTransport = (file, onProgress) =>
         return;
       }
 
-      const { uploadUrl, key, kind, mimeType } = await presignRes.json();
+      const { uploadUrl, key, mimeType } = await presignRes.json();
 
       const dims = await getClientDimensions(file);
       // Voice: pass duration only — no size/width/height (the feed player
@@ -236,12 +237,15 @@ export function useMediaUpload(transport: UploadTransport = defaultTransport) {
   const [items, setItems] = useState<MediaUploadItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const itemsRef = useRef<MediaUploadItem[]>([]);
-  const inflight = useRef(0);
+  const inflight = useRef<Set<string>>(new Set());
+  const nextId = useRef(0);
+
+  const idFor = () => `media-${++nextId.current}`;
 
   const updateItem = useCallback(
-    (index: number, updater: (item: MediaUploadItem) => MediaUploadItem) => {
+    (id: string, updater: (item: MediaUploadItem) => MediaUploadItem) => {
       setItems((prev) => {
-        const next = prev.map((item, i) => (i === index ? updater(item) : item));
+        const next = prev.map((item) => (item.id === id ? updater(item) : item));
         itemsRef.current = next;
         return next;
       });
@@ -249,46 +253,38 @@ export function useMediaUpload(transport: UploadTransport = defaultTransport) {
     []
   );
 
-  const beginUpload = useCallback(() => {
-    inflight.current += 1;
+  const beginUpload = useCallback((id: string) => {
+    inflight.current.add(id);
     setIsUploading(true);
   }, []);
 
-  const endUpload = useCallback(() => {
-    inflight.current -= 1;
-    if (inflight.current <= 0) {
-      inflight.current = 0;
+  const endUpload = useCallback((id: string) => {
+    inflight.current.delete(id);
+    if (inflight.current.size === 0) {
       setIsUploading(false);
     }
   }, []);
 
-  const uploadFiles = useCallback(
-    async (files: File[], startIndex: number) => {
-      if (files.length === 0) return;
-      beginUpload();
-      await Promise.all(
-        files.map(async (file, index) => {
-          const actualIndex = startIndex + index;
-          const result = await transport(file, (percent) =>
-            updateItem(actualIndex, (item) => ({ ...item, progress: percent }))
-          );
-          if (result.ok) {
-            updateItem(actualIndex, (item) => ({
-              ...item,
-              progress: 100,
-              media: result.media,
-            }));
-          } else {
-            updateItem(actualIndex, (item) => ({
-              ...item,
-              error: result.error,
-            }));
-          }
-        })
-      );
-      endUpload();
+  const uploadFile = useCallback(
+    async (id: string, file: File) => {
+      try {
+        const result = await transport(file, (percent) =>
+          updateItem(id, (item) => ({ ...item, progress: percent }))
+        );
+        if (result.ok) {
+          updateItem(id, (item) => ({
+            ...item,
+            progress: 100,
+            media: result.media,
+          }));
+        } else {
+          updateItem(id, (item) => ({ ...item, error: result.error }));
+        }
+      } finally {
+        endUpload(id);
+      }
     },
-    [beginUpload, endUpload, transport, updateItem]
+    [endUpload, transport, updateItem]
   );
 
   const selectFiles = useCallback(
@@ -296,6 +292,7 @@ export function useMediaUpload(transport: UploadTransport = defaultTransport) {
       if (files.length === 0) return;
       const startIndex = itemsRef.current.length;
       const newItems: MediaUploadItem[] = files.map((file) => ({
+        id: idFor(),
         file,
         progress: 0,
         error: null,
@@ -306,52 +303,52 @@ export function useMediaUpload(transport: UploadTransport = defaultTransport) {
         itemsRef.current = combined;
         return combined;
       });
-      void uploadFiles(files, startIndex);
+      for (let i = 0; i < newItems.length; i += 1) {
+        const item = newItems[i];
+        if (startIndex + i >= MAX_ATTACHMENTS) break;
+        beginUpload(item.id!);
+        void uploadFile(item.id!, item.file);
+      }
     },
-    [uploadFiles]
+    [beginUpload, uploadFile]
   );
 
-  const removeFile = useCallback((index: number) => {
-    setItems((prev) => {
-      const next = prev.filter((_, i) => i !== index);
-      itemsRef.current = next;
-      return next;
-    });
-  }, []);
+  const removeFile = useCallback(
+    (index: number) => {
+      const target = itemsRef.current[index];
+      if (target?.id) {
+        endUpload(target.id);
+      }
+      setItems((prev) => {
+        const next = prev.filter((_, i) => i !== index);
+        itemsRef.current = next;
+        return next;
+      });
+    },
+    [endUpload]
+  );
 
   const retryFile = useCallback(
     (index: number) => {
       const item = itemsRef.current[index];
       if (!item || item.error === null || item.media !== null) return;
 
-      const { file } = item;
-      updateItem(index, (it) => ({
+      const id = item.id ?? idFor();
+      updateItem(id, (it) => ({
         ...it,
         error: null,
         progress: 0,
         media: null,
       }));
-      beginUpload();
-      void (async () => {
-        const result = await transport(file, (percent) =>
-          updateItem(index, (it) => ({ ...it, progress: percent }))
-        );
-        if (result.ok) {
-          updateItem(index, (it) => ({
-            ...it,
-            progress: 100,
-            media: result.media,
-          }));
-        } else {
-          updateItem(index, (it) => ({ ...it, error: result.error }));
-        }
-        endUpload();
-      })();
+      beginUpload(id);
+      void uploadFile(id, item.file);
     },
-    [beginUpload, endUpload, transport, updateItem]
+    [beginUpload, updateItem, uploadFile]
   );
 
   const clear = useCallback(() => {
+    inflight.current.clear();
+    setIsUploading(false);
     setItems([]);
     itemsRef.current = [];
   }, []);

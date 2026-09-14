@@ -306,6 +306,70 @@ describe("useMediaUpload — injected transport", () => {
     expect(result.current.completedMedia).toHaveLength(0);
     expect(result.current.isUploading).toBe(false);
   });
+
+  it("removing a mid-upload file resets isUploading so the send button re-enables", async () => {
+    let resolveUpload!: (r: UploadResult) => void;
+    const transport: UploadTransport = (file, onProgress) => {
+      onProgress(30);
+      return new Promise((res) => {
+        resolveUpload = res;
+      });
+    };
+
+    const { result } = renderHook(() => useMediaUpload(transport));
+
+    act(() => {
+      result.current.selectFiles([makeFile("a.jpg")]);
+    });
+    expect(result.current.isUploading).toBe(true);
+    expect(result.current.items).toHaveLength(1);
+
+    // user removes the still-uploading attachment → button must unlock
+    act(() => {
+      result.current.removeFile(0);
+    });
+    expect(result.current.isUploading).toBe(false);
+    expect(result.current.items).toHaveLength(0);
+
+    // the in-flight request later resolves → must be a no-op on the removed
+    // item and must not re-flag isUploading
+    await act(async () => {
+      resolveUpload({ ok: true, media: makeMedia() });
+    });
+    expect(result.current.isUploading).toBe(false);
+    expect(result.current.items).toHaveLength(0);
+    expect(result.current.completedMedia).toHaveLength(0);
+  });
+
+  it("removing one of multiple mid-upload files keeps isUploading true until the remaining upload finishes", async () => {
+    const resolvers: Array<(r: UploadResult) => void> = [];
+    const transport: UploadTransport = (file, onProgress) => {
+      onProgress(10);
+      return new Promise((res) => {
+        resolvers.push(res);
+      });
+    };
+
+    const { result } = renderHook(() => useMediaUpload(transport));
+
+    act(() => {
+      result.current.selectFiles([makeFile("a.jpg"), makeFile("b.jpg")]);
+    });
+    expect(result.current.items).toHaveLength(2);
+    expect(result.current.isUploading).toBe(true);
+
+    act(() => {
+      result.current.removeFile(0);
+    });
+    expect(result.current.items.map((i) => i.file.name)).toEqual(["b.jpg"]);
+    expect(result.current.isUploading).toBe(true);
+
+    await act(async () => {
+      resolvers[1]({ ok: true, media: makeMedia() });
+    });
+    expect(result.current.isUploading).toBe(false);
+    expect(result.current.completedMedia).toHaveLength(1);
+  });
 });
 
 describe("media helpers", () => {
