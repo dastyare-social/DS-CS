@@ -61,6 +61,8 @@ Every post you publish should work for you — not pad someone else's engagement
 > **[Try the live demo →](https://cs.dastyare.social)**
 >
 > See how the creator studio feels before you deploy it yourself.
+>
+> Login: **hey@dastyare.social** / Password: **123456789**
 
 ---
 
