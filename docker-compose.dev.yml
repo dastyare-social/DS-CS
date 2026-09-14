@@ -6,10 +6,12 @@ services:
     ports:
       - "8729:8729"
     env_file:
-      - /tmp/dev.env
+      - .env
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/ds_cs
       S3_ENDPOINT: http://rustfs:9000
+      BETTER_AUTH_URL: http://localhost:8729
+      NEXT_PUBLIC_APP_URL: http://localhost:8729
     volumes:
       - .:/app
       - /app/node_modules
