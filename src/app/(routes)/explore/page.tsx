@@ -7,6 +7,9 @@ import Header from "@/components/header";
 import Loader from "@/components/loader";
 import Shorts from "@/components/shorts";
 import Threads from "@/components/threads";
+import { Button } from "@/components/button";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
+import NewsletterModal from "@/components/modals/notifications";
 import { cn } from "@/lib/utils";
 import type { PostWithReactions } from "@/lib/api/posts";
 import {
@@ -80,6 +83,19 @@ export default function Page() {
         `${footerHeight + 20}px`
       );
     });
+  }, []);
+
+  // Set --page-height on mount + resize (same pattern as home page)
+  useEffect(() => {
+    const updatePageHeight = () => {
+      document.documentElement.style.setProperty(
+        "--page-height",
+        `${window.innerHeight}px`
+      );
+    };
+    updatePageHeight();
+    window.addEventListener("resize", updatePageHeight);
+    return () => window.removeEventListener("resize", updatePageHeight);
   }, []);
 
   // Initialize on mount
@@ -808,7 +824,7 @@ export default function Page() {
           exploreState === "threads" ? "flex" : "hidden"
         )}
       >
-        <div ref={footerRef} className="fixed bottom-0 w-full max-w-xl z-50">
+        <div ref={footerRef} className="fixed bottom-0 inset-x-0 mx-auto w-full max-w-xl z-50">
           {shorts.length > 0 && (
             <div className="flex justify-end w-full px-5 pb-5 pointer-events-auto">
               <AsteriskIcon
@@ -820,6 +836,24 @@ export default function Page() {
               />
             </div>
           )}
+
+          <div
+            className={cn(
+              "flex justify-center w-full px-4 pb-3 sm:pb-5",
+              exploreState === "shorts" && "max-sm:hidden"
+            )}
+          >
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="text-sm md:text-sm px-3.5 py-1.5 backdrop-blur-3xl bg-white/50">
+                  {t("general.join_my_channel")}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <NewsletterModal />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {isLoading || threads.length > 0 ? (
@@ -895,7 +929,6 @@ export default function Page() {
               exploreState === "shorts" ? "flex" : "hidden",
             )}
           >
-            <div className="hidden sm:block h-[var(--chat-header-height)] w-full" />
             <div className="flex items-center justify-center w-full h-full px-5 text-center text-xl">
               {t.rich("general.no_shorts_yet", {
                 highlight: (c) => <span className="text-primary">{c}</span>,
