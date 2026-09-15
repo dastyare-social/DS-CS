@@ -601,12 +601,72 @@ const Post = memo(
     // Tracks duplicate view *inside one mounted instance*
     const hasSentViewRef = useRef(false);
 
-    // For video posts: inline preview (preload="metadata") + modal playback state
+    // For video posts: inline thumbnail + segmented silent preview + modal playback
     const [inlineVideoReady, setInlineVideoReady] = useState(false);
+    const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogVideoState, setDialogVideoState] = useState<
       "loading" | "ready" | "buffering"
     >("loading");
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+    const inlineVideoRef = useRef<HTMLVideoElement | null>(null);
+    const mediaBoxRef = useRef<HTMLDivElement | null>(null);
+    const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const holdTriggeredRef = useRef(false);
+    const dialogOpenRef = useRef(false);
+    const visibleRef = useRef(false);
+    const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isPreviewingRef = useRef(false);
+    const segmentStartsRef = useRef<number[]>([]);
+    const segmentIndexRef = useRef(0);
+
+    // 2s per segment, at most 5 segments => at most 10s of preview, from
+    // random parts of the clip arranged in ascending (start -> end) order.
+    const PREVIEW_SEGMENT_MS = 2000;
+
+    const buildPreviewSegments = (v: HTMLVideoElement) => {
+      const dur = v.duration;
+      if (!Number.isFinite(dur) || dur <= 0) {
+        segmentStartsRef.current = [];
+        return;
+      }
+      const SEG = PREVIEW_SEGMENT_MS / 1000;
+      const maxSegments = Math.min(5, Math.max(1, Math.floor(dur / SEG)));
+      const candidates: number[] = [];
+      for (let t = 0; t + SEG <= dur; t += SEG * 2) candidates.push(t);
+      for (let i = candidates.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+      }
+      segmentStartsRef.current =
+        maxSegments === 1 && candidates.length === 0
+          ? [0]
+          : candidates.slice(0, maxSegments).sort((a, b) => a - b);
+    };
+
+    // Drive the loop across the random 2s segments in ascending order.
+    const handlePreviewTimeUpdate = () => {
+      const v = inlineVideoRef.current;
+      if (!v || !isPreviewingRef.current) return;
+      const segs = segmentStartsRef.current;
+      if (segs.length === 0) return;
+      const SEG = PREVIEW_SEGMENT_MS / 1000;
+      if (v.currentTime >= segs[segmentIndexRef.current] + SEG - 0.05) {
+        segmentIndexRef.current += 1;
+        if (segmentIndexRef.current >= segs.length) {
+          segmentIndexRef.current = 0;
+          buildPreviewSegments(v);
+        }
+        const next = segmentStartsRef.current[segmentIndexRef.current];
+        if (next !== undefined) {
+          try {
+            v.currentTime = next;
+          } catch {
+            // ignore seek errors
+          }
+        }
+      }
+    };
 
     const getCount = (emoji: string) =>
       (localReactions ?? []).find(
@@ -689,6 +749,119 @@ const Post = memo(
       (r: { emoji: string; count: number }) => getCount(r.emoji) > 0,
     );
 
+    // Seek the inline video to the very first frames so browsers paint a
+    // thumbnail frame even though only metadata is preloaded.
+    const showFirstFrame = (v: HTMLVideoElement) => {
+      if (v.readyState >= 1 && Number.isFinite(v.duration) && v.duration > 0) {
+        try {
+          if (Math.abs(v.currentTime - 0.05) > 0.001) v.currentTime = 0.05;
+        } catch {
+          // ignore seek errors
+        }
+      }
+    };
+
+    // Start the silent segmented preview on the post thumbnail (long-press or
+    // holding the post in view for 2s). Never while the modal is open.
+    const startPreview = () => {
+      const v = inlineVideoRef.current;
+      if (!v || dialogOpenRef.current) return;
+      v.muted = true;
+      v.loop = true;
+      if (segmentStartsRef.current.length === 0) buildPreviewSegments(v);
+      segmentIndexRef.current = 0;
+      isPreviewingRef.current = true;
+      const first = segmentStartsRef.current[0];
+      if (first !== undefined && Math.abs(v.currentTime - first) > 0.001) {
+        try {
+          v.currentTime = first;
+        } catch {
+          // ignore seek errors
+        }
+      }
+      const result = v.play();
+      if (result) result.catch(() => {});
+    };
+
+    // Pause the preview and restore the thumbnail frame.
+    const stopPreview = () => {
+      const v = inlineVideoRef.current;
+      if (!v) return;
+      isPreviewingRef.current = false;
+      v.pause();
+      showFirstFrame(v);
+    };
+
+    // Long-press: start the preview instead of opening the modal.
+    const handleHoldStart = () => {
+      holdTriggeredRef.current = false;
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = setTimeout(() => {
+        holdTriggeredRef.current = true;
+        startPreview();
+      }, 450);
+    };
+
+    const handleHoldEnd = () => {
+      if (holdTimerRef.current) {
+        clearTimeout(holdTimerRef.current);
+        holdTimerRef.current = null;
+      }
+    };
+
+    // Short press opens the modal; a completed long-press is swallowed.
+    const handleMediaClick = () => {
+      if (holdTriggeredRef.current) {
+        holdTriggeredRef.current = false;
+        return;
+      }
+      dialogOpenRef.current = true;
+      stopPreview();
+      setDialogOpen(true);
+    };
+
+    // Auto-preview videos kept in view without scrolling for ~2s.
+    useEffect(() => {
+      if (type !== "video") return;
+      const el = mediaBoxRef.current;
+      if (!el || typeof IntersectionObserver === "undefined") return;
+
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            visibleRef.current = entry.isIntersecting;
+            if (idleTimerRef.current) {
+              clearTimeout(idleTimerRef.current);
+              idleTimerRef.current = null;
+            }
+            if (entry.isIntersecting) {
+              idleTimerRef.current = setTimeout(() => {
+                idleTimerRef.current = null;
+                if (visibleRef.current && !dialogOpenRef.current) startPreview();
+              }, 2000);
+            } else {
+              stopPreview();
+            }
+          }
+        },
+        { threshold: 0.4 },
+      );
+
+      io.observe(el);
+      return () => {
+        io.disconnect();
+        if (idleTimerRef.current) {
+          clearTimeout(idleTimerRef.current);
+          idleTimerRef.current = null;
+        }
+        if (holdTimerRef.current) {
+          clearTimeout(holdTimerRef.current);
+          holdTimerRef.current = null;
+        }
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [type]);
+
     const renderMedia = () => {
       if (!hasMedia || !media) return null;
 
@@ -760,46 +933,65 @@ const Post = memo(
 
         return (
           <Dialog
+            open={dialogOpen}
             onOpenChange={(o) => {
-              if (!o) setDialogVideoState("loading");
+              dialogOpenRef.current = o;
+              setDialogOpen(o);
+              if (!o) {
+                setDialogVideoState("loading");
+              } else {
+                stopPreview();
+              }
             }}
           >
-            <DialogTrigger className="outline-none">
-              <div
-                className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer"
-                style={{ aspectRatio }}
-              >
-                <video
-                  src={src}
-                  preload="metadata"
-                  muted
-                  playsInline
-                  disablePictureInPicture
-                  controlsList="nodownload noplaybackrate"
-                  onLoadedData={() => setInlineVideoReady(true)}
-                  onCanPlay={() => setInlineVideoReady(true)}
-                  onError={() => setInlineVideoReady(true)}
-                  className="absolute inset-0 h-full w-full object-cover p-1 outline-none"
-                />
+            <div
+              ref={mediaBoxRef}
+              role="button"
+              aria-label={t("preview")}
+              className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer select-none touch-manipulation [-webkit-touch-callout:none]"
+              style={{ aspectRatio }}
+              onPointerDown={handleHoldStart}
+              onPointerUp={handleHoldEnd}
+              onPointerLeave={handleHoldEnd}
+              onPointerCancel={handleHoldEnd}
+              onContextMenu={(e) => e.preventDefault()}
+              onClick={handleMediaClick}
+            >
+              <video
+                ref={inlineVideoRef}
+                src={src}
+                preload="metadata"
+                muted
+                loop
+                playsInline
+                disablePictureInPicture
+                controlsList="nodownload noplaybackrate"
+                onLoadedMetadata={(e) => showFirstFrame(e.currentTarget)}
+                onSeeked={() => setInlineVideoReady(true)}
+                onLoadedData={() => setInlineVideoReady(true)}
+                onCanPlay={() => setInlineVideoReady(true)}
+                onError={() => setInlineVideoReady(true)}
+                onTimeUpdate={handlePreviewTimeUpdate}
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover p-1 outline-none"
+              />
 
-                {!inlineVideoReady && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader className="size-10 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
-                  </div>
-                )}
-
-                <div
-                  className={cn(
-                    "absolute inset-0 flex items-center justify-center text-white/60",
-                    !inlineVideoReady && "pointer-events-none",
-                  )}
-                >
-                  <PlayIcon className="stroke-1 rounded-full bg-black/10 backdrop-blur-sm border-[1.5px] border-white/20 p-2 size-12 hover:scale-110" />
+              {!inlineVideoReady && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader className="size-10 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
                 </div>
+              )}
+
+              <div
+                className={cn(
+                  "pointer-events-none absolute inset-0 flex items-center justify-center text-white/60 transition-opacity",
+                  !inlineVideoReady && "opacity-0",
+                )}
+              >
+                <PlayIcon className="stroke-1 rounded-full bg-black/10 backdrop-blur-sm border-[1.5px] border-white/20 p-2 size-12" />
               </div>
-            </DialogTrigger>
+            </div>
             <DialogContent>
-              <div className="relative w-[calc(100vw-70px)] h-[calc(100dvh-70px)] sm:w-fit sm:h-auto overflow-hidden backdrop-blur-3xl border border-secondary/5 bg-white/50">
+              <div className="relative flex items-center justify-center w-[calc(100vw-70px)] sm:w-fit overflow-hidden backdrop-blur-3xl border border-secondary/5 bg-white/50">
                 {dialogVideoState !== "ready" && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
@@ -817,8 +1009,8 @@ const Post = memo(
                   onPlaying={() => setDialogVideoState("ready")}
                   onError={() => setDialogVideoState("ready")}
                   className={cn(
-                    "block w-full h-full object-contain p-1",
-                    "sm:w-auto sm:h-auto sm:max-h-[85vh] sm:max-w-[calc(100vw-140px)]",
+                    "block w-full h-auto max-h-[calc(100dvh-70px)] object-contain p-1",
+                    "sm:max-h-[85vh] sm:w-auto",
                     dialogVideoState !== "ready" && "opacity-0",
                   )}
                 />
