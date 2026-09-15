@@ -69,7 +69,7 @@ export default function PinnedBar({
                 ? ` — ${clampedIndex + 1}/${pinnedPosts.length}`
                 : ""}
             </span>
-            <span className="line-clamp-1 whitespace-pre-wrap wrap-break-word opacity-60">
+            <span className="font-bidi line-clamp-1 whitespace-pre-wrap wrap-break-word opacity-60">
               {resolvePostPreview(current)}
             </span>
           </div>

@@ -1248,7 +1248,7 @@ const Page = () => {
                 <div className="flex items-center gap-x-2.5">
                   <div className="flex flex-col flex-1 text-xs">
                     <span>{t("general.editing_post")}</span>
-                    <span className="line-clamp-1 whitespace-pre-wrap wrap-break-word opacity-60">
+                    <span className="font-bidi line-clamp-1 whitespace-pre-wrap wrap-break-word opacity-60">
                       {resolvePostPreview(activeEditPost)}
                     </span>
                   </div>
