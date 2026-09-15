@@ -601,10 +601,11 @@ const Post = memo(
     // Tracks duplicate view *inside one mounted instance*
     const hasSentViewRef = useRef(false);
 
-    // For video thumbnail
-    const [videoThumb, setVideoThumb] = useState<string | null>(null);
-    const [dialogVideoReady, setDialogVideoReady] = useState(false);
-    const hiddenVideoRef = useRef<HTMLVideoElement | null>(null);
+    // For video posts: inline preview (preload="metadata") + modal playback state
+    const [inlineVideoReady, setInlineVideoReady] = useState(false);
+    const [dialogVideoState, setDialogVideoState] = useState<
+      "loading" | "ready" | "buffering"
+    >("loading");
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
     const getCount = (emoji: string) =>
@@ -684,53 +685,6 @@ const Post = memo(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Generate a random-frame thumbnail for video
-    useEffect(() => {
-      if (!hasMedia || !media || type !== "video") return;
-      if (typeof window === "undefined") return;
-
-      const video = document.createElement("video");
-      hiddenVideoRef.current = video;
-      video.src = normalizeMediaUrl(media.url);
-      video.crossOrigin = "anonymous";
-      video.muted = true;
-      video.playsInline = true;
-
-      const handleLoadedMetadata = () => {
-        const duration = video.duration || 0;
-        if (!duration || Number.isNaN(duration)) return;
-
-        const targetTime = Math.random() * duration;
-        const seekHandler = () => {
-          try {
-            const canvas = document.createElement("canvas");
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 360;
-            const ctx = canvas.getContext("2d");
-            if (!ctx) return;
-
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL("image/jpeg");
-            setVideoThumb(dataUrl);
-          } catch (e) {
-            console.error("Failed to capture video frame", e);
-          } finally {
-            video.removeEventListener("seeked", seekHandler);
-          }
-        };
-
-        video.currentTime = targetTime;
-        video.addEventListener("seeked", seekHandler);
-      };
-
-      video.addEventListener("loadedmetadata", handleLoadedMetadata);
-
-      return () => {
-        video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-        hiddenVideoRef.current = null;
-      };
-    }, [hasMedia, media, type]);
-
     const normalizedReactions = (localReactions ?? []).filter(
       (r: { emoji: string; count: number }) => getCount(r.emoji) > 0,
     );
@@ -807,7 +761,7 @@ const Post = memo(
         return (
           <Dialog
             onOpenChange={(o) => {
-              if (!o) setDialogVideoReady(false);
+              if (!o) setDialogVideoState("loading");
             }}
           >
             <DialogTrigger className="outline-none">
@@ -815,49 +769,61 @@ const Post = memo(
                 className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer"
                 style={{ aspectRatio }}
               >
-                {!videoThumb && (
+                <video
+                  src={src}
+                  preload="metadata"
+                  muted
+                  playsInline
+                  disablePictureInPicture
+                  controlsList="nodownload noplaybackrate"
+                  onLoadedData={() => setInlineVideoReady(true)}
+                  onCanPlay={() => setInlineVideoReady(true)}
+                  onError={() => setInlineVideoReady(true)}
+                  className="absolute inset-0 h-full w-full object-cover p-1 outline-none"
+                />
+
+                {!inlineVideoReady && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Loader className="size-10 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
                   </div>
                 )}
-                {videoThumb && (
-                  <>
-                    <SafeImage
-                      src={videoThumb}
-                      unoptimized
-                      alt=""
-                      fill
-                      className="absolute inset-0 h-full w-full object-cover p-1"
-                    />
 
-                    <div className="absolute inset-0 flex items-center justify-center text-white/60">
-                      <PlayIcon className="stroke-1 rounded-full bg-black/10 backdrop-blur-sm border-[1.5px] border-white/20 p-2 size-12 hover:scale-110" />
-                    </div>
-                  </>
-                )}
+                <div
+                  className={cn(
+                    "absolute inset-0 flex items-center justify-center text-white/60",
+                    !inlineVideoReady && "pointer-events-none",
+                  )}
+                >
+                  <PlayIcon className="stroke-1 rounded-full bg-black/10 backdrop-blur-sm border-[1.5px] border-white/20 p-2 size-12 hover:scale-110" />
+                </div>
               </div>
             </DialogTrigger>
-            {videoThumb && (
-              <DialogContent>
-                <div className="relative w-fit max-w-full overflow-hidden backdrop-blur-3xl border border-secondary/5 bg-white/50">
-                  {!dialogVideoReady && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
-                    </div>
+            <DialogContent>
+              <div className="relative w-[calc(100vw-70px)] h-[calc(100dvh-70px)] sm:w-fit sm:h-auto overflow-hidden backdrop-blur-3xl border border-secondary/5 bg-white/50">
+                {dialogVideoState !== "ready" && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
+                  </div>
+                )}
+                <video
+                  src={src}
+                  controls
+                  autoPlay
+                  playsInline
+                  onLoadedData={() => setDialogVideoState("ready")}
+                  onCanPlay={() => setDialogVideoState("ready")}
+                  onWaiting={() => setDialogVideoState("buffering")}
+                  onStalled={() => setDialogVideoState("buffering")}
+                  onPlaying={() => setDialogVideoState("ready")}
+                  onError={() => setDialogVideoState("ready")}
+                  className={cn(
+                    "block w-full h-full object-contain p-1",
+                    "sm:w-auto sm:h-auto sm:max-h-[85vh] sm:max-w-[calc(100vw-140px)]",
+                    dialogVideoState !== "ready" && "opacity-0",
                   )}
-                  <video
-                    src={src}
-                    controls
-                    autoPlay
-                    onCanPlay={() => setDialogVideoReady(true)}
-                    className={cn(
-                      "block max-h-[85vh] max-w-full p-1",
-                      !dialogVideoReady && "opacity-0",
-                    )}
-                  />
-                </div>
-              </DialogContent>
-            )}
+                />
+              </div>
+            </DialogContent>
           </Dialog>
         );
       }
