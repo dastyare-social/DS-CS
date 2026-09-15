@@ -76,7 +76,7 @@ services:
     restart: unless-stopped
 
   rustfs-createbuckets:
-    image: minio/mc:latest
+    image: quay.io/minio/mc:latest
     depends_on:
       - rustfs
     entrypoint: >

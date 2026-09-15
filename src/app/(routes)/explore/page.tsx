@@ -822,66 +822,87 @@ export default function Page() {
           )}
         </div>
 
-        <Threads
-          threads={threads}
-          threadsError={threadsError}
-          isRefreshingThreads={isRefreshingThreads}
-          isApplyingNewThreads={isApplyingNewThreads}
-          newThreadsCount={newThreadsCount}
-          isLoadingMoreThreads={isLoadingMoreThreads}
-          hasMoreThreads={hasMoreThreads}
-          threadsPageRef={threadsPageRef}
-          threadsScrollRef={threadsScrollRef}
-          threadsListRef={threadsListRef}
-          threadsSentinelRef={threadsSentinelRef}
-          threadVideoRefs={threadVideoRefs}
-          isPullingRef={isPullingRef}
-          refreshLoaderHeight={refreshLoaderHeight}
-          refreshLoaderOpacity={refreshLoaderOpacity}
-          clampedPull={clampedPull}
-          onShowNewThreads={handleShowNewThreads}
-          onThreadReact={handleThreadReact}
-          onVideoPlay={pauseAllExcept}
-          loadMore={loadMoreThreads}
-        />
+        {isLoading || threads.length > 0 ? (
+          <Threads
+            threads={threads}
+            threadsError={threadsError}
+            isRefreshingThreads={isRefreshingThreads}
+            isApplyingNewThreads={isApplyingNewThreads}
+            newThreadsCount={newThreadsCount}
+            isLoadingMoreThreads={isLoadingMoreThreads}
+            hasMoreThreads={hasMoreThreads}
+            threadsPageRef={threadsPageRef}
+            threadsScrollRef={threadsScrollRef}
+            threadsListRef={threadsListRef}
+            threadsSentinelRef={threadsSentinelRef}
+            threadVideoRefs={threadVideoRefs}
+            isPullingRef={isPullingRef}
+            refreshLoaderHeight={refreshLoaderHeight}
+            refreshLoaderOpacity={refreshLoaderOpacity}
+            clampedPull={clampedPull}
+            onShowNewThreads={handleShowNewThreads}
+            onThreadReact={handleThreadReact}
+            onVideoPlay={pauseAllExcept}
+            loadMore={loadMoreThreads}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-center text-xl px-5">
+            {t.rich("general.no_threads_yet", {
+              highlight: (c) => <span className="text-primary">{c}</span>,
+            })}
+          </div>
+        )}
       </div>
 
-      <div
-        className={cn(
-          "hidden sm:block w-[1px] h-full bg-secondary/5",
-          shorts.length === 0 || threads.length === 0 && "sm:hidden"
-        )}
-      />
+      <div className="hidden sm:block w-[1px] h-full bg-secondary/5" />
 
-      {exploreState === "shorts" && shorts.length > 0 && (
+      {shorts.length > 0 ? (
         <Shorts
+          className={cn(
+            exploreState === "shorts" ? "flex" : "hidden",
+          )}
           shorts={shorts}
-          likedStates={likedStates}
-          likeCounts={likeCounts}
-          videoLoadingStates={videoLoadingStates}
-          videoPreloadStates={videoPreloadStates}
-          activeIndex={activeIndex}
-          lastSecondsVisibleIndex={lastSecondsVisibleIndex}
-          videoRefs={videoRefs}
-          containerRefs={containerRefs}
-          scrollContainerRef={scrollContainerRef}
-          onContainerClick={handleClick}
-          onToggleLike={toggleLike}
-          onVideoPlay={pauseAllExcept}
-          onVideoEnded={handleVideoEnded}
-          onSwitchToThreads={() => {
-            pauseAllVideos();
-            setExploreState("threads");
-          }}
-          onWaiting={handleVideoWaiting}
-          onLoadStart={handleVideoLoadStart}
-          onLoadedData={handleVideoLoadedData}
-          onCanPlay={handleVideoCanPlay}
-          onPlaying={handleVideoPlaying}
-          onStalled={handleVideoStalled}
-          onError={handleVideoError}
-        />
-      )}
+            likedStates={likedStates}
+            likeCounts={likeCounts}
+            videoLoadingStates={videoLoadingStates}
+            videoPreloadStates={videoPreloadStates}
+            activeIndex={activeIndex}
+            lastSecondsVisibleIndex={lastSecondsVisibleIndex}
+            videoRefs={videoRefs}
+            containerRefs={containerRefs}
+            scrollContainerRef={scrollContainerRef}
+            onContainerClick={handleClick}
+            onToggleLike={toggleLike}
+            onVideoPlay={pauseAllExcept}
+            onVideoEnded={handleVideoEnded}
+            onSwitchToThreads={() => {
+              pauseAllVideos();
+              setExploreState("threads");
+            }}
+            hasThreads={threads.length > 0}
+            onWaiting={handleVideoWaiting}
+            onLoadStart={handleVideoLoadStart}
+            onLoadedData={handleVideoLoadedData}
+            onCanPlay={handleVideoCanPlay}
+            onPlaying={handleVideoPlaying}
+            onStalled={handleVideoStalled}
+            onError={handleVideoError}
+          />
+        ) : (
+          <div
+            className={cn(
+              "sm:flex flex-col flex-1 h-[var(--page-height)]",
+              exploreState === "shorts" ? "flex" : "hidden",
+            )}
+          >
+            <div className="hidden sm:block h-[var(--chat-header-height)] w-full" />
+            <div className="flex items-center justify-center w-full h-full px-5 text-center text-xl">
+              {t.rich("general.no_shorts_yet", {
+                highlight: (c) => <span className="text-primary">{c}</span>,
+              })}
+            </div>
+          </div>
+        )}
     </div>
   );
 }

@@ -29,6 +29,7 @@ export interface ShortItemProps {
   onVideoPlay?: (video: HTMLVideoElement) => void;
   onVideoEnded: (index: number) => void;
   onSwitchToThreads: () => void;
+  hasThreads: boolean;
   onWaiting: (index: number) => void;
   onLoadStart: (index: number) => void;
   onLoadedData: (index: number) => void;
@@ -54,6 +55,7 @@ export default function ShortItem({
   onVideoPlay,
   onVideoEnded,
   onSwitchToThreads,
+  hasThreads,
   onWaiting,
   onLoadStart,
   onLoadedData,
@@ -128,13 +130,15 @@ export default function ShortItem({
               </span>
             </div>
 
-            <LineSquiggleIcon
-              onClick={(e) => {
-                e.stopPropagation();
-                onSwitchToThreads();
-              }}
-              className="block sm:hidden opacity-80 size-5 stroke-1 hover:opacity-100"
-            />
+            {hasThreads && (
+              <LineSquiggleIcon
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSwitchToThreads();
+                }}
+                className="block sm:hidden opacity-80 size-5 stroke-1 hover:opacity-100"
+              />
+            )}
           </div>
         </div>
 

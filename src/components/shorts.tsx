@@ -1,8 +1,10 @@
 import Short from "@/components/short";
 import type { PostWithReactions } from "@/lib/api/posts";
+import { cn } from "@/lib/utils";
 import type { MouseEvent } from "react";
 
 interface ShortsProps {
+  className?: string;
   shorts: PostWithReactions[];
   likedStates: boolean[];
   likeCounts: number[];
@@ -18,6 +20,7 @@ interface ShortsProps {
   onVideoPlay: (video: HTMLVideoElement) => void;
   onVideoEnded: (index: number) => void;
   onSwitchToThreads: () => void;
+  hasThreads: boolean;
   onWaiting: (index: number) => void;
   onLoadStart: (index: number) => void;
   onLoadedData: (index: number) => void;
@@ -28,6 +31,7 @@ interface ShortsProps {
 }
 
 export default function Shorts({
+  className,
   shorts,
   likedStates,
   likeCounts,
@@ -43,6 +47,7 @@ export default function Shorts({
   onVideoPlay,
   onVideoEnded,
   onSwitchToThreads,
+  hasThreads,
   onWaiting,
   onLoadStart,
   onLoadedData,
@@ -52,7 +57,7 @@ export default function Shorts({
   onError,
 }: ShortsProps) {
   return (
-    <div className="sm:flex flex-col flex-1 h-[var(--page-height)]">
+    <div className={cn("sm:flex flex-col flex-1 h-[var(--page-height)]", className)}>
       <div className="hidden sm:block h-[var(--chat-header-height)] w-full" />
       <div
         ref={scrollContainerRef}
@@ -76,6 +81,7 @@ export default function Shorts({
             onVideoPlay={onVideoPlay}
             onVideoEnded={onVideoEnded}
             onSwitchToThreads={onSwitchToThreads}
+            hasThreads={hasThreads}
             onWaiting={onWaiting}
             onLoadStart={onLoadStart}
             onLoadedData={onLoadedData}

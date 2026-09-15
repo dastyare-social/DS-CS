@@ -567,6 +567,153 @@ const FileDownload = ({
 
 /* -------------------- MAIN MESSAGE COMPONENT -------------------- */
 
+// ──────────────────────────────────────────────────────────────────────
+// Shared inline-video preview coordinator.
+//
+// Only the single most-visible video post may auto-preview on view. A post
+// is measured as the fraction of its media box that sits inside the "view
+// band": the region between the header/pinned-bar bottom and the top of the
+// post input footer (`--chat-header-height` + `--pinned-bar-height` at the
+// top, `--chat-footer-height` at the bottom). The post with the largest
+// such fraction is the leader; the preview starts only when the leader
+// keeps more than 50% of itself in the band while the view stays idle for
+// ~2s, and stops the previous leader.
+// ──────────────────────────────────────────────────────────────────────
+
+type VideoPreviewReg = {
+  el: HTMLElement;
+  controls: { start: () => void; stop: () => void };
+};
+
+const videoPreviewRegistry = new Set<VideoPreviewReg>();
+
+let videoPreviewObserver: IntersectionObserver | null = null;
+let videoPreviewBound = false;
+let videoPreviewTick = 0;
+let videoPreviewOwner: VideoPreviewReg | null = null;
+let videoPreviewTimer: ReturnType<typeof setTimeout> | null = null;
+let videoPreviewPending = false;
+
+const readViewBandRect = (): { top: number; bottom: number } | null => {
+  if (typeof window === "undefined") return null;
+  const styles = getComputedStyle(document.documentElement);
+  const toPx = (name: string) => {
+    const n = Number.parseFloat(styles.getPropertyValue(name));
+    return Number.isFinite(n) ? n : 0;
+  };
+  return {
+    top: toPx("--chat-header-height") + toPx("--pinned-bar-height"),
+    bottom: window.innerHeight - toPx("--chat-footer-height"),
+  };
+};
+
+// Fraction of the media box that is visible inside the view band.
+const readBandFraction = (reg: VideoPreviewReg): number => {
+  const band = readViewBandRect();
+  if (!band) return 0;
+  const rect = reg.el.getBoundingClientRect();
+  const top = Math.max(rect.top, band.top);
+  const bottom = Math.min(rect.bottom, band.bottom);
+  if (bottom <= top || rect.height <= 0) return 0;
+  return (bottom - top) / rect.height;
+};
+
+const onVideoPreviewScroll = () => {
+  if (videoPreviewTimer) {
+    clearTimeout(videoPreviewTimer);
+    videoPreviewTimer = null;
+  }
+  videoPreviewPending = false;
+  scheduleVideoPreviewRecompute();
+};
+
+const scheduleVideoPreviewRecompute = () => {
+  if (videoPreviewTick) return;
+  videoPreviewTick = window.requestAnimationFrame(() => {
+    videoPreviewTick = 0;
+    recomputeVideoPreviews();
+  });
+};
+
+const recomputeVideoPreviews = () => {
+  if (videoPreviewRegistry.size === 0) {
+    if (videoPreviewTimer) {
+      clearTimeout(videoPreviewTimer);
+      videoPreviewTimer = null;
+    }
+    return;
+  }
+
+  let leader: VideoPreviewReg | null = null;
+  let best = 0;
+  for (const reg of videoPreviewRegistry) {
+    const frac = readBandFraction(reg);
+    if (frac > best) {
+      best = frac;
+      leader = reg;
+    }
+  }
+
+  if (leader && best > 0.5 && leader !== videoPreviewOwner) {
+    if (videoPreviewPending) {
+      // The 2s idle window has elapsed; the leader is still the top post.
+      videoPreviewPending = false;
+      videoPreviewOwner = leader;
+      leader.controls.start();
+    } else if (!videoPreviewTimer) {
+      videoPreviewTimer = setTimeout(() => {
+        videoPreviewTimer = null;
+        videoPreviewPending = true;
+        recomputeVideoPreviews();
+      }, 2000);
+    }
+  } else if (videoPreviewOwner && (!leader || best <= 0.5)) {
+    // The leader lost the top spot or dropped below 50% – stop it.
+    videoPreviewOwner.controls.stop();
+    videoPreviewOwner = null;
+    videoPreviewPending = false;
+    if (videoPreviewTimer) {
+      clearTimeout(videoPreviewTimer);
+      videoPreviewTimer = null;
+    }
+  }
+};
+
+const registerVideoPreview = (reg: VideoPreviewReg) => {
+  videoPreviewRegistry.add(reg);
+  if (!videoPreviewObserver) {
+    videoPreviewObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          scheduleVideoPreviewRecompute();
+        }
+      },
+      { threshold: [0, 0.25, 0.5, 0.75, 1] },
+    );
+  }
+  videoPreviewObserver.observe(reg.el);
+  if (!videoPreviewBound) {
+    videoPreviewBound = true;
+    document.addEventListener("scroll", onVideoPreviewScroll, {
+      capture: true,
+      passive: true,
+    });
+    window.addEventListener("resize", scheduleVideoPreviewRecompute);
+  }
+  scheduleVideoPreviewRecompute();
+};
+
+const unregisterVideoPreview = (reg: VideoPreviewReg) => {
+  videoPreviewRegistry.delete(reg);
+  videoPreviewObserver?.unobserve(reg.el);
+  if (videoPreviewOwner === reg) {
+    reg.controls.stop();
+    videoPreviewOwner = null;
+    videoPreviewPending = false;
+  }
+  scheduleVideoPreviewRecompute();
+};
+
 const Post = memo(
   function Post({
     post,
@@ -614,11 +761,12 @@ const Post = memo(
     const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const holdTriggeredRef = useRef(false);
     const dialogOpenRef = useRef(false);
-    const visibleRef = useRef(false);
-    const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isPreviewingRef = useRef(false);
     const segmentStartsRef = useRef<number[]>([]);
     const segmentIndexRef = useRef(0);
+    // Live controls so the shared preview leader always calls the latest
+    // render's start/stop handlers.
+    const previewControlsRef = useRef({ start: () => {}, stop: () => {} });
 
     // 2s per segment, at most 5 segments => at most 10s of preview, from
     // random parts of the clip arranged in ascending (start -> end) order.
@@ -762,10 +910,10 @@ const Post = memo(
     };
 
     // Start the silent segmented preview on the post thumbnail (long-press or
-    // holding the post in view for 2s). Never while the modal is open.
+    // the shared view-leader manager). Never while the modal is open.
     const startPreview = () => {
       const v = inlineVideoRef.current;
-      if (!v || dialogOpenRef.current) return;
+      if (!v || dialogOpenRef.current || isPreviewingRef.current) return;
       v.muted = true;
       v.loop = true;
       if (segmentStartsRef.current.length === 0) buildPreviewSegments(v);
@@ -791,6 +939,12 @@ const Post = memo(
       v.pause();
       showFirstFrame(v);
     };
+
+    // Expose the latest handlers to the shared view-leader manager.
+    useEffect(() => {
+      previewControlsRef.current.start = startPreview;
+      previewControlsRef.current.stop = stopPreview;
+    });
 
     // Long-press: start the preview instead of opening the modal.
     const handleHoldStart = () => {
@@ -820,46 +974,21 @@ const Post = memo(
       setDialogOpen(true);
     };
 
-    // Auto-preview videos kept in view without scrolling for ~2s.
+    // Register with the shared leader so only the single most-visible (>50%)
+    // video post auto-previews while the view is idle.
     useEffect(() => {
       if (type !== "video") return;
       const el = mediaBoxRef.current;
-      if (!el || typeof IntersectionObserver === "undefined") return;
-
-      const io = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            visibleRef.current = entry.isIntersecting;
-            if (idleTimerRef.current) {
-              clearTimeout(idleTimerRef.current);
-              idleTimerRef.current = null;
-            }
-            if (entry.isIntersecting) {
-              idleTimerRef.current = setTimeout(() => {
-                idleTimerRef.current = null;
-                if (visibleRef.current && !dialogOpenRef.current) startPreview();
-              }, 2000);
-            } else {
-              stopPreview();
-            }
-          }
-        },
-        { threshold: 0.4 },
-      );
-
-      io.observe(el);
+      if (!el) return;
+      const reg: VideoPreviewReg = { el, controls: previewControlsRef.current };
+      registerVideoPreview(reg);
       return () => {
-        io.disconnect();
-        if (idleTimerRef.current) {
-          clearTimeout(idleTimerRef.current);
-          idleTimerRef.current = null;
-        }
+        unregisterVideoPreview(reg);
         if (holdTimerRef.current) {
           clearTimeout(holdTimerRef.current);
           holdTimerRef.current = null;
         }
       };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [type]);
 
     const renderMedia = () => {
