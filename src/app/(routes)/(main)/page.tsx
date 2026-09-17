@@ -340,15 +340,15 @@ const Page = () => {
             )}
 
             {!isLoading && posts.length === 0 && (
-              <div className="w-full h-full flex justify-center items-center text-xl text-center">
-                <div>
+              <div className="w-full h-full flex justify-center items-center px-[25px]">
+                <p className="text-xl text-center w-full">
                   {t.rich("general.wait_for_first_content", {
                     owner_name: app_config[locale].name,
                     highlight: (chunks) => (
                       <span className="text-primary">{chunks}</span>
                     ),
                   })}
-                </div>
+                </p>
               </div>
             )}
 
