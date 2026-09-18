@@ -6,7 +6,7 @@ const apiKey =
 const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || process.env.NEXT_PUBLIC_POSTHOG_API_HOST;
 
 let posthog: PostHog | null = null;
-let initialized = false;
+let initPromise: Promise<PostHog | null> | null = null;
 
 const canInit = () => {
   if (typeof window === "undefined" || typeof document === "undefined") return false;
@@ -28,29 +28,51 @@ function forEachClient(fn: (client: PostHog) => void) {
   if (posthog) fn(posthog);
 }
 
-export async function initPostHog() {
-  if (!canInit()) return null;
-  if (initialized) return posthog;
-
-  const ph = await getPosthog();
-  if (!ph) return null;
-
-  try {
-    const startRecording = () => ph.startSessionRecording();
-    ph.init(apiKey!, {
-      api_host: apiHost,
-      autocapture: false,
-      capture_pageview: false,
-      capture_heatmaps: true,
-      loaded: startRecording,
-    });
-
-    initialized = true;
-    return ph;
-  } catch (error) {
-    console.error("PostHog init failed", error);
-    return null;
+// Resolve once the document has finished loading. PostHog injects <script> tags
+// into the document when it initializes; doing that while React still hydrates
+// collides with the server-rendered JSON-LD <script> tags and breaks hydration
+// (React error #418). The `load` event fires after hydration, so waiting for it
+// keeps the injected scripts out of the hydration window.
+export function whenDocumentReady(): Promise<void> {
+  if (typeof document === "undefined" || document.readyState === "complete") {
+    return Promise.resolve();
   }
+  return new Promise((resolve) => {
+    window.addEventListener("load", () => resolve(), { once: true });
+  });
+}
+
+export function initPostHog(): Promise<PostHog | null> {
+  if (!canInit()) return Promise.resolve(null);
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    await whenDocumentReady();
+
+    const ph = await getPosthog();
+    if (!ph) {
+      initPromise = null;
+      return null;
+    }
+
+    try {
+      const startRecording = () => ph.startSessionRecording();
+      ph.init(apiKey!, {
+        api_host: apiHost,
+        autocapture: false,
+        capture_pageview: false,
+        capture_heatmaps: true,
+        loaded: startRecording,
+      });
+      return ph;
+    } catch (error) {
+      console.error("PostHog init failed", error);
+      initPromise = null;
+      return null;
+    }
+  })();
+
+  return initPromise;
 }
 
 export async function captureClientEvent(
