@@ -29,6 +29,7 @@ import {
 import { filterString } from "@/lib/filters";
 import Header from "@/components/header";
 import PinnedBar from "@/components/pinned-bar";
+import UpdateBanner from "@/components/update-banner";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
 import type { MediaPayload, PostWithReactions } from "@/lib/api/posts";
 import { Locale } from "@/config/locale";
@@ -688,6 +689,12 @@ const Page = () => {
     replacePost,
   } = usePosts(8);
 
+  // Initial load / empty states are centered overlays — never scrollable and
+  // never rendered together with the min-height posts list (which would add
+  // a second viewport height below the loader).
+  const isInitialLoading = isLoading && posts.length === 0;
+  const isEmpty = !isLoading && posts.length === 0;
+
   // Pinned posts + editing state
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(
@@ -848,7 +855,7 @@ const Page = () => {
         } catch (err) {
           console.error("Failed to edit post", err);
           showWriteError(err);
-          updatePost({ ...target, content: trimmed });
+          updatePost(target);
         }
       }
       setEditingPostId(null);
@@ -969,7 +976,8 @@ const Page = () => {
   // =========================
   const resolvePostPreview = (post?: PostWithReactions) => {
     if (!post) return "";
-    if (post.type === "text") return post.content ?? "";
+    const content = post.content?.trim();
+    if (content) return content;
     return `${post.type.charAt(0).toUpperCase()}${post.type.slice(1)} Post`;
   };
 
@@ -988,7 +996,19 @@ const Page = () => {
       }
       if (!el) return;
       programmaticScrollRef.current = true;
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Land the post exactly where the newest post rests: bottom edge above
+      // the input (+ update banner), matching the list bottom padding.
+      const rootStyles = getComputedStyle(document.documentElement);
+      const footerH =
+        parseFloat(rootStyles.getPropertyValue("--chat-footer-height")) || 0;
+      const bannerH =
+        parseFloat(rootStyles.getPropertyValue("--update-banner-height")) || 0;
+      const prevScrollMargin = el.style.scrollMarginBottom;
+      el.style.scrollMarginBottom = `${footerH + bannerH}px`;
+      el.scrollIntoView({ behavior: "smooth", block: "end" });
+      window.setTimeout(() => {
+        el.style.scrollMarginBottom = prevScrollMargin;
+      }, 1000);
       setHighlightedPostId(targetId);
 
       const releaseLock = () => {
@@ -1054,8 +1074,7 @@ const Page = () => {
   }, [pinnedPosts]);
 
   const handleEditPost = (post: PostWithReactions) => {
-    if (!post.content) return;
-    setInputValue(post.content);
+    setInputValue(post.content ?? "");
     setEditingPostId(post.id);
   };
 
@@ -1118,7 +1137,11 @@ const Page = () => {
           ref={pageRef}
           onScroll={handleListScroll}
           style={{ height: `${pageHeight}px` }}
-          className="flex flex-col-reverse overflow-y-scroll none-scroll-bar w-full outline-none border-x border-secondary/5"
+          className={`flex flex-col-reverse w-full outline-none border-x border-secondary/5 ${
+            isInitialLoading || isEmpty
+              ? "overflow-hidden"
+              : "overflow-y-scroll none-scroll-bar"
+          }`}
         >
           {/* Header */}
           <Header
@@ -1130,28 +1153,40 @@ const Page = () => {
           {/* —— List —— */}
           <div className="flex-1 px-2.5 w-full">
             {/* Initial load */}
-            {isLoading && posts.length === 0 && (
-              <div className="w-full h-full flex justify-center items-center text-xl text-center">
-                <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
+            {isInitialLoading && (
+              <div className="w-full grid place-items-center overflow-hidden min-h-[calc(var(--page-height)-var(--chat-header-height)-var(--chat-footer-height)-var(--update-banner-height,0px))] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--update-banner-height,0px))]">
+                {error ? (
+                  <p className="text-xl text-center w-full text-red-500">
+                    Failed to Load Posts — {error}
+                  </p>
+                ) : (
+                  <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
+                )}
               </div>
             )}
 
-            {!isLoading && posts.length === 0 && (
-              <div className="w-full h-full flex justify-center items-center px-[25px]">
-                <p className="text-xl text-center w-full">
-                  {t.rich("general.publish_first_content", {
-                    highlight: (chunks) => (
-                      <span className="text-primary">{chunks}</span>
-                    ),
-                  })}
-                </p>
+            {isEmpty && (
+              <div className="w-full grid place-items-center overflow-hidden px-[25px] min-h-[calc(var(--page-height)-var(--chat-header-height)-var(--chat-footer-height)-var(--update-banner-height,0px))] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--update-banner-height,0px))]">
+                {error ? (
+                  <p className="text-xl text-center w-full text-red-500">
+                    Failed to Load Posts — {error}
+                  </p>
+                ) : (
+                  <p className="text-xl text-center w-full">
+                    {t.rich("general.publish_first_content", {
+                      highlight: (chunks) => (
+                        <span className="text-primary">{chunks}</span>
+                      ),
+                    })}
+                  </p>
+                )}
               </div>
             )}
 
-            {/* Error */}
+            {/* Error — pinned-bar layer, just below the pinned banner, above posts */}
             {error && (
               <div
-                className="fixed left-1/2 -translate-x-1/2 z-[60] px-4 w-full max-w-2xl pointer-events-none"
+                className="fixed left-1/2 -translate-x-1/2 z-40 px-4 w-full max-w-2xl pointer-events-none"
                 style={{
                   top: `calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) + 8px)`,
                 }}
@@ -1163,58 +1198,60 @@ const Page = () => {
             )}
 
             {/* Posts */}
-            <div
-              ref={listRef}
-              className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[var(--chat-footer-height)]"
-            >
-              {posts.map((msg: PostWithReactions) => (
-                <div
-                  key={msg.id}
-                  id={`message-${msg.id}`}
-                  data-message-id={msg.id}
-                  className="message-wrapper"
-                >
-                  <Message
-                    can_pin_post
-                    can_edit_post
-                    can_delete_post
-                    can_copy_text
-                    post={msg}
-                    highlighted={highlightedPostId === msg.id}
-                    pinned={msg.pinnedAt != null}
-                    onDelete={(id) => {
-                      const wasPinned = msg.pinnedAt != null;
-                      removePost(id);
-                      if (wasPinned) refreshPinnedPosts();
-                    }}
-                    onDeleteError={(err) => {
-                      showWriteError(err);
-                      addPost(msg);
-                    }}
-                    onPin={handleTogglePinPost}
-                    onEdit={handleEditPost}
-                    onRetry={handleRetryPost}
-                  />
-                </div>
-              ))}
+            {!isInitialLoading && !isEmpty && (
+              <div
+                ref={listRef}
+                className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--update-banner-height,0px))]"
+              >
+                {posts.map((msg: PostWithReactions) => (
+                  <div
+                    key={msg.id}
+                    id={`message-${msg.id}`}
+                    data-message-id={msg.id}
+                    className="message-wrapper"
+                  >
+                    <Message
+                      can_pin_post
+                      can_edit_post
+                      can_delete_post
+                      can_copy_text
+                      post={msg}
+                      highlighted={highlightedPostId === msg.id}
+                      pinned={msg.pinnedAt != null}
+                      onDelete={(id) => {
+                        const wasPinned = msg.pinnedAt != null;
+                        removePost(id);
+                        if (wasPinned) refreshPinnedPosts();
+                      }}
+                      onDeleteError={(err) => {
+                        showWriteError(err);
+                        addPost(msg);
+                      }}
+                      onPin={handleTogglePinPost}
+                      onEdit={handleEditPost}
+                      onRetry={handleRetryPost}
+                    />
+                  </div>
+                ))}
 
-              {/* Loading more (top infinite scroll) */}
-              {isLoadingMore && posts.length > 0 && (
-                <div className="grid place-items-center">
-                  <Loader />
-                </div>
-              )}
+                {/* Loading more (top infinite scroll) */}
+                {isLoadingMore && posts.length > 0 && (
+                  <div className="grid place-items-center py-4">
+                    <Loader />
+                  </div>
+                )}
 
-              {/* Sentinel for infinite scroll at visual TOP (DOM bottom because of flex-col-reverse) */}
-              <div ref={sentinelRef} />
-            </div>
+                {/* Sentinel for infinite scroll at visual TOP (DOM bottom because of flex-col-reverse) */}
+                <div ref={sentinelRef} />
+              </div>
+            )}
           </div>
         </div>
 
         {/* Write error toast */}
         {writeError && (
           <div
-            className="fixed left-1/2 -translate-x-1/2 z-[60] px-4 w-full max-w-2xl pointer-events-none"
+            className="fixed left-1/2 -translate-x-1/2 z-40 px-4 w-full max-w-2xl pointer-events-none"
             style={{
               top: `calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) + 8px)`,
             }}
@@ -1229,7 +1266,7 @@ const Page = () => {
         {showScrollToBottom && (
           <div
             onClick={scrollToBottom}
-            style={{ bottom: `calc(var(--chat-footer-height) - 5px)` }}
+            style={{ bottom: `calc(var(--chat-footer-height) + var(--update-banner-height, 0px) - 5px)` }}
             className="absolute right-4 z-40 border border-secondary/5 p-1 rounded-full backdrop-blur-sm cursor-pointer hover:bg-secondary/3 text-foreground/80"
           >
             <ChevronDownIcon className="size-6 stroke-1 text-foreground/60" />
@@ -1312,6 +1349,12 @@ const Page = () => {
                         .join("\n");
                       setInputValue(inputValue + truncated);
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter" || e.shiftKey) return;
+                      if (isOffline) return;
+                      e.preventDefault();
+                      handleSendMessage();
+                    }}
                     ref={inputRef}
                     placeholder={
                       isOffline
@@ -1383,6 +1426,8 @@ const Page = () => {
           </div>
         </div>
       </div>
+
+      <UpdateBanner />
     </>
   );
 };

@@ -10,6 +10,7 @@ import { usePosts } from "@/lib/hooks/use-posts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
 import Header from "@/components/header";
+import InstallBanner from "@/components/install-banner";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { setUserLocale } from "@/services/locale";
@@ -84,6 +85,12 @@ const Page = () => {
   const { posts, total, isLoading, isLoadingMore, error, hasMore, loadMore } =
     usePosts(8);
 
+  // Initial load / empty states are centered overlays — never scrollable and
+  // never rendered together with the min-height posts list (which would add
+  // a second viewport height below the loader).
+  const isInitialLoading = isLoading && posts.length === 0;
+  const isEmpty = !isLoading && posts.length === 0;
+
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // ──────────────────────────────────────
@@ -135,7 +142,19 @@ const Page = () => {
       }
       if (!el) return;
       programmaticScrollRef.current = true;
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Land the post exactly where the newest post rests: bottom edge above
+      // the input (+ install banner), matching the list bottom padding.
+      const rootStyles = getComputedStyle(document.documentElement);
+      const footerH =
+        parseFloat(rootStyles.getPropertyValue("--chat-footer-height")) || 0;
+      const bannerH =
+        parseFloat(rootStyles.getPropertyValue("--install-banner-height")) || 0;
+      const prevScrollMargin = el.style.scrollMarginBottom;
+      el.style.scrollMarginBottom = `${footerH + bannerH}px`;
+      el.scrollIntoView({ behavior: "smooth", block: "end" });
+      window.setTimeout(() => {
+        el.style.scrollMarginBottom = prevScrollMargin;
+      }, 1000);
       setHighlightedPostId(targetId);
 
       const releaseLock = () => {
@@ -313,6 +332,7 @@ const Page = () => {
         activeIndex={displayIndex}
         onCycle={handleCyclePinned}
         onUnpin={handleUnpin}
+        showUnpin={false}
       />
 
       {/* Feed column — positioning context for overlays anchored to the posts feed */}
@@ -321,7 +341,11 @@ const Page = () => {
           ref={pageRef}
           onScroll={handleListScroll}
           style={{ height: `${pageHeight}px` }}
-          className="flex flex-col-reverse overflow-y-scroll none-scroll-bar w-full outline-none border-x border-secondary/5"
+          className={`flex flex-col-reverse w-full outline-none border-x border-secondary/5 ${
+            isInitialLoading || isEmpty
+              ? "overflow-hidden"
+              : "overflow-y-scroll none-scroll-bar"
+          }`}
         >
           <Header
             explore
@@ -333,58 +357,66 @@ const Page = () => {
           />
 
           <div className="flex-1 px-2.5 w-full">
-            {isLoading && posts.length === 0 && (
-              <div className="w-full h-full flex justify-center items-center text-xl text-center">
+            {isInitialLoading && (
+              <div className="w-full grid place-items-center overflow-hidden min-h-[calc(var(--page-height)-var(--chat-header-height)-var(--chat-footer-height)-var(--install-banner-height,0px))] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--install-banner-height,0px))]">
                 <Loader />
               </div>
             )}
 
-            {!isLoading && posts.length === 0 && (
-              <div className="w-full h-full flex justify-center items-center px-[25px]">
-                <p className="text-xl text-center w-full">
-                  {t.rich("general.wait_for_first_content", {
-                    owner_name: app_config[locale].name,
-                    highlight: (chunks) => (
-                      <span className="text-primary">{chunks}</span>
-                    ),
-                  })}
-                </p>
+            {isEmpty && (
+              <div className="w-full grid place-items-center overflow-hidden px-[25px] min-h-[calc(var(--page-height)-var(--chat-header-height)-var(--chat-footer-height)-var(--install-banner-height,0px))] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--install-banner-height,0px))]">
+                {error ? (
+                  <p className="text-xl text-center w-full text-red-500">
+                    Failed to Load Posts — {error}
+                  </p>
+                ) : (
+                  <p className="text-xl text-center w-full">
+                    {t.rich("general.wait_for_first_content", {
+                      owner_name: app_config[locale].name,
+                      highlight: (chunks) => (
+                        <span className="text-primary">{chunks}</span>
+                      ),
+                    })}
+                  </p>
+                )}
               </div>
             )}
 
-            {error && (
+            {error && !isInitialLoading && (
               <div className="text-center text-sm text-red-500">
                 Failed to Load Posts — {error}
               </div>
             )}
 
-            <div
-              ref={listRef}
-              className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[var(--chat-footer-height)]"
-            >
-              {posts.map((msg, index) => (
-                <div
-                  key={msg.id ?? index}
-                  id={`message-${msg.id}`}
-                  data-message-id={msg.id}
-                  className="message-wrapper"
-                >
-                  <Post
-                    post={msg}
-                    pinned={msg.pinnedAt != null}
-                    highlighted={highlightedPostId === msg.id}
-                  />
-                </div>
-              ))}
+            {!isInitialLoading && !isEmpty && (
+              <div
+                ref={listRef}
+                className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--install-banner-height,0px))]"
+              >
+                {posts.map((msg, index) => (
+                  <div
+                    key={msg.id ?? index}
+                    id={`message-${msg.id}`}
+                    data-message-id={msg.id}
+                    className="message-wrapper"
+                  >
+                    <Post
+                      post={msg}
+                      pinned={msg.pinnedAt != null}
+                      highlighted={highlightedPostId === msg.id}
+                    />
+                  </div>
+                ))}
 
-              {isLoadingMore && posts.length > 0 && (
-                <div className="grid place-items-center">
-                  <Loader />
-                </div>
-              )}
+                {isLoadingMore && posts.length > 0 && (
+                  <div className="grid place-items-center py-4">
+                    <Loader />
+                  </div>
+                )}
 
-              <div ref={sentinelRef} />
-            </div>
+                <div ref={sentinelRef} />
+              </div>
+            )}
           </div>
         </div>
 
@@ -392,12 +424,14 @@ const Page = () => {
         {showScrollToBottom && (
           <div
             onClick={scrollToBottom}
-            style={{ bottom: `calc(var(--chat-footer-height) - 5px)` }}
+            style={{ bottom: `calc(var(--chat-footer-height) + var(--install-banner-height, 0px) - 5px)` }}
             className="absolute right-4 z-40 border border-secondary/5 p-1 rounded-full backdrop-blur-sm cursor-pointer hover:bg-secondary/3 text-foreground/80"
           >
             <ChevronDownIcon className="size-6 stroke-1 text-foreground/60" />
           </div>
         )}
+
+        <InstallBanner />
 
         <div ref={footerRef} className="fixed bottom-0 max-w-2xl w-full z-50">
           <div className="flex w-full gap-x-1.5 sm:gap-x-2 px-4 pb-3 lg:pb-5 justify-center items-center">

@@ -189,11 +189,15 @@ const Page = () => {
 
   if (pageHeight === null) return null;
 
+  const isInitialState = isLoading || error != null || message == null;
+
   return (
     <div
       ref={pageRef}
       style={{ height: `100dvh` }}
-      className="flex flex-col-reverse overflow-y-scroll none-scroll-bar w-full outline-none max-w-2xl border-x border-secondary/5"
+      className={`flex flex-col-reverse w-full outline-none max-w-2xl border-x border-secondary/5 ${
+        isInitialState ? "overflow-hidden" : "overflow-y-scroll none-scroll-bar"
+      }`}
     >
       <Header
         explore
@@ -207,19 +211,25 @@ const Page = () => {
         {/* Single Post Container */}
         <div
           ref={listRef}
-          className="flex flex-col-reverse pt-[var(--chat-header-height)] pb-[var(--chat-footer-height)] w-full h-full"
+          className={
+            isInitialState
+              ? "flex w-full overflow-hidden min-h-[calc(100dvh-var(--chat-header-height)-var(--chat-footer-height))] items-center justify-center pt-[var(--chat-header-height)] pb-[var(--chat-footer-height)]"
+              : "flex flex-col-reverse min-h-full pt-[var(--chat-header-height)] pb-[var(--chat-footer-height)] w-full"
+          }
         >
           {/* Loading state */}
           {isLoading && (
-            <div className="w-full h-full flex justify-center items-center text-xl text-center">
+            <div className="grid place-items-center">
               <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
             </div>
           )}
 
           {/* Error state */}
           {!isLoading && error && (
-            <div className="w-full h-full flex justify-center items-center text-sm text-primary text-center px-4">
-              Failed to load message: {error}
+            <div className="w-full grid place-items-center px-4">
+              <p className="text-sm text-primary text-center">
+                Failed to load message: {error}
+              </p>
             </div>
           )}
 

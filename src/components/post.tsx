@@ -1076,7 +1076,7 @@ const Post = memo(
             <div
               ref={mediaBoxRef}
               role="button"
-              aria-label={t("preview")}
+              aria-label={t("general.preview")}
               className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer select-none touch-manipulation [-webkit-touch-callout:none]"
               style={{ aspectRatio }}
               onPointerDown={handleHoldStart}
@@ -1213,7 +1213,16 @@ const Post = memo(
                   </div>
                 )}
 
-                {renderMedia()}
+                {hasMedia && (
+                  <div
+                    className={cn(
+                      "relative",
+                      highlighted && "rounded-2xl ring-2 ring-primary/5 bg-primary/3",
+                    )}
+                  >
+                    {renderMedia()}
+                  </div>
+                )}
 
                 <div
                   className={cn(

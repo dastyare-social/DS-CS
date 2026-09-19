@@ -795,7 +795,7 @@ export default function Page() {
 
   if (isLoading && shorts.length === 0 && threads.length === 0) {
     return (
-      <div className="w-full h-screen flex justify-center items-center text-xl text-center">
+      <div className="w-full h-dvh grid place-items-center overflow-hidden">
         <Loader />
       </div>
     );
@@ -880,10 +880,12 @@ export default function Page() {
             loadMore={loadMoreThreads}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-center text-xl px-5">
-            {t.rich("general.no_threads_yet", {
-              highlight: (c) => <span className="text-primary">{c}</span>,
-            })}
+          <div className="w-full h-full grid place-items-center overflow-hidden px-5">
+            <p className="text-center text-xl">
+              {t.rich("general.no_threads_yet", {
+                highlight: (c) => <span className="text-primary">{c}</span>,
+              })}
+            </p>
           </div>
         )}
       </div>

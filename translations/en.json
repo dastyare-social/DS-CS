@@ -11,8 +11,8 @@
     "not_posted_any_content_yet": "Not Posted Any Content Yet",
     "wait_for_first_content": "Wait For <highlight>{owner_name}</highlight> To Publish First Content",
     "publish_first_content": "Publish <highlight>Your First Content</highlight> To Show On Your Channel",
-    "no_shorts_yet": "Wait\u00A0<highlight>For Shorts</highlight>\u00A0To Appear",
-    "no_threads_yet": "Wait\u00A0<highlight>For Threads</highlight>\u00A0To Appear",
+    "no_shorts_yet": "Wait <highlight>For Shorts</highlight> To Appear",
+    "no_threads_yet": "Wait <highlight>For Threads</highlight> To Appear",
     "copy_post_link": "Copy Post Link",
     "copy_text": "Copy Text",
     "delete_post": "Delete Post",
@@ -48,7 +48,11 @@
     "publish": "Publish",
     "publishing": "Publishing...",
     "tap_to_select": "Tap to select photo or video",
-    "change": "Change"
+    "change": "Change",
+    "install_app_text": "Install App For The Best Experience",
+    "install": "Install",
+    "update": "Update",
+    "update_app_text": "Update App For The Best Experience"
   },
   "last_time": {
     "just_now": "Just now",

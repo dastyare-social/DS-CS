@@ -10,11 +10,13 @@ interface PinnedBarProps {
   activeIndex: number;
   onCycle: () => void;
   onUnpin: (post: PostWithReactions) => void;
+  showUnpin?: boolean;
 }
 
 function resolvePostPreview(post?: PostWithReactions) {
   if (!post) return "";
-  if (post.type === "text") return post.content ?? "";
+  const content = post.content?.trim();
+  if (content) return content;
   return `${post.type.charAt(0).toUpperCase()}${post.type.slice(1)} Post`;
 }
 
@@ -23,6 +25,7 @@ export default function PinnedBar({
   activeIndex,
   onCycle,
   onUnpin,
+  showUnpin = true,
 }: PinnedBarProps) {
   const t = useTranslations();
   const barRef = useRef<HTMLDivElement>(null);
@@ -73,13 +76,15 @@ export default function PinnedBar({
               {resolvePostPreview(current)}
             </span>
           </div>
-          <XIcon
-            onClick={(e) => {
-              e.stopPropagation();
-              if (current) onUnpin(current);
-            }}
-            className="size-3 stroke-[1.5px] cursor-pointer shrink-0"
-          />
+          {showUnpin && (
+            <XIcon
+              onClick={(e) => {
+                e.stopPropagation();
+                if (current) onUnpin(current);
+              }}
+              className="size-3 stroke-[1.5px] cursor-pointer shrink-0"
+            />
+          )}
         </div>
       </div>
     </div>
