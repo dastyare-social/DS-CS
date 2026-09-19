@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 
+import { readFileSync } from "node:fs";
 import createNextIntlPlugin from "next-intl/plugin";
 import { withPostHogConfig } from "@posthog/nextjs-config";
 
@@ -12,6 +13,23 @@ type RemotePattern = {
 };
 
 const withNextIntl = createNextIntlPlugin("./src/i18n.ts");
+
+// App version baked into the build as NEXT_PUBLIC_APP_VERSION. Read from
+// package.json so every build (Vercel, docker, local) self-reports the
+// release it was compiled from; an explicit env value wins when set.
+// The /api/update-check route compares this against Docker Hub tags.
+const appVersion = (() => {
+  try {
+    const pkg = JSON.parse(
+      readFileSync(new URL("./package.json", import.meta.url), "utf-8"),
+    ) as { version?: unknown };
+    return typeof pkg.version === "string" && pkg.version.trim().length > 0
+      ? pkg.version.trim()
+      : "0.1.0";
+  } catch {
+    return "0.1.0";
+  }
+})();
 
 // Serwist is disabled — we maintain public/sw.js by hand.
 // On Turbopack (Next.js 16 default) Serwist's webpack plugin never runs anyway.
@@ -98,6 +116,10 @@ const remotePatterns: RemotePattern[] = [
 ];
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_APP_VERSION:
+      process.env.NEXT_PUBLIC_APP_VERSION ?? appVersion,
+  },
   serverExternalPackages: ["@takumi-rs/core", "takumi-js"],
   images: {
     remotePatterns,
