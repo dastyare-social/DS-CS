@@ -66,7 +66,7 @@ export default function ImageSlider({ media, content }: ImageSliderProps) {
 
   return (
     <Dialog>
-      <DialogTrigger className="outline-none">
+      <DialogTrigger asChild className="outline-none">
         <div
           className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer select-none"
           style={{ aspectRatio }}
@@ -79,7 +79,7 @@ export default function ImageSlider({ media, content }: ImageSliderProps) {
             sizes="(max-width: 768px) 80vw, 320px"
             loading="lazy"
             onLoad={() => setMediaLoading(false)}
-            className={cn("object-cover p-1", mediaLoading && "opacity-0")}
+            className={cn("object-cover p-1")}
           />
 
           {/* Loader while media loads */}
@@ -111,7 +111,7 @@ export default function ImageSlider({ media, content }: ImageSliderProps) {
             sizes="(max-width: 768px) 80vw, 320px"
             loading="lazy"
             onLoad={() => setMediaLoading(false)}
-            className={cn("object-contain p-1", mediaLoading && "opacity-0")}
+            className={cn("object-contain p-1")}
           />
 
           {/* Loader while media loads */}

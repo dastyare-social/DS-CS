@@ -1018,7 +1018,7 @@ const Post = memo(
 
         return (
           <Dialog>
-            <DialogTrigger className="outline-none">
+            <DialogTrigger asChild className="outline-none">
               <div
                 className="relative w-full max-w-2xs max-h-[960px] overflow-hidden border border-secondary/5 cursor-pointer"
                 style={{ aspectRatio }}
