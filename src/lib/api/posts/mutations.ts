@@ -239,7 +239,8 @@ export async function createPost({
     const createdPosts: PostWithReactions[] = [];
     for (let i = 0; i < mediaInputs.length; i++) {
       const { type, media } = await buildMediaForInput(mediaInputs[i]);
-      const itemContent = i === 0 ? content : "— content —";
+      // Follow-up posts carry no content — same as every other format.
+      const itemContent = i === 0 ? content : null;
       const created = await insertPost({
         type,
         content: itemContent ?? null,

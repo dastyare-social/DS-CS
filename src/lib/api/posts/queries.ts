@@ -63,6 +63,16 @@ export type PostWithReactions = {
   _pendingMedia?: PendingMediaInput[];
 };
 
+// Placeholder once stored for follow-up split posts (see createPost in
+// mutations.ts). Treat it as empty so those posts behave exactly like
+// every other format with no content.
+const LEGACY_EMPTY_CONTENT = "— content —";
+
+function normalizeContent(content: string | null): string | null {
+  if (!content) return null;
+  return content === LEGACY_EMPTY_CONTENT ? null : content;
+}
+
 export type GetPostsParams = {
   page?: number;
   limit?: number;
@@ -175,6 +185,7 @@ export async function getPostsWithReactions({
 
   const items: PostWithReactions[] = rows.map((m) => ({
     ...m,
+    content: normalizeContent(m.content),
     media: m.media as MediaPayload,
     reactions: grouped[m.id] ?? [],
   }));
@@ -228,6 +239,7 @@ export async function getPostById(
 
   return {
     ...post,
+    content: normalizeContent(post.content),
     media: post.media as MediaPayload,
     reactions: reactionsRows,
   };
@@ -260,6 +272,7 @@ export async function getPinnedPosts(): Promise<PostWithReactions[]> {
 
   return rows.map((m) => ({
     ...m,
+    content: normalizeContent(m.content),
     media: m.media as MediaPayload,
     reactions: grouped[m.id] ?? [],
   }));
