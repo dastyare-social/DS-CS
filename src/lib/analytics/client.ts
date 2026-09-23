@@ -8,8 +8,24 @@ const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || process.env.NEXT_PUBLIC_
 let posthog: PostHog | null = null;
 let initialized = false;
 
+const isLocalhost = () => {
+  const host = window.location.hostname;
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "::1" ||
+    host === "[::1]" ||
+    host.endsWith(".localhost")
+  );
+};
+
 const canInit = () => {
   if (typeof window === "undefined" || typeof document === "undefined") return false;
+  // Stay quiet outside a production build and on local dev hosts. `next dev` runs
+  // with NODE_ENV="development" and serves from localhost, so this keeps local
+  // sessions from writing exceptions and recordings into the production project.
+  if (process.env.NODE_ENV !== "production") return false;
+  if (isLocalhost()) return false;
   if (typeof apiKey !== "string" || apiKey.trim().length === 0) return false;
   if (typeof apiHost !== "string" || apiHost.trim().length === 0) return false;
   return true;
@@ -86,9 +102,11 @@ export async function identifyClient(
 
 /**
  * Capture a client-side error (uncaught exception or unhandled promise
- * rejection) to PostHog as a `client_error` event. Deliberately uses a custom
- * event (not PostHog's `$exception` autocapture) to stay consistent with the
- * rest of the app's manual event taxonomy and the `autocapture: false` config.
+ * rejection) to PostHog as a `client_error` event. This is a manual event that
+ * fits the app's own event taxonomy. It does not replace PostHog's `$exception`
+ * autocapture: that capture runs from a project-level setting, and the client
+ * `autocapture: false` option turns off click and pageview autocapture only,
+ * not exception capture.
  */
 let errorTrackingInstalled = false;
 
