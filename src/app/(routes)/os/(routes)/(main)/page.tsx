@@ -1154,7 +1154,7 @@ const Page = () => {
           <div className="flex-1 px-2.5 w-full">
             {/* Initial load */}
             {isInitialLoading && (
-              <div className="w-full grid place-items-center overflow-hidden min-h-[calc(var(--page-height)-var(--chat-header-height)-var(--chat-footer-height)-var(--update-banner-height,0px))] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--update-banner-height,0px))]">
+              <div className="w-full grid place-items-center overflow-hidden min-h-[calc(var(--page-height)+var(--pinned-bar-height,0px))] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--update-banner-height,0px))]">
                 {error ? (
                   <p className="text-xl text-center w-full text-red-500">
                     Failed to Load Posts — {error}
@@ -1166,7 +1166,7 @@ const Page = () => {
             )}
 
             {isEmpty && (
-              <div className="w-full grid place-items-center overflow-hidden px-[25px] min-h-[calc(var(--page-height)-var(--chat-header-height)-var(--chat-footer-height)-var(--update-banner-height,0px))] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--update-banner-height,0px))]">
+              <div className="w-full grid place-items-center overflow-hidden px-[25px] min-h-[calc(var(--page-height)+var(--pinned-bar-height,0px))] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--update-banner-height,0px))]">
                 {error ? (
                   <p className="text-xl text-center w-full text-red-500">
                     Failed to Load Posts — {error}
