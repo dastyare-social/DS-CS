@@ -4,6 +4,12 @@ import { readFileSync } from "node:fs";
 import createNextIntlPlugin from "next-intl/plugin";
 import { withPostHogConfig } from "@posthog/nextjs-config";
 
+import {
+  POSTHOG_INGEST_PATH,
+  posthogAssetsHost,
+  posthogIngestionHost,
+} from "./src/lib/analytics/proxy";
+
 // Define RemotePattern type inline since it might not be exported in Next.js 16
 type RemotePattern = {
   protocol: "http" | "https";
@@ -131,6 +137,20 @@ const nextConfig: NextConfig = {
       destination: string;
       has?: Array<{ type: "header"; key: string; value: string }>;
     }> = [];
+
+    // First-party PostHog proxy: forward same-origin capture traffic to the
+    // real PostHog hosts so ad blockers cannot drop it. Static assets first,
+    // then the catch-all for capture, decide, and session recording.
+    rewrites.push(
+      {
+        source: `${POSTHOG_INGEST_PATH}/static/:path*`,
+        destination: `${posthogAssetsHost()}/static/:path*`,
+      },
+      {
+        source: `${POSTHOG_INGEST_PATH}/:path*`,
+        destination: `${posthogIngestionHost()}/:path*`,
+      },
+    );
 
     const searchConsoleEnabled =
       process.env.NEXT_PUBLIC_ENABLE_SEARCH_CONSOLE === "true";
