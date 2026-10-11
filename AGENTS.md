@@ -7,7 +7,7 @@ Guide for AI agents consuming or extending this project. **Primary audience: ext
 
 ## Project summary
 
-Dastyare Social CS is a Next.js creator studio. It exposes a REST API for posts, stories, and outgoing webhooks, with Better Auth for authentication. The frontend uses tRPC internally; external agents should prefer the documented REST endpoints.
+Dastyare Social CS is a Next.js creator studio. It exposes a REST API for posts, stories, and outgoing webhooks, with Better Auth for authentication. The frontend uses oRPC internally; external agents should prefer the documented REST endpoints.
 
 - **Runtime:** Bun, Node 20+, PostgreSQL, S3-compatible storage
 - **Dev port:** 8729
@@ -23,7 +23,7 @@ Dastyare Social CS is a Next.js creator studio. It exposes a REST API for posts,
 | Project context | `/context.md` | Compact agent context — read first |
 | REST base | `/api` | All REST endpoints (see OpenAPI paths) |
 | Auth | `/api/auth/*` | Better Auth (sign-in, sessions, API keys) |
-| tRPC | `/api/trpc` | Internal frontend RPC — avoid for external integrations |
+| oRPC | `/api/rpc` | Internal frontend RPC — avoid for external integrations |
 
 ## Authentication
 
@@ -200,7 +200,7 @@ Full schemas: `/openapi.json` → `components.schemas`
 | `src/app/api/*/route.ts` | REST handlers — add JSDoc `@openapi` tags here |
 | `src/lib/api/` | Business logic (queries, mutations, S3 uploads) |
 | `src/lib/db/schema/` | Drizzle tables + Zod schemas via drizzle-zod |
-| `src/lib/trpc/router.ts` | tRPC procedures mirroring posts/stories logic |
+| `src/lib/orpc/router.ts` | oRPC procedures mirroring posts/stories logic |
 | `src/lib/webhooks/` | Outbound webhook delivery (emit + HMAC signing + retries) |
 | `src/lib/auth/` | Better Auth server config and React client |
 | `src/lib/filters/` | Content filtering (NSFW words, HTML sanitization) |

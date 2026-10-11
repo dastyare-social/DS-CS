@@ -1,4 +1,4 @@
-import { trpc } from "@/lib/trpc/client";
+import { orpc } from "@/lib/orpc/client";
 import type { PostWithReactions, PostType } from "@/lib/api/posts";
 import { captureClientEvent } from "@/lib/analytics/client";
 
@@ -30,16 +30,16 @@ export async function getPosts(params?: GetPostsParams | null) {
     type: params?.type ?? "list",
     bypassCache: params?.bypassCache ?? false,
   };
-  return trpc.posts.list.query(safe);
+  return orpc.posts.list(safe);
 }
 
 export async function getExploreInitial() {
-  return trpc.posts.exploreInitial.query();
+  return orpc.posts.exploreInitial();
 }
 
 export async function countPosts() {
   try {
-    const result = await trpc.posts.count.query();
+    const result = await orpc.posts.count();
     return result.total;
   } catch (err) {
     console.error("countPosts failed:", err);
@@ -48,14 +48,14 @@ export async function countPosts() {
 }
 
 export async function getPostById(id: string) {
-  return trpc.posts.getById.query({ id });
+  return orpc.posts.getById({ id });
 }
 
 export async function createPost(
   content: string | null,
   media?: PostMediaInput[] | undefined
 ) {
-  const result = await trpc.posts.create.mutate({ content, media });
+  const result = await orpc.posts.create({ content, media });
   void captureClientEvent("post_created", {
     post_type: result.type,
     has_media: Boolean(result.media),
@@ -65,7 +65,7 @@ export async function createPost(
 }
 
 export async function batchIncrementViews(ids: string[]) {
-  const result = await trpc.posts.batchView.mutate({ ids });
+  const result = await orpc.posts.batchView({ ids });
   void captureClientEvent("post_batch_viewed", {
     post_ids: ids,
     count: ids.length,
@@ -74,7 +74,7 @@ export async function batchIncrementViews(ids: string[]) {
 }
 
 export async function addReaction(postId: string, emoji: string) {
-  const result = await trpc.posts.addReaction.mutate({ postId, emoji });
+  const result = await orpc.posts.addReaction({ postId, emoji });
   void captureClientEvent("post_reacted", {
     post_id: postId,
     emoji,
@@ -84,7 +84,7 @@ export async function addReaction(postId: string, emoji: string) {
 }
 
 export async function viewPost(id: string) {
-  const result = await trpc.posts.view.mutate({ id });
+  const result = await orpc.posts.view({ id });
   void captureClientEvent("post_viewed", {
     post_id: id,
     views: result?.views,
@@ -93,11 +93,11 @@ export async function viewPost(id: string) {
 }
 
 export async function deletePost(id: string) {
-  return trpc.posts.delete.mutate({ id });
+  return orpc.posts.delete({ id });
 }
 
 export async function updatePostContent(id: string, content: string) {
-  const result = await trpc.posts.update.mutate({ id, content });
+  const result = await orpc.posts.update({ id, content });
   void captureClientEvent("post_updated", {
     post_id: id,
     content_length: content.length,
@@ -106,7 +106,7 @@ export async function updatePostContent(id: string, content: string) {
 }
 
 export async function togglePinPost(id: string, pinned: boolean) {
-  const result = await trpc.posts.update.mutate({
+  const result = await orpc.posts.update({
     id,
     pinnedAt: pinned ? new Date().toISOString() : null,
   });
@@ -117,5 +117,5 @@ export async function togglePinPost(id: string, pinned: boolean) {
 }
 
 export async function getPinnedPosts(): Promise<PostWithReactions[]> {
-  return trpc.posts.pinned.query();
+  return orpc.posts.pinned();
 }

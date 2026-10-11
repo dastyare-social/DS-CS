@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 // Cache names
 // ---------------------------------------------------------------------------
-const TRPC_CACHE = "trpc-cache-v1";
+const RPC_CACHE = "rpc-cache-v2";
 const STATIC_CACHE = "static-cache-v1";
 const PAGE_CACHE = "page-cache-v1";
 const MEDIA_CACHE = "media-cache-v1";
@@ -60,33 +60,39 @@ function idbCount() {
 }
 
 // ---------------------------------------------------------------------------
-// Extract posts from tRPC response and store in IndexedDB
+// Extract posts from an oRPC response and store in IndexedDB
 //
-// tRPC httpBatchLink + superjson wire format:
-//   [{"result":{"data":{"json":{"items":[...]},"meta":{}}}}]
+// oRPC Standard RPC wire format (POST /api/rpc/posts/list):
+//   request  → { "json": { ...input } }
+//   response → { "json": { items: [...] }, "meta": [[1,"items",0,"createdAt"]] }
+//
+// The `meta` array carries type tags for values that JSON can't express.
+// Tag 1 = DATE. Dates still arrive as plain ISO strings in `json` — oRPC
+// rehydrates them into `Date` objects on the client. So no meta handling is
+// needed here; storing the ISO string is correct for IndexedDB.
 // ---------------------------------------------------------------------------
 function extractPostsFromResponse(data) {
   if (!data || typeof data !== "object") return [];
 
+  // oRPC returns a single object per request, but tolerate a batched array.
   const entries = Array.isArray(data) ? data : [data];
   const allPosts = [];
 
   for (const entry of entries) {
     if (!entry || typeof entry !== "object") continue;
 
-    const resultData = entry?.result?.data;
-    if (!resultData || typeof resultData !== "object") continue;
+    // oRPC error envelope: { json: { definedError/code/message } }
+    if (entry.error !== undefined) continue;
 
-    // superjson wraps in {json, meta} — unwrap if present
-    const unwrapped =
-      resultData.json !== undefined ? resultData.json : resultData;
+    const payload = entry.json;
+    if (payload === undefined || payload === null) continue;
 
     // Could be {items: [...]} (posts.list) or a plain array (posts.pinned)
     let items;
-    if (Array.isArray(unwrapped)) {
-      items = unwrapped;
-    } else if (unwrapped && Array.isArray(unwrapped.items)) {
-      items = unwrapped.items;
+    if (Array.isArray(payload)) {
+      items = payload;
+    } else if (Array.isArray(payload.items)) {
+      items = payload.items;
     } else {
       continue;
     }
@@ -177,6 +183,12 @@ self.addEventListener("activate", (event) => {
         await Promise.all(keys.map((k) => caches.delete(k)));
       } else {
         await Promise.all(keys.filter((k) => k.endsWith("-dev")).map((k) => caches.delete(k)));
+        // Purge the pre-oRPC cache so returning users don't keep dead tRPC
+        // responses around consuming storage. Safe to remove once every
+        // deployed client has shipped this worker.
+        if (keys.includes("trpc-cache-v1")) {
+          await caches.delete("trpc-cache-v1");
+        }
       }
       await self.clients.claim();
     })(),
@@ -249,8 +261,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // tRPC API: network-first, store posts in IDB + raw response in Cache API
-  if (sameOrigin && url.pathname.startsWith("/api/trpc/")) {
+  // oRPC API: network-first, store posts in IDB + raw response in Cache API
+  if (sameOrigin && url.pathname.startsWith("/api/rpc/")) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
@@ -258,8 +270,9 @@ self.addEventListener("fetch", (event) => {
           const cloneForJson = response.clone();
           const cloneForCache = response.clone();
 
-          // Parse tRPC response and store posts in IDB (background)
-          cloneForJson.json()
+          // Parse oRPC response and store posts in IDB (background)
+          cloneForJson
+            .json()
             .then((data) => {
               const posts = extractPostsFromResponse(data);
               if (posts.length) {
@@ -275,8 +288,8 @@ self.addEventListener("fetch", (event) => {
             })
             .catch(() => {});
 
-          // Cache raw response for offline tRPC fallback
-          caches.open(TRPC_CACHE).then((cache) => {
+          // Cache raw response for offline oRPC fallback
+          caches.open(RPC_CACHE).then((cache) => {
             cache.put(event.request, cloneForCache);
           });
 

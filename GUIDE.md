@@ -16,13 +16,13 @@ Dastyare Social CS is a single Next.js app that serves:
 - **Public creator site** — home feed, explore (shorts + threads), post pages, resume page.
 - **Operator dashboard** (`/os`) — manage posts, stories, media, and admin account.
 - **REST API** — OpenAPI-documented endpoints for posts, stories, webhooks, media, push, and auth.
-- **tRPC layer** — used internally by the frontend for reads and writes.
+- **oRPC layer** — used internally by the frontend for reads and writes.
 - **MCP server** — lets AI agents interact with the content via stdio or HTTP.
 - **Web push notifications** — browser push to opted-in subscribers via VAPID + Web Push.
 
 Design principles:
 
-- **Server-first**: business logic lives in `src/lib/api/*` (mutations/queries), shared by REST routes, tRPC procedures, server actions, and MCP tools. Auth and demo-mode guards are enforced in that shared layer.
+- **Server-first**: business logic lives in `src/lib/api/*` (mutations/queries), shared by REST routes, oRPC procedures, server actions, and MCP tools. Auth and demo-mode guards are enforced in that shared layer.
 - **OpenAPI-first REST**: route handlers carry `@id` / `@description` JSDoc that `openapi:generate` turns into `public/openapi.json` served by Scalar at `/docs`.
 - **Self-hostable**: PostgreSQL + S3-compatible storage (MinIO, R2, S3, etc.), Docker Compose, and a one-line server install script.
 
@@ -37,7 +37,7 @@ Design principles:
 | Language | TypeScript 5 (strict), Bun runtime |
 | ORM / DB | Drizzle ORM + PostgreSQL (via `pg` / `postgres`) |
 | Auth | Better Auth (sessions, accounts, API keys, admin bootstrap) |
-| API | tRPC 11 (frontend), REST route handlers (OpenAPI via JSDoc) |
+| API | oRPC 1.15 (frontend), REST route handlers (OpenAPI via JSDoc) |
 | Media | AWS SDK v3 (S3-compatible), sharp, ffmpeg-probe |
 | Push | web-push (VAPID), Service Worker push + notification handlers |
 | Analytics | PostHog (posthog-js client + posthog-node server) |
@@ -66,7 +66,7 @@ public/
 src/
   app/
     (routes)/            # pages: (main) feed, explore, os (admin), posts/[post_id], resume
-    api/                 # REST: posts, stories, webhooks, media, upload, push, auth, trpc, mcp, og, .well-known/mcp
+    api/                 # REST: posts, stories, webhooks, media, upload, push, auth, rpc, mcp, og, .well-known/mcp
     manifest.ts          # PWA web app manifest
     robots.ts, sitemap.ts, llms.txt, agents.md, docs/readme
   components/            # UI components + modals (notifications, profile)
@@ -79,7 +79,7 @@ webhooks/            # outbound event delivery: WEBHOOK_EVENTS, emitWebhookEvent
     filters/             # content sanitization pipeline (NSFW, HTML)
     media/               # S3 upload, size/MIME config, auth
     notifications/       # client (subscribe/toggle), push (send), status
-    trpc/                # tRPC router + procedures (posts, stories)
+    orpc/                # oRPC router + procedures (posts, stories)
     utils/               # shared helpers, media utils
     hooks/               # use-posts, use-media-upload
   mcp/                   # MCP server factory + posts/stories tools
@@ -202,7 +202,7 @@ Migrations are plain SQL under `src/lib/db/migrations/`. `scripts/bootstrap-admi
 The key rule: **`src/lib/api/*` is the single source of truth for business logic.** Everything else is a thin transport on top.
 
 ```
-UI (React) ──► tRPC procedures ──┐
+UI (React) ──► oRPC procedures ──┐
 External ────► REST handlers ────┼──► src/lib/api/{posts,stories}/mutations.ts & queries.ts ──► Drizzle ──► Postgres
 AI agents ───► MCP tools ────────┘
                                     └──► src/lib/webhooks/index.ts ──► emitWebhookEvent ──► signed HTTP POST ──► your endpoint
@@ -213,7 +213,7 @@ AI agents ───► MCP tools ────────┘
 - **`src/lib/webhooks/index.ts`**: `emitWebhookEvent(event, data)` — fires after the matching mutations, delivers JSON envelopes to subscribed webhooks with HMAC signature (`x-ds-webhook-signature: t=…,v1=…`), retries on failure (up to 3 attempts, backoff), and records `lastStatus`/`lastAttemptAt`/`failureCount` on the webhook row. Events: `post.created|updated|deleted|reacted|viewed`, `story.created|updated|deleted|viewed|liked`.
 - **`src/lib/api/*/queries.ts`**: reads — lists with pagination/search, counts, by-id.
 - **REST handlers** (`src/app/api/...`) validate input with zod and call the same functions; mutations are additionally guarded by API-key auth where appropriate.
-- **tRPC** (`src/lib/trpc/router.ts`) exposes `posts.*` and `stories.*` procedures (list, count, getById, create, update, delete, view, like, reaction, batchView). The frontend hooks (`src/lib/hooks/use-posts.ts`, `use-media-upload.ts`) consume these.
+- **oRPC** (`src/lib/orpc/router.ts`) exposes `posts.*` and `stories.*` procedures (list, count, getById, create, update, delete, view, like, reaction, batchView) over `/api/rpc`. The action layer (`src/lib/actions/*`) consumes these.
 - **Server actions** (`src/lib/actions/*`) wrap the shared functions for `useTransition`-style client usage (e.g., view batching).
 
 ---

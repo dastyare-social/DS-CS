@@ -91,7 +91,7 @@ For a local stdio server against the database, run `bun run mcp` (write tools en
 
 ## Optional
 
-- tRPC endpoint at `/api/trpc` is for internal frontend use; external agents should use REST
+- oRPC endpoint at `/api/rpc` is for internal frontend use; external agents should use REST
 - Content filtering (NSFW, HTML sanitization) applied on write paths
 - Media uploads stored in S3-compatible object storage
 - `/about` — the owner's about/resume page, active only when `enabled: true` in `config/about.config.yml`; indexable only when global indexing is also enabled. Agents can read and modify it via the `get_resume_config`, `update_resume_config`, and `set_resume_enabled` MCP tools.

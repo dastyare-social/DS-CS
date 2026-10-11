@@ -24,7 +24,7 @@ keeps that reach working for you on your own infrastructure.
 
 - **Runtime:** Bun, Node 20+, PostgreSQL, S3-compatible storage
 - **Dev port:** 8729
-- **Stack:** Next.js 16, React 19, TypeScript, Drizzle ORM, Tailwind CSS 4, tRPC, Better Auth
+- **Stack:** Next.js 16, React 19, TypeScript, Drizzle ORM, Tailwind CSS 4, oRPC, Better Auth
 - **Public site:** home feed `/`, explore `/explore`, single post `/posts/{id}`, optional `/about`
 - **Creator panel (auth):** `/os`, login `/os/register`
 - **Agent surfaces:** `/api/mcp` (MCP tools), `/openapi.json`, `/docs` (Scalar), `/llms.txt`, `/agents.md`, `/context.md`
@@ -46,7 +46,7 @@ keeps that reach working for you on your own infrastructure.
 
 - Do not refactor unrelated code.
 - Do not expose or fetch `POSTHOG_API_KEY` / `WEBPUSH_PRIVATE_KEY` / secrets.
-- External agents: use the REST API (`/api/*`) — avoid the internal tRPC router.
+- External agents: use the REST API (`/api/*`) — avoid the internal oRPC router.
 - Do not treat SEO / LLM discovery as a guarantee.
 
 ## Fast commands

@@ -1,4 +1,4 @@
-import { router, publicProcedure } from "@/lib/trpc/trpc";
+import { os } from "@orpc/server";
 import { z } from "zod";
 import {
   addReaction,
@@ -23,6 +23,17 @@ import {
   StoryMediaInput,
 } from "@/lib/api/stories";
 
+/**
+ * Internal RPC router — posts and stories.
+ *
+ * This mirrors the tRPC router that preceded it, procedure for procedure. Input
+ * validation matches the old Zod schemas exactly; output validation is
+ * intentionally omitted, as it was under tRPC.
+ *
+ * Consumers must go through `src/lib/actions/*` — never call this from a
+ * component directly.
+ */
+
 const postListInput = z.object({
   page: z.number().int().positive().optional(),
   limit: z.number().int().positive().max(100).optional(),
@@ -34,11 +45,13 @@ const postListInput = z.object({
 const mediaInput = z.object({
   url: z.string().nullable().optional(),
   type: z.enum(["text", "image", "video", "voice", "file"]).nullable().optional(),
-  dimensions: z.object({
-    width: z.number(),
-    height: z.number(),
-    duration: z.number().optional(),
-  }).optional(),
+  dimensions: z
+    .object({
+      width: z.number(),
+      height: z.number(),
+      duration: z.number().optional(),
+    })
+    .optional(),
 });
 
 const postCreateInput = z.object({
@@ -81,40 +94,31 @@ const storyLikeInput = z.object({
   direction: z.enum(["inc", "dec"]),
 });
 
-export const postsRouter = router({
+export const postsRouter = {
   // Combined endpoint to fetch initial explore data (shorts + threads) in one request
-  exploreInitial: publicProcedure.query(async () => {
+  exploreInitial: os.handler(async () => {
     const shortsResult = await getPostsWithReactions({ page: 1, limit: 20 });
     const threads = await getPostsWithReactions({ page: 1, limit: 5 });
-    
-    console.log("All shorts items:", shortsResult.items);
-    
+
     // Filter shorts to only include vertical videos (9:16 aspect ratio)
     const filteredShorts = shortsResult.items.filter((item) => {
-      console.log("Filtering item:", item.id, item.type, item.media);
       if (item.type !== "video" || !item.media) {
-        console.log("Filtered out: not video or no media");
         return false;
       }
       const media = item.media as { width?: number; height?: number };
       const width = media.width || 0;
       const height = media.height || 0;
-      
+
       // If dimensions are 0, include the video anyway (fallback for videos without dimension data)
       if (width === 0 || height === 0) {
-        console.log("Including video with missing dimensions:", item.id, item.media);
         return true;
       }
-      
+
       // Check for 9:16 aspect ratio (height > width, approximately 1.77:1 ratio)
       const aspectRatio = height / width;
-      const isVertical = aspectRatio >= 1.6 && aspectRatio <= 2.0;
-      console.log("Aspect ratio check:", width, height, aspectRatio, isVertical);
-      return isVertical;
+      return aspectRatio >= 1.6 && aspectRatio <= 2.0;
     });
-    
-    console.log("Filtered shorts:", filteredShorts);
-    
+
     return {
       shorts: {
         ...shortsResult,
@@ -124,7 +128,8 @@ export const postsRouter = router({
       threads,
     };
   }),
-  list: publicProcedure.input(postListInput).query(async ({ input }) => {
+
+  list: os.input(postListInput).handler(async ({ input }) => {
     const result = await getPostsWithReactions({
       page: input.page,
       limit: input.limit,
@@ -154,13 +159,13 @@ export const postsRouter = router({
     return result;
   }),
 
-  count: publicProcedure.query(async () => ({ total: await countPosts() })),
+  count: os.handler(async () => ({ total: await countPosts() })),
 
-  pinned: publicProcedure.query(async () => {
+  pinned: os.handler(async () => {
     return getPinnedPosts();
   }),
 
-  getById: publicProcedure.input(postIdInput).query(async ({ input }) => {
+  getById: os.input(postIdInput).handler(async ({ input }) => {
     const post = await getPostById(input.id);
     if (!post) {
       throw new Error("Post not found");
@@ -168,7 +173,7 @@ export const postsRouter = router({
     return post;
   }),
 
-  create: publicProcedure.input(postCreateInput).mutation(async ({ input }) => {
+  create: os.input(postCreateInput).handler(async ({ input }) => {
     const media = input.media
       ?.filter((m) => typeof m.url === "string" && m.url.length > 0)
       .map((m) => ({
@@ -185,22 +190,20 @@ export const postsRouter = router({
     return "_multiple" in result ? result.posts[0] : result;
   }),
 
-  batchView: publicProcedure
-    .input(postBatchViewInput)
-    .mutation(async ({ input }) => {
-      await batchIncrementViews(input.ids);
-      return { success: true };
-    }),
+  batchView: os.input(postBatchViewInput).handler(async ({ input }) => {
+    await batchIncrementViews(input.ids);
+    return { success: true };
+  }),
 
-  addReaction: publicProcedure.input(postReactionInput).mutation(async ({ input }) => {
+  addReaction: os.input(postReactionInput).handler(async ({ input }) => {
     return addReaction({ postId: input.postId, emoji: input.emoji });
   }),
 
-  view: publicProcedure.input(postIdInput).mutation(async ({ input }) => {
+  view: os.input(postIdInput).handler(async ({ input }) => {
     return viewPost(input.id);
   }),
 
-  delete: publicProcedure.input(postIdInput).mutation(async ({ input }) => {
+  delete: os.input(postIdInput).handler(async ({ input }) => {
     const ok = await deletePostById(input.id);
     if (!ok) {
       throw new Error("Post not found");
@@ -208,29 +211,27 @@ export const postsRouter = router({
     return { success: true };
   }),
 
-  update: publicProcedure
-    .input(postUpdateInput)
-    .mutation(async ({ input }) => {
-      const patch: {
-        content?: string | null;
-        pinnedAt?: Date | null;
-      } = {};
-      if (input.content !== undefined) {
-        patch.content = input.content;
-      }
-      if (input.pinnedAt !== undefined) {
-        patch.pinnedAt = input.pinnedAt ? new Date(input.pinnedAt) : null;
-      }
-      const updated = await updatePost({ id: input.id, patch });
-      if (!updated) {
-        throw new Error("Post not found");
-      }
-      return updated;
-    }),
-});
+  update: os.input(postUpdateInput).handler(async ({ input }) => {
+    const patch: {
+      content?: string | null;
+      pinnedAt?: Date | null;
+    } = {};
+    if (input.content !== undefined) {
+      patch.content = input.content;
+    }
+    if (input.pinnedAt !== undefined) {
+      patch.pinnedAt = input.pinnedAt ? new Date(input.pinnedAt) : null;
+    }
+    const updated = await updatePost({ id: input.id, patch });
+    if (!updated) {
+      throw new Error("Post not found");
+    }
+    return updated;
+  }),
+};
 
-export const storiesRouter = router({
-  list: publicProcedure.input(storyListInput).query(async ({ input }) => {
+export const storiesRouter = {
+  list: os.input(storyListInput).handler(async ({ input }) => {
     return getStories({
       page: input.page,
       limit: input.limit,
@@ -239,9 +240,9 @@ export const storiesRouter = router({
     });
   }),
 
-  count: publicProcedure.query(async () => ({ total: await countStories() })),
+  count: os.handler(async () => ({ total: await countStories() })),
 
-  getById: publicProcedure.input(storyIdInput).query(async ({ input }) => {
+  getById: os.input(storyIdInput).handler(async ({ input }) => {
     const story = await getStoryById(input.id);
     if (!story) {
       throw new Error("Story not found");
@@ -249,7 +250,7 @@ export const storiesRouter = router({
     return story;
   }),
 
-  view: publicProcedure.input(storyIdInput).mutation(async ({ input }) => {
+  view: os.input(storyIdInput).handler(async ({ input }) => {
     const result = await incrementStoryViews(input.id);
     if (!result) {
       throw new Error("Story not found");
@@ -257,7 +258,7 @@ export const storiesRouter = router({
     return result;
   }),
 
-  like: publicProcedure.input(storyLikeInput).mutation(async ({ input }) => {
+  like: os.input(storyLikeInput).handler(async ({ input }) => {
     const result = await toggleStoryLike(input.id, input.direction);
     if (!result) {
       throw new Error("Story not found");
@@ -265,7 +266,7 @@ export const storiesRouter = router({
     return result;
   }),
 
-  delete: publicProcedure.input(storyIdInput).mutation(async ({ input }) => {
+  delete: os.input(storyIdInput).handler(async ({ input }) => {
     const ok = await deleteStoryById(input.id);
     if (!ok) {
       throw new Error("Story not found");
@@ -273,7 +274,7 @@ export const storiesRouter = router({
     return ok;
   }),
 
-  create: publicProcedure
+  create: os
     .input(
       z.object({
         type: z.enum(["image", "video"]).nullable().optional(),
@@ -291,24 +292,24 @@ export const storiesRouter = router({
                 width: z.number().optional(),
                 height: z.number().optional(),
                 duration: z.number().optional(),
-              })
+              }),
             ),
           ])
           .optional(),
-      })
+      }),
     )
-    .mutation(async ({ input }) => {
+    .handler(async ({ input }) => {
       const story = await createStory({
         type: input.type ?? undefined,
         media: (input.media as StoryMediaInput | StoryMediaInput[]) ?? null,
       });
       return story;
     }),
-});
+};
 
-export const appRouter = router({
+export const appRouter = {
   posts: postsRouter,
   stories: storiesRouter,
-});
+};
 
 export type AppRouter = typeof appRouter;

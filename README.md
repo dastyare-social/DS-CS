@@ -35,7 +35,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Better_Auth-1.6-FF6B35" alt="Better Auth" />
-  <img src="https://img.shields.io/badge/tRPC-11-398CCF?logo=tRPC" alt="tRPC" />
+  <img src="https://img.shields.io/badge/oRPC-1.15-398CCF" alt="oRPC" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/Biome-lint--format-60A5FA?logo=biome" alt="Biome" />
 </p>
@@ -184,7 +184,7 @@ DS-CS keeps that reach working for you instead: your content stays discoverable,
 | **SEO built in**            | Sitemap, robots.txt, OpenGraph images, structured data (JSON-LD), Google Search Console integration. |
 | **Animated emoji**          | Optional animated .webp emoji overlays from the Telegram emoji set.                                  |
 | **Admin bootstrap**         | First user created automatically from environment variables.                                         |
-| **REST API + tRPC**         | Full API for headless publishing; tRPC for the internal dashboard.                                   |
+| **REST API + oRPC**         | Full API for headless publishing; oRPC for the internal dashboard.                                   |
 | **Self-hosted**             | Your server, your database, your data. No third parties.                                             |
 | **Docker-ready**            | Multi-stage build, Docker Compose included, one-command deploy.                                      |
 | **Modern stack**            | Next.js 16, React 19, TypeScript, Bun, PostgreSQL, Drizzle ORM, Tailwind CSS.                        |
@@ -496,7 +496,7 @@ src/
 │   │   ├── webhooks/         # Outbound webhook management (REST API)
 │   │   ├── push/             # Web push notification endpoints
 │   │   ├── upload/           # File upload + presigned S3 URLs
-│   │   └── trpc/             # Internal tRPC (used by dashboard)
+│   │   └── rpc/              # Internal oRPC (used by dashboard)
 │   └── docs/                 # Scalar API reference UI
 ├── components/
 │   ├── context-menu.tsx      # Custom right-click/long-press menu (Context + Portal + emoji bar)
@@ -509,11 +509,11 @@ src/
 │   └── ...                   # Other UI components
 ├── lib/
 │   ├── actions/              # Server actions (post/story operations)
-│   ├── api/                  # Shared business logic (used by REST, tRPC, and actions)
+│   ├── api/                  # Shared business logic (used by REST, oRPC, and actions)
 │   ├── auth/                 # Better Auth server + client + API key auth
 │   ├── db/                   # Drizzle schema + migrations + seed
 │   ├── notifications/        # Web push notification logic
-│   └── trpc/                 # tRPC router (dashboard data layer)
+│   └── orpc/                 # oRPC router (dashboard data layer)
 ├── store/                    # Zustand stores (posts, stories, etc.)
 └── styles/                   # Global styles (Tailwind)
 ```

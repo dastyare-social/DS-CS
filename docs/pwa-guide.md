@@ -75,27 +75,30 @@ All rules are **same-origin only**. Cross-origin requests (PostHog, analytics, e
 
 ### SW-side extraction
 
-The SW intercepts tRPC responses and stores posts in IndexedDB in the background:
+The SW intercepts oRPC responses and stores posts in IndexedDB in the background:
 
 ```
-tRPC response -> clone -> parse JSON -> extractPostsFromResponse() -> idbPutAll()
+oRPC response -> clone -> parse JSON -> extractPostsFromResponse() -> idbPutAll()
 ```
 
-### tRPC wire format (superjson)
+### oRPC wire format (Standard RPC)
 
 ```
-[{"result":{"data":{"json":{"items":[...],"page":1,...},"meta":{"values":{...}}}}}]
+request  → POST /api/rpc/posts/list   { "json": { ...input } }
+response → { "json": { "items": [...], "page": 1, ... }, "meta": [[1,"items",0,"createdAt"]] }
 ```
+
+The `meta` array carries type tags for values JSON cannot express (`1` = `Date`). Dates still travel as plain ISO strings inside `json`; oRPC rehydrates them into `Date` objects on the client, so the SW never needs to interpret `meta`.
 
 The `extractPostsFromResponse()` function:
 
-1. Unwraps the batch array
-2. Unwraps `result.data.json` (superjson envelope)
+1. Skips error envelopes (`entry.error !== undefined`)
+2. Reads the `json` payload
 3. Handles both `{items: [...]}` (posts.list) and plain arrays (posts.pinned)
 4. Filters out non-post items (stories with `content === undefined`)
 5. Stores `{id, type, content, media, reactions, views, pinnedAt, createdAt, updatedAt, _cachedAt}`
 
-**Note**: The app itself does NOT read from IndexedDB directly. Posts are always fetched via tRPC. The SW stores posts in IDB purely as a background caching layer.
+**Note**: The app itself does NOT read from IndexedDB directly. Posts are always fetched via oRPC. The SW stores posts in IDB purely as a background caching layer.
 
 ---
 
@@ -293,15 +296,15 @@ const withSerwist = (_config: NextConfig) => _config;
 
 ---
 
-### 3. tRPC Response Not Parsed (superjson)
+### 3. oRPC Response Not Parsed
 
 **Symptom**: Posts not stored in IndexedDB. SW logged nothing.
 
-**Root cause**: tRPC uses `httpBatchLink` + `superjson`, so responses are wrapped in a `{json, meta}` envelope inside the standard tRPC batch format. The original parser expected raw `{items: [...]}` format.
+**Root cause (historical, under tRPC + superjson)**: responses were wrapped in a `{json, meta}` envelope inside the tRPC batch array format, so a parser expecting raw `{items: [...]}` found nothing.
 
-**Fix**: Updated `extractPostsFromResponse()` to unwrap `result.data.json` (superjson envelope) and handle both array and `{items: [...]}` formats.
+**Fix (historical)**: `extractPostsFromResponse()` unwrapped `result.data.json` and handled both array and `{items: [...]}` formats. Commit `96aa5eb`.
 
-**Commit**: `96aa5eb`
+**Current (oRPC)**: the envelope is top-level `{ json, meta }` with no batch array. If posts stop appearing here after an oRPC change, diff the response shape against `{"json": {...}, "meta": [...]}` above.
 
 ---
 

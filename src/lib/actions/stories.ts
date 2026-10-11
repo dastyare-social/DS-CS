@@ -1,4 +1,4 @@
-import { trpc } from "@/lib/trpc/client";
+import { orpc } from "@/lib/orpc/client";
 import { captureClientEvent } from "@/lib/analytics/client";
 import type {
   GetStoriesParams,
@@ -15,12 +15,12 @@ export async function getStories(params?: GetStoriesParams | null) {
     search: params?.search ?? undefined,
     type: params?.type ?? undefined,
   };
-  return trpc.stories.list.query(safe);
+  return orpc.stories.list(safe);
 }
 
 export async function countStories() {
   try {
-    const result = await trpc.stories.count.query();
+    const result = await orpc.stories.count();
     return result.total;
   } catch (err) {
     console.error("countStories failed:", err);
@@ -29,11 +29,11 @@ export async function countStories() {
 }
 
 export async function getStoryById(id: string) {
-  return trpc.stories.getById.query({ id });
+  return orpc.stories.getById({ id });
 }
 
 export async function incrementStoryViews(id: string) {
-  const result = await trpc.stories.view.mutate({ id });
+  const result = await orpc.stories.view({ id });
   void captureClientEvent("story_viewed", {
     story_id: id,
     views: result?.views,
@@ -42,7 +42,7 @@ export async function incrementStoryViews(id: string) {
 }
 
 export async function toggleStoryLike(id: string, direction: "inc" | "dec") {
-  const result = await trpc.stories.like.mutate({ id, direction });
+  const result = await orpc.stories.like({ id, direction });
   void captureClientEvent("story_liked", {
     story_id: id,
     direction,
@@ -60,7 +60,7 @@ export async function createStoryAction(media: {
   const type = media.url.toLowerCase().match(/\.(mp4|webm|mov|avi|mkv|m4v)$/)
     ? "video"
     : "image";
-  const result = await trpc.stories.create.mutate({ type, media });
+  const result = await orpc.stories.create({ type, media });
   void captureClientEvent("story_created", {
     story_id: result.id,
     type,
@@ -69,7 +69,7 @@ export async function createStoryAction(media: {
 }
 
 export async function deleteStoryAction(id: string) {
-  const ok = await trpc.stories.delete.mutate({ id });
+  const ok = await orpc.stories.delete({ id });
   if (ok) {
     void captureClientEvent("story_deleted", {
       story_id: id,
