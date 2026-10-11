@@ -103,7 +103,7 @@ export default function ShortItem({
         {/* PRE-DOWNLOAD LOADER */}
         {videoPreloadStates[index] && (
           <div className="absolute inset-0 z-[9] flex items-center justify-center bg-black">
-            <Loader className="size-10 border border-white/20 text-white/70 p-2 rounded-full bg-black/40 backdrop-blur-2xl" />
+            <Loader className="liquid-glass-dark size-10 text-white/70 p-2 rounded-full [--liquid-glass-bg:color-mix(in_srgb,black_40%,transparent)]" />
           </div>
         )}
 

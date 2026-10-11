@@ -177,11 +177,11 @@ export default function UploadStoryModal({
     <>
       <Dialog open={open} onOpenChange={(o) => !o && requestClose()}>
         <DialogContent onInteractOutside={(e) => e.preventDefault()}>
-          <div className="relative w-full overflow-hidden flex items-center justify-center border border-secondary/5 backdrop-blur-3xl bg-white/50 aspect-9/16 min-w-xs max-w-xs">
+          <div className="liquid-glass relative w-full overflow-hidden flex items-center justify-center aspect-9/16 min-w-xs max-w-xs">
             <button
               type="button"
               onClick={requestClose}
-              className="absolute top-3 right-3 z-20 p-2 hover:cursor-pointer rounded-full bg-black/10 backdrop-blur-xs border border-white/10 hover:bg-black/20 transition-colors text-white"
+              className="liquid-glass-dark absolute top-3 right-3 z-20 p-2 hover:cursor-pointer rounded-full transition-colors text-white"
             >
               <XIcon className="size-5 stroke-1" />
             </button>
@@ -190,7 +190,7 @@ export default function UploadStoryModal({
               <button
                 type="button"
                 onClick={handleStartUpload}
-                className="absolute bottom-3 right-3 z-20 p-2 hover:cursor-pointer rounded-full bg-black/10 backdrop-blur-xs border border-white/10 hover:bg-black/20 transition-colors text-white"
+                className="liquid-glass-dark absolute bottom-3 right-3 z-20 p-2 hover:cursor-pointer rounded-full transition-colors text-white"
               >
                 <ArrowRightIcon className="size-5 stroke-1" />
               </button>
@@ -208,7 +208,7 @@ export default function UploadStoryModal({
                 <button
                   type="button"
                   onClick={handleStartUpload}
-                  className="progress-ring text-white bg-white/10 backdrop-blur-xs rounded-full px-2.5 text-md transition-all duration-300 flex items-center gap-x-2 cursor-pointer outline-none hover:bg-white/20"
+                  className="progress-ring liquid-glass-dark text-white rounded-full px-2.5 text-md transition-all duration-300 flex items-center gap-x-2 cursor-pointer outline-none"
                   style={
                     { "--ring-progress": "0%" } as React.CSSProperties
                   }
@@ -221,7 +221,7 @@ export default function UploadStoryModal({
               (phase === "uploading" || phase === "creating" || phase === "done") && (
                 <div className="absolute flex flex-col justify-center items-center gap-y-2 z-10">
                   <div
-                    className="progress-ring text-white bg-white/10 backdrop-blur-xs rounded-full px-2.5 text-md transition-all duration-300"
+                    className="progress-ring liquid-glass-dark text-white rounded-full px-2.5 text-md transition-all duration-300"
                     style={
                       {
                         "--ring-progress": `${ringProgress}%`,

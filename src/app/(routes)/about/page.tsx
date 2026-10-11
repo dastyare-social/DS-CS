@@ -152,7 +152,7 @@ const Page = () => {
           <Button
             variant="primary"
             asChild
-            className="text-sm md:text-sm px-3.5 py-1.5 backdrop-blur-3xl text-nowrap"
+            className="text-sm md:text-sm px-3.5 py-1.5 text-nowrap"
           >
             <Link href="/">View My Channel</Link>
           </Button>

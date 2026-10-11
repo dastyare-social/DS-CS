@@ -34,7 +34,7 @@ const ProfileModal = ({ opened }: { opened?: boolean }) => {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center gap-y-2.5 py-6 px-6 w-3xs border border-secondary/5 min-h-70 rounded-3xl bg-background/50 backdrop-blur-3xl">
+    <div className="liquid-glass flex flex-col justify-center items-center gap-y-2.5 py-6 px-6 w-3xs min-h-70 rounded-3xl">
       <div className="aspect-square mt-3 rounded-full border border-secondary/5 overflow-hidden">
         <Stories size={85} opened={opened} />
       </div>

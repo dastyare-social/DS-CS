@@ -12,6 +12,7 @@ import {
 import Stories from "./stories";
 import Reaction from "./reaction";
 import Loader from "./loader";
+import LazyImageLoader from "./lazy-image-loader";
 import ImageSlider from "./image-slider";
 import type { PostWithReactions } from "@/lib/api/posts";
 import { Dialog, DialogContent, DialogTrigger } from "./dialog";
@@ -1036,7 +1037,7 @@ const Post = memo(
             </DialogTrigger>
             <DialogContent>
               <div
-                className="relative w-full min-w-sm max-w-xl max-h-[560px] overflow-hidden backdrop-blur-3xl p-1 border border-secondary/5 bg-white/50"
+                className="liquid-glass relative w-full min-w-sm max-w-xl max-h-[560px] overflow-hidden p-1"
                 style={{ aspectRatio }}
               >
                 <SafeImage
@@ -1105,9 +1106,9 @@ const Post = memo(
               />
 
               {!inlineVideoReady && (
-                <div className="absolute inset-0 flex items-center justify-center">
+                <LazyImageLoader>
                   <Loader className="size-10 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
-                </div>
+                </LazyImageLoader>
               )}
 
               <div
@@ -1116,15 +1117,15 @@ const Post = memo(
                   !inlineVideoReady && "opacity-0",
                 )}
               >
-                <PlayIcon className="stroke-1 rounded-full bg-black/10 backdrop-blur-sm border-[1.5px] border-white/20 p-2 size-12" />
+                <PlayIcon className="liquid-glass-dark stroke-1 rounded-full p-2 size-12 [--liquid-glass-border-width:1.5px]" />
               </div>
             </div>
             <DialogContent>
-              <div className="relative flex items-center justify-center w-[calc(100vw-70px)] sm:w-fit overflow-hidden backdrop-blur-3xl border border-secondary/5 bg-white/50">
+              <div className="liquid-glass relative flex items-center justify-center w-[calc(100vw-70px)] sm:w-fit overflow-hidden">
                 {dialogVideoState !== "ready" && (
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <LazyImageLoader>
                     <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
-                  </div>
+                  </LazyImageLoader>
                 )}
                 <video
                   src={src}
@@ -1226,7 +1227,7 @@ const Post = memo(
 
                 <div
                   className={cn(
-                    "rounded-2xl border border-secondary/5 bg-secondary/1 px-3.5 py-2 max-w-2xs min-w-[220px] backdrop-blur-sm bg-white/10",
+                    "liquid-glass rounded-2xl px-3.5 py-2 max-w-2xs min-w-[220px]",
                     highlighted && "ring-2 ring-primary/5 bg-primary/3 text-primary",
                   )}
                 >

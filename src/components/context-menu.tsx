@@ -383,7 +383,7 @@ export const ContextMenuContent = React.forwardRef<
         }}
         className={cn(
           // same style as your Radix version
-          "backdrop-blur-3xl z-50 max-h-[min(80vh,400px)] min-w-[8rem] transition-[opacity,transform] duration-500 overflow-x-hidden overflow-y-auto rounded-xl border border-secondary/5 bg-background/80 p-1 text-foreground",
+          "liquid-glass z-50 max-h-[min(80vh,400px)] min-w-[8rem] transition-[opacity,transform] duration-500 overflow-x-hidden overflow-y-auto rounded-xl p-1 text-foreground",
           // animations — using tw-animate-css / tailwind animate utils
           "animate-in fade-in-0 zoom-in-95",
           className,
@@ -721,7 +721,7 @@ export const ContextMenuSubContent = React.forwardRef<
         ...style,
       }}
       className={cn(
-        "backdrop-blur-3xl z-50 max-h-[min(80vh,400px)] min-w-[8rem] overflow-x-hidden overflow-y-auto rounded-xl border border-secondary/5 bg-background/80 p-1 text-foreground",
+        "liquid-glass z-50 max-h-[min(80vh,400px)] min-w-[8rem] overflow-x-hidden overflow-y-auto rounded-xl p-1 text-foreground",
         "animate-in fade-in-0 zoom-in-95",
         className,
       )}
@@ -849,7 +849,7 @@ export function ContextMenuEmojiBar({
           transform: room.placeBelow ? "none" : "translateY(-100%)",
         }}
         className={cn(
-          "z-50 rounded-full border border-secondary/5 bg-background/80 backdrop-blur-3xl px-1 pt-2.5 pb-2 text-foreground",
+          "liquid-glass z-50 rounded-full px-1 pt-2.5 pb-2 text-foreground",
           "flex items-center overflow-x-auto none-scroll-bar select-none",
           "animate-in fade-in-0 zoom-in-95 duration-500 transition-[opacity,transform]",
           className,

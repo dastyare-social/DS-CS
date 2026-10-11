@@ -1,0 +1,35 @@
+{
+  "name": "ds-cs",
+  "version": "0.1.0",
+  "description": "CLI for Dastyare Social — CS. Install DS-CS skills and third-party agent skills, wire up MCP, and authenticate to a channel.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "ds-cs": "./bin/ds-cs.mjs"
+  },
+  "exports": {
+    ".": "./bin/ds-cs.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "dev": "node ./bin/ds-cs.mjs"
+  },
+  "keywords": [
+    "ds-cs",
+    "dastyare-social",
+    "agent-skills",
+    "skills",
+    "mcp",
+    "cli",
+    "ai"
+  ],
+  "dependencies": {}
+}

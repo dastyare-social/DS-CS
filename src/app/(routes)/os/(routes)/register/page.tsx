@@ -37,7 +37,7 @@ const Page = () => {
   // Handle "Continue" click – validate email and reveal password
   const handleContinue = () => {
     if (!email.trim()) {
-      setError(t("general.email_required") || "Email is required");
+      setError(t("general.email_required"));
       return;
     }
     setError(null);
@@ -54,7 +54,7 @@ const Page = () => {
   // Handle final sign-in
   const handleSignIn = async () => {
     if (!email.trim() || !password.trim()) {
-      setError(t("general.all_fields_required") || "All fields are required");
+      setError(t("general.all_fields_required"));
       return;
     }
     setLoading(true);
@@ -71,11 +71,7 @@ const Page = () => {
 
       if (signInError) {
         // Better Auth returns an error object with a message
-        throw new Error(
-          signInError.message ||
-            t("general.login_error") ||
-            "Invalid credentials",
-        );
+        throw new Error(signInError.message || t("general.login_error"));
       }
 
       // If no error and no redirect happened (e.g., callbackURL not used),
@@ -88,7 +84,9 @@ const Page = () => {
       // }
     } catch (err: unknown) {
       setError(
-        err instanceof Error ? err.message : t("general.login_error") || "Invalid credentials",
+        err instanceof Error && err.message
+          ? err.message
+          : t("general.login_error"),
       );
     } finally {
       setLoading(false);

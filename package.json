@@ -1,7 +1,7 @@
 {
   "name": "ds_cs",
   "author": "Dastyare Social — Team",
-  "version": "0.3.7",
+  "version": "0.4.0",
   "scripts": {
     "dev": "bun run generate:config && bun run generate:icons && next dev -p 8729",
     "build": "bun run generate:config && bun run generate:icons && bun run upload:emojis && bun run db:migrate && bun run bootstrap:admin && next build",
@@ -57,6 +57,7 @@
     "drizzle-zod": "^0.8.3",
     "ffmpeg-probe": "^1.0.6",
     "gsap": "^3.14.2",
+    "img-fx": "^0.5.1",
     "lucide-react": "^1.7.0",
     "next": "16.2.2",
     "next-intl": "^4.9.0",
@@ -73,6 +74,7 @@
     "sharp": "^0.34.5",
     "tailwind-merge": "^3.5.0",
     "takumi-js": "^2.2.2",
+    "three": "^0.186.1",
     "web-push": "^3.6.7",
     "zod": "^4.4.3",
     "zustand": "^5.0.15"

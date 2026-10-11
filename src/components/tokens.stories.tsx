@@ -40,6 +40,25 @@ const TOKEN_GROUPS: Array<{ group: string; tokens: TokenSpec[] }> = [
       { name: "selection-background", var: "--selection-background" },
     ],
   },
+  {
+    group: "Liquid glass",
+    tokens: [
+      { name: "liquid-glass-blur", var: "--liquid-glass-blur" },
+      { name: "liquid-glass-saturate", var: "--liquid-glass-saturate" },
+      { name: "liquid-glass-bg", var: "--liquid-glass-bg" },
+      { name: "liquid-glass-wash-top", var: "--liquid-glass-wash-top" },
+      { name: "liquid-glass-wash-bottom", var: "--liquid-glass-wash-bottom" },
+      {
+        name: "liquid-glass-border-width",
+        var: "--liquid-glass-border-width",
+      },
+      {
+        name: "liquid-glass-border-color",
+        var: "--liquid-glass-border-color",
+      },
+      { name: "liquid-glass-sheen", var: "--liquid-glass-sheen" },
+    ],
+  },
 ];
 
 function TokensGallery() {

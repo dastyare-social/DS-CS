@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import SafeImage from "./safe-image";
 import { Dialog, DialogContent, DialogTrigger } from "./dialog";
 import Loader from "./loader";
+import LazyImageLoader from "./lazy-image-loader";
 import { cn } from "@/lib/utils";
 
 type MediaItem = {
@@ -84,14 +85,14 @@ export default function ImageSlider({ media, content }: ImageSliderProps) {
 
           {/* Loader while media loads */}
           {mediaLoading && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <LazyImageLoader>
               <Loader className="size-10 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
-            </div>
+            </LazyImageLoader>
           )}
 
           {/* —— slide counter —— */}
           {media.length > 1 && (
-            <div className="absolute top-3 right-3 text-white bg-white/10 backdrop-blur-xs border border-white/20 rounded-full px-1.5 py-0.5 text-xs leading-none">
+            <div className="liquid-glass-dark absolute top-3 right-3 text-white rounded-full px-1.5 py-0.5 text-xs leading-none">
               {currentIndex + 1} / {media.length}
             </div>
           )}
@@ -100,7 +101,7 @@ export default function ImageSlider({ media, content }: ImageSliderProps) {
       <DialogContent>
         <div
           onClick={handleSlideClick}
-          className="relative w-full min-w-sm max-w-xl max-h-[560px] overflow-hidden backdrop-blur-3xl p-1 border border-secondary/5 bg-white/50 cursor-pointer select-none"
+          className="liquid-glass relative w-full min-w-sm max-w-xl max-h-[560px] overflow-hidden p-1 cursor-pointer select-none"
           style={{ aspectRatio }}
         >
           <SafeImage
@@ -117,13 +118,15 @@ export default function ImageSlider({ media, content }: ImageSliderProps) {
           {/* Loader while media loads */}
           {mediaLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
+              <LazyImageLoader>
+                <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
+              </LazyImageLoader>
             </div>
           )}
 
           {/* Slide counter — same style as "wait — creating story" pill, thinner border */}
           {media.length > 1 && (
-            <div className="absolute top-5 right-5 text-white bg-white/10 backdrop-blur-xs border border-white/20 rounded-full px-1.5 py-0.5 text-sm leading-none">
+            <div className="liquid-glass-dark absolute top-5 right-5 text-white rounded-full px-1.5 py-0.5 text-sm leading-none">
               {currentIndex + 1} / {media.length}
             </div>
           )}
@@ -135,10 +138,10 @@ export default function ImageSlider({ media, content }: ImageSliderProps) {
                 <div
                   key={index}
                   className={cn(
-                    "w-3 h-3 rounded-full border backdrop-blur-xs transition-all duration-200",
+                    "liquid-glass-dark w-3 h-3 rounded-full transition-all duration-200",
                     index === currentIndex
-                      ? "bg-white/80 border-white/60"
-                      : "bg-white/10 border-white/40",
+                      ? "[--liquid-glass-bg:color-mix(in_srgb,white_80%,transparent)] [--liquid-glass-border-color:color-mix(in_srgb,white_60%,transparent)]"
+                      : "[--liquid-glass-bg:color-mix(in_srgb,white_10%,transparent)] [--liquid-glass-border-color:color-mix(in_srgb,white_40%,transparent)]",
                   )}
                 />
               ))}

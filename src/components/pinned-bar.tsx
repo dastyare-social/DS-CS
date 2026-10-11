@@ -61,7 +61,7 @@ export default function PinnedBar({
     >
       <div
         onClick={onCycle}
-        className="w-full backdrop-blur-md border border-secondary/5 cursor-pointer px-3 py-2 rounded-2xl bg-background/50"
+        className="w-full liquid-glass cursor-pointer px-3 py-2 rounded-2xl"
       >
         <div className="flex items-center gap-x-2.5">
           <PinIcon className="size-5 stroke-[1.5px] rotate-45 shrink-0" />

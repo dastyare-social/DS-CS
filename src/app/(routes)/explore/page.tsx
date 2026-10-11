@@ -832,7 +832,7 @@ export default function Page() {
                 pauseAllVideos();
                 setExploreState("shorts");
               }}
-                className="flex sm:hidden opacity-80 size-12 stroke-1 hover:opacity-100 bg-primary/5 border border-primary/10 rounded-full p-1 text-primary backdrop-blur-3xl"
+                className="liquid-glass flex sm:hidden opacity-80 size-12 stroke-1 hover:opacity-100 rounded-full p-1 text-primary"
               />
             </div>
           )}
@@ -845,7 +845,7 @@ export default function Page() {
           >
             <Dialog>
               <DialogTrigger asChild>
-                <Button className="text-sm md:text-sm px-3.5 py-1.5 backdrop-blur-3xl bg-white/50">
+                <Button className="text-sm md:text-sm px-3.5 py-1.5">
                   {t("general.join_my_channel")}
                 </Button>
               </DialogTrigger>

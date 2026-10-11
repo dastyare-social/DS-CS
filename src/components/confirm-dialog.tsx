@@ -37,7 +37,7 @@ export default function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={handleCancel}>
       <DialogContent
-        className="w-[85vw] max-w-3xs bg-background/80 backdrop-blur-3xl border border-secondary/10 rounded-3xl p-0 overflow-hidden"
+        className="liquid-glass w-[85vw] max-w-3xs rounded-3xl p-0 overflow-hidden"
         showCloseButton={false}
       >
         <div className="flex flex-col justify-center items-center gap-y-0.5 py-6 px-6 text-center">

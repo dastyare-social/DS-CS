@@ -139,7 +139,7 @@ export default function InstallBanner() {
       ref={barRef}
       className="fixed bottom-[calc(var(--chat-footer-height)-5px)] left-1/2 -translate-x-1/2 w-full max-w-sm z-40 px-4 pt-2.5"
     >
-      <div className="w-full flex items-center gap-x-2.5 rounded-2xl border border-secondary/5 bg-white/50 backdrop-blur-md px-3 py-2">
+      <div className="liquid-glass w-full flex items-center gap-x-2.5 rounded-2xl px-3 py-2">
         <p className="flex-1 min-w-0 text-[15px] text-secondary/90">
           {t("general.install_app_text")}
         </p>

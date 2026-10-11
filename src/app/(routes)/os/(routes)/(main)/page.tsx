@@ -25,10 +25,21 @@ import {
   UploadIcon,
   WifiOffIcon,
   XIcon,
+  XCircleIcon,
+  EyeIcon,
+  GalleryHorizontalIcon,
+  GalleryVerticalEndIcon,
 } from "lucide-react";
 import { filterString } from "@/lib/filters";
 import Header from "@/components/header";
 import PinnedBar from "@/components/pinned-bar";
+import LazyImageLoader from "@/components/lazy-image-loader";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/context-menu";
 import UpdateBanner from "@/components/update-banner";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
 import type { MediaPayload, PostWithReactions } from "@/lib/api/posts";
@@ -121,126 +132,160 @@ const VoiceAttachment = ({
   );
 
   return (
-    <div
-      dir="ltr"
-      className={cn(
-        "relative rounded-2xl border border-primary/5 bg-primary/5 px-3 py-2 flex items-center gap-3",
-        error && "cursor-pointer",
-      )}
-      onClick={error ? onRetry : undefined}
-    >
-      {/* Progress button — same ring as posts' download circle */}
-      <button
-        type="button"
-        onClick={error ? onRetry : ready ? togglePlay : undefined}
-        disabled={!ready && !error}
-        className="relative flex items-center justify-center rounded-full outline-none border-[1.5px] border-primary/10 hover:bg-primary/3 cursor-pointer text-primary/60 w-9 h-9 disabled:cursor-default disabled:hover:bg-transparent"
-      >
-        {!error && !ready && (
-          <svg className="absolute inset-0 h-full w-full -rotate-90">
-            <circle
-              cx="50%"
-              cy="50%"
-              r="45%"
-              className="stroke-primary/20"
-              strokeWidth="2"
-              fill="none"
-            />
-            <circle
-              cx="50%"
-              cy="50%"
-              r="45%"
-              className="stroke-primary"
-              strokeWidth="2"
-              fill="none"
-              strokeDasharray={circumference}
-              strokeDashoffset={(1 - ratio) * circumference}
-              strokeLinecap="round"
-            />
-          </svg>
-        )}
-        {error ? (
-          <RotateCcwIcon className="w-5 h-5 relative z-10 stroke-1" />
-        ) : !ready ? (
-          done ? (
-            <CheckIcon className="w-5 h-5 relative z-10 stroke-1" />
-          ) : (
-            <UploadIcon className="w-5 h-5 relative z-10 stroke-1 animate-pulse" />
-          )
-        ) : playing ? (
-          <PauseIcon className="w-5 h-5 relative z-10 stroke-1" />
-        ) : (
-          <PlayIcon className="w-5 h-5 relative z-10 stroke-1" />
-        )}
-      </button>
-
-      {ready && (
-        <audio
-          ref={audioRef}
-          src={objectUrl ?? undefined}
-          preload="metadata"
-          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-          onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-          onEnded={() => setPlaying(false)}
-          className="hidden"
-        />
-      )}
-
-      <div className="flex-1 flex flex-col gap-1">
-        <div
-          onClick={handleWaveformClick}
-          className={cn(
-            "w-40 max-w-full h-10 flex items-center gap-[2px]",
-            ready && "cursor-pointer select-none",
-          )}
-        >
-          {bars.map((h, idx) => {
-            const barRatio = bars.length > 1 ? idx / (bars.length - 1) : 0;
-            // Upload progress tint before ready, playback fill after — same
-            // colors as posts' VoicePlayer (download /20, played /50)
-            let bgClass = "bg-primary/10";
-            if (!ready && !error && ratio >= barRatio)
-              bgClass = "bg-primary/20";
-            if (ready && playedRatio >= barRatio) bgClass = "bg-primary/50";
-            return (
-              <div
-                key={idx}
-                className={cn(
-                  "flex-1 rounded-full transition-colors duration-150",
-                  bgClass,
-                )}
-                style={{ height: `${h}px` }}
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+          <div
+            dir="ltr"
+            className={cn(
+              "relative rounded-2xl border border-primary/5 bg-primary/5 px-3 py-2 flex items-center gap-3",
+              error && "cursor-pointer",
+            )}
+            onClick={error ? onRetry : undefined}
+          >
+            {/* Progress button — same ring as posts' download circle */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (error) onRetry();
+                else if (ready) togglePlay();
+              }}
+              disabled={!ready && !error}
+              className="relative flex items-center justify-center rounded-full outline-none border-[1.5px] border-primary/10 hover:bg-primary/3 cursor-pointer text-primary/60 w-9 h-9 disabled:cursor-default disabled:hover:bg-transparent"
+            >
+          {!error && !ready && (
+            <svg className="absolute inset-0 h-full w-full -rotate-90">
+              <circle
+                cx="50%"
+                cy="50%"
+                r="45%"
+                className="stroke-primary/20"
+                strokeWidth="2"
+                fill="none"
               />
-            );
-          })}
-        </div>
-
-        <div className="flex items-center justify-between text-[11px] text-primary">
-          {uploading ? (
-            <span>Uploading {Math.floor(ratio * 100)}%</span>
-          ) : error ? (
-            <span>Failed — Try Again</span>
-          ) : ready && duration ? (
-            <>
-              <span className="opacity-60 tabular-nums">
-                {formatTime(currentTime)} / {formatTime(duration)}
-              </span>
-              <span className="opacity-60">{formatSize(file.size)}</span>
-            </>
-          ) : (
-            <span className="opacity-60">done</span>
+              <circle
+                cx="50%"
+                cy="50%"
+                r="45%"
+                className="stroke-primary"
+                strokeWidth="2"
+                fill="none"
+                strokeDasharray={circumference}
+                strokeDashoffset={(1 - ratio) * circumference}
+                strokeLinecap="round"
+              />
+            </svg>
           )}
-        </div>
-      </div>
+          {error ? (
+            <RotateCcwIcon className="w-5 h-5 relative z-10 stroke-1" />
+          ) : !ready ? (
+            done ? (
+              <CheckIcon className="w-5 h-5 relative z-10 stroke-1" />
+            ) : (
+              <UploadIcon className="w-5 h-5 relative z-10 stroke-1 animate-pulse" />
+            )
+          ) : playing ? (
+            <PauseIcon className="w-5 h-5 relative z-10 stroke-1" />
+          ) : (
+            <PlayIcon className="w-5 h-5 relative z-10 stroke-1" />
+          )}
+        </button>
 
-      <button
-        type="button"
-        onClick={onRemove}
-        className="absolute -top-1.5 -right-1.5 z-10 p-1 hover:cursor-pointer rounded-full bg-black/10 backdrop-blur-xs border border-white/10 hover:bg-black/20 transition-colors text-white"
-      >
-        <XIcon className="size-2.5 stroke-[1.5px]" />
-      </button>
-    </div>
+        {ready && (
+          <audio
+            ref={audioRef}
+            src={objectUrl ?? undefined}
+            preload="metadata"
+            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+            onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+            onEnded={() => setPlaying(false)}
+            className="hidden"
+          />
+        )}
+
+        <div className="flex-1 flex flex-col gap-1">
+          <div
+            onClick={handleWaveformClick}
+            className={cn(
+              "w-40 max-w-full h-10 flex items-center gap-[2px]",
+              ready && "cursor-pointer select-none",
+            )}
+          >
+            {bars.map((h, idx) => {
+              const barRatio = bars.length > 1 ? idx / (bars.length - 1) : 0;
+              // Upload progress tint before ready, playback fill after — same
+              // colors as posts' VoicePlayer (download /20, played /50)
+              let bgClass = "bg-primary/10";
+              if (!ready && !error && ratio >= barRatio)
+                bgClass = "bg-primary/20";
+              if (ready && playedRatio >= barRatio) bgClass = "bg-primary/50";
+              return (
+                <div
+                  key={idx}
+                  className={cn(
+                    "flex-1 rounded-full transition-colors duration-150",
+                    bgClass,
+                  )}
+                  style={{ height: `${h}px` }}
+                />
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] text-primary">
+            {uploading ? (
+              <span>Uploading {Math.floor(ratio * 100)}%</span>
+            ) : error ? (
+              <span>Failed — Try Again</span>
+            ) : ready && duration ? (
+              <>
+                <span className="opacity-60 tabular-nums">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
+                <span className="opacity-60">{formatSize(file.size)}</span>
+              </>
+            ) : (
+              <span className="opacity-60">done</span>
+            )}
+          </div>
+        </div>
+        </div>
+      </ContextMenuTrigger>
+
+      <ContextMenuContent className="w-44">
+        {/* Same as clicking the waveform: toggles playback in place. */}
+        {ready && (
+          <ContextMenuItem
+            className="flex gap-x-2 py-1.5"
+            onClick={() => {
+              if (audioRef.current?.paused) void audioRef.current.play();
+              else audioRef.current?.pause();
+              setPlaying(!(audioRef.current?.paused ?? true));
+            }}
+          >
+            <div className="flex-1">{playing ? "Pause audio" : "Play audio"}</div>
+            {playing ? (
+              <PauseIcon className="stroke-[1.5px] size-4" />
+            ) : (
+              <PlayIcon className="stroke-[1.5px] size-4" />
+            )}
+          </ContextMenuItem>
+        )}
+
+        <ContextMenuItem
+          className="flex gap-x-2 py-1.5"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+        >
+          <div className="flex-1">
+            {uploading ? "Cancel upload" : "Remove from post"}
+          </div>
+          <XCircleIcon className="stroke-[1.5px] size-4" />
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 };
 
@@ -375,49 +420,74 @@ function useDoneRevealTimer(done: boolean) {
   return doneExpired;
 }
 
-const UploadPillOverlay = ({
-  progress,
-  uploading,
-}: {
-  progress: number;
-  uploading: boolean;
-}) => (
-  <div className="absolute inset-0 z-10 bg-black/50 rounded-2xl flex items-center justify-center p-1 pointer-events-none">
+/* Overlay glass for image/video thumbnails. Deliberately barely-there: a hint
+   of tint plus the blur and rim, so the media reads through it rather than
+   being hidden behind a scrim. */
+const overlayGlass =
+  "liquid-glass-dark [--liquid-glass-bg:color-mix(in_srgb,black_6%,transparent)] " +
+  "[--liquid-glass-wash-top:color-mix(in_srgb,white_4%,transparent)] " +
+  "[--liquid-glass-wash-bottom:transparent] " +
+  "[--liquid-glass-border-color:transparent]";
+
+/* The small centred control needs real contrast, which a 6% wash cannot give
+   over an arbitrary photo. It carries its own opaque chip — small enough that
+   the picture still shows around it. This is also what keeps the white ring
+   stroke and white icon legible now that the ring colours are tokens. */
+const controlGlass =
+  "liquid-glass-dark [--liquid-glass-bg:color-mix(in_srgb,black_55%,transparent)] " +
+  "[--liquid-glass-wash-top:color-mix(in_srgb,white_12%,transparent)]";
+
+/* Uploading — a full-round progress ring on the image. The numeric text sits
+   below the image (see StatusText), not inside the ring. */
+const UploadRingOverlay = ({ progress }: { progress: number }) => (
+  <div
+    className={cn(
+      "absolute inset-[2px] z-10 grid place-items-center pointer-events-none",
+      overlayGlass,
+    )}
+  >
     <div
-      className="progress-ring progress-ring-sm text-white bg-white/10 backdrop-blur-xs rounded-full px-1.5 py-0.5 text-[10px] leading-none whitespace-nowrap transition-all duration-300"
+      className={cn(
+        "progress-ring progress-ring-sm rounded-full size-8",
+        controlGlass,
+      )}
       style={{ "--ring-progress": `${progress}%` } as React.CSSProperties}
-    >
-      {uploading ? `${Math.round(progress)} / 100` : "done"}
-    </div>
+    />
   </div>
 );
 
-const ErrorOverlay = ({ onRetry }: { onRetry: () => void }) => (
-  <div className="absolute inset-0 z-10 bg-black/50 rounded-2xl flex items-center justify-center p-1">
+/* Failed — retry icon on the image, larger, still clickable. The label moves
+   below the image; nothing on the overlay tints it red. */
+const RetryOverlay = ({ onRetry }: { onRetry: () => void }) => (
+  <div
+    className={cn(
+      "absolute inset-[2px] z-10 grid place-items-center",
+      overlayGlass,
+    )}
+  >
     <button
       type="button"
+      aria-label="Retry upload"
       onClick={(e) => {
         e.stopPropagation();
         onRetry();
       }}
-      className="progress-ring progress-ring-sm text-white bg-white/10 backdrop-blur-xs rounded-full px-1.5 py-0.5 text-[10px] leading-none transition-all duration-300 flex items-center gap-x-1 cursor-pointer outline-none max-w-full"
+      className={cn(
+        "progress-ring progress-ring-sm text-white rounded-full p-2 grid place-items-center cursor-pointer outline-none",
+        controlGlass,
+      )}
       style={{ "--ring-progress": "0%" } as React.CSSProperties}
     >
-      <RotateCcwIcon className="size-2.5 stroke-[1.5] shrink-0" />
-      <span className="truncate">Failed — Try Again</span>
+      <RotateCcwIcon className="size-6 stroke-[1.5px] shrink-0" />
     </button>
   </div>
 );
 
-const RemoveBadge = ({ onClick }: { onClick: () => void }) => (
-  <div
-    onClick={(e) => {
-      e.stopPropagation();
-      onClick();
-    }}
-    className="absolute -top-1 -right-1 z-20 p-0.5 cursor-pointer rounded-full bg-black/10 backdrop-blur-xs border border-white/10 hover:bg-black/20 transition-colors text-white"
-  >
-    <XIcon className="size-3 stroke-[1.5px]" />
+/* Status line — outside the bordered media box, below it. Clamped to two
+   lines at the thumbnail width so long labels wrap instead of overflowing. */
+const StatusText = ({ children }: { children: React.ReactNode }) => (
+  <div className="pt-1 text-center text-[12px] leading-[1.3] text-foreground/60 line-clamp-2 break-words px-0.5">
+    {children}
   </div>
 );
 
@@ -440,72 +510,138 @@ const MediaAttachment = ({
   const doneExpired = useDoneRevealTimer(done);
   const showOverlay = uploading || (done && !doneExpired);
   const objectUrl = useObjectUrl(file);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const viewable = error === null && media !== null && objectUrl !== null;
 
-  const thumbClasses =
-    "relative block w-20 h-20 border border-primary/5 bg-primary/3 flex justify-center items-center rounded-2xl";
+  const viewLabel = isImage ? "View image" : "View video";
+  const removeLabel = uploading ? "Cancel upload" : "Remove from post";
 
-  const thumb = (
-    <>
-      <div className="w-full h-full overflow-hidden rounded-2xl">
-        {objectUrl &&
-          (isImage ? (
-            <img
-              src={objectUrl}
-              alt=""
-              draggable={false}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <video
-              src={objectUrl}
-              muted
-              playsInline
-              preload="metadata"
-              className="w-full h-full object-cover"
-            />
-          ))}
-      </div>
+  /* Square, unrounded media box — matches how images and videos are rendered
+     everywhere else in the app (see post.tsx renderMedia). Only the surrounding
+     glass panel is rounded, never the media itself. */
+  const thumbClasses = "relative block w-24 h-24 border border-primary/5 bg-primary/3";
 
-      {showOverlay && (
-        <UploadPillOverlay progress={progress} uploading={uploading} />
+  /* The media itself sits 2px inside the border and carries 1px of its own
+     padding, mirroring the parent's 1px border. */
+  const mediaBox =
+    "absolute inset-[2px] p-px overflow-hidden";
+
+  const mediaFrame = (
+    <div className={mediaBox}>
+      {objectUrl ? (
+        isImage ? (
+          <img
+            src={objectUrl}
+            alt=""
+            draggable={false}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <video
+            src={objectUrl}
+            muted
+            playsInline
+            preload="metadata"
+            className="w-full h-full object-cover"
+          />
+        )
+      ) : (
+        /* Nothing decoded yet — the WebGL effect fills the gap, armed only
+           if the upload is slow enough to still be loading at 300ms. */
+        <LazyImageLoader />
       )}
-      {error && <ErrorOverlay onRetry={onRetry} />}
-      <RemoveBadge onClick={onRemove} />
-    </>
+    </div>
   );
 
-  if (!viewable) {
-    return <div className={thumbClasses}>{thumb}</div>;
-  }
+  /* Persists once finished — "— uploaded" never fades, unlike the overlay
+     above it, which still clears so the picture is revealed. */
+  const statusText = uploading
+    ? `${Math.round(progress)} / 100`
+    : error
+      ? "Failed — Try Again"
+      : "— uploaded";
+
+  const dialogContent = (
+    <DialogContent>
+      <div className="liquid-glass flex items-center justify-center overflow-hidden p-1">
+        {isImage ? (
+          <img
+            src={objectUrl!}
+            alt=""
+            className="object-contain max-w-full max-h-[70vh]"
+          />
+        ) : (
+          <video
+            src={objectUrl!}
+            controls
+            autoPlay
+            playsInline
+            className="max-w-full max-h-[70vh]"
+          />
+        )}
+      </div>
+    </DialogContent>
+  );
+
+  /* Box only. The viewer is controlled so the context menu can open it with
+     the exact same result as clicking the media. */
+  const box = (
+    <div className={thumbClasses}>
+      {viewable ? (
+        <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+          <DialogTrigger asChild>
+            <div className="absolute inset-0 cursor-pointer outline-none">
+              {mediaFrame}
+            </div>
+          </DialogTrigger>
+          {dialogContent}
+        </Dialog>
+      ) : (
+        mediaFrame
+      )}
+
+      {uploading && <UploadRingOverlay progress={progress} />}
+      {error && <RetryOverlay onRetry={onRetry} />}
+    </div>
+  );
 
   return (
-    <Dialog>
-      <DialogTrigger className={`${thumbClasses} cursor-pointer outline-none`}>
-        {thumb}
-      </DialogTrigger>
-      <DialogContent>
-        <div className="flex items-center justify-center overflow-hidden backdrop-blur-3xl p-1 border border-secondary/5 bg-white/50">
-          {isImage ? (
-            <img
-              src={objectUrl!}
-              alt=""
-              className="object-contain max-w-full max-h-[70vh]"
-            />
-          ) : (
-            <video
-              src={objectUrl!}
-              controls
-              autoPlay
-              playsInline
-              className="max-w-full max-h-[70vh]"
-            />
-          )}
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div className="w-24 shrink-0">
+          {box}
+          {statusText && <StatusText>{statusText}</StatusText>}
         </div>
-      </DialogContent>
-    </Dialog>
-  );
+      </ContextMenuTrigger>
+
+      <ContextMenuContent className="w-44">
+        {/* Same action as clicking the media — opens the viewer. */}
+        {viewable && (
+          <ContextMenuItem
+            className="flex gap-x-2 py-1.5"
+            onClick={() => setViewerOpen(true)}
+          >
+            <div className="flex-1">{viewLabel}</div>
+            <EyeIcon className="stroke-[1.5px] size-4" />
+          </ContextMenuItem>
+        )}
+
+        {/* Verb changes with state: you cannot "remove from post" a transfer
+            that is still in flight. */}
+        <ContextMenuItem
+          className="flex gap-x-2 py-1.5"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+        >
+          <div className="flex-1">{removeLabel}</div>
+          <XCircleIcon className="stroke-[1.5px] size-4" />
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+    );
 };
 
 const MediaAttachmentThumb = ({
@@ -1267,7 +1403,7 @@ const Page = () => {
           <div
             onClick={scrollToBottom}
             style={{ bottom: `calc(var(--chat-footer-height) + var(--update-banner-height, 0px) - 5px)` }}
-            className="absolute right-4 z-40 border border-secondary/5 p-1 rounded-full backdrop-blur-sm cursor-pointer hover:bg-secondary/3 text-foreground/80"
+            className="liquid-glass absolute right-4 z-40 p-1 rounded-full cursor-pointer text-foreground/80"
           >
             <ChevronDownIcon className="size-6 stroke-1 text-foreground/60" />
           </div>
@@ -1279,7 +1415,7 @@ const Page = () => {
           {activeEditPost && (
             <div className="w-full flex justify-center items-center tracking-tight px-4 pb-3">
               <div
-                className="w-full max-w-3xl backdrop-blur-md border border-secondary/5 cursor-pointer px-3 py-2 rounded-2xl bg-background/50"
+                className="liquid-glass w-full max-w-3xl cursor-pointer px-3 py-2 rounded-2xl"
                 onClick={() => scrollToPost(activeEditPost.id)}
               >
                 <div className="flex items-center gap-x-2.5">
@@ -1303,11 +1439,11 @@ const Page = () => {
             </div>
           )}
 
-          <div className="flex w-full gap-x-3 px-4 pb-3 lg:pb-5 justify-center items-center border-t border-x border-secondary/5 backdrop-blur-md bg-white/50">
+          <div className="liquid-glass flex w-full gap-x-3 px-4 pb-3 lg:pb-5 justify-center items-center">
             <div className="flex flex-col max-w-3xl w-full gap-y-2">
               {/* selected attachments preview — hidden during edit mode */}
               {!editingPostId && selectedFiles.length > 0 && (
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-2 mt-2 pb-2 border-b border-secondary/5">
+                <div className="flex flex-wrap items-end gap-x-2 gap-y-2 mt-2 pb-2 border-b border-secondary/5">
                   {selectedFiles.map((item, index) => (
                     <MediaAttachmentThumb
                       key={item.id ?? `${item.file.name}-${index}`}
@@ -1385,8 +1521,8 @@ const Page = () => {
                       onChange={handleFileChange}
                       disabled={isOffline}
                     />
-                    <HardDriveIcon
-                      className={`stroke-[1px] flex justify-center items-center opacity-80 w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full cursor-pointer ${isOffline ? "opacity-50 cursor-not-allowed" : ""}`}
+                    <GalleryVerticalEndIcon
+                      className={`stroke-[1px] flex justify-center items-center opacity-80 w-10 h-10 rounded-full mt-3 lg:mt-5 border border-secondary/3 p-2 cursor-pointer ${isOffline ? "opacity-50 cursor-not-allowed" : ""}`}
                     />
                   </label>
                 )}
@@ -1413,14 +1549,7 @@ const Page = () => {
                 </button>
               </div>
               <div className="line-clamp-2 md:line-clamp-1 text-sm tracking-tighter opacity-60">
-                {isOffline ? (
-                  <span className="flex items-center gap-1.5 text-amber-500">
-                    <WifiOffIcon className="size-3.5" />
-                    You are offline. Viewing cached content.
-                  </span>
-                ) : (
-                  t("general.lorem_ipsum")
-                )}
+                  {t("general.lorem_ipsum")}
               </div>
             </div>
           </div>

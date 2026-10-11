@@ -5,14 +5,14 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-full transition-all disabled:pointer-events-none disabled:opacity-60 outline-none cursor-pointer select-none text-xl md:text-2xl px-5 py-2",
+  "inline-flex items-center justify-center rounded-full liquid-glass transition-all disabled:pointer-events-none disabled:opacity-60 outline-none cursor-pointer select-none text-xl md:text-2xl px-5 py-2",
   {
     variants: {
       variant: {
         primary:
-          "bg-button-background text-button-foreground border border-button-border hover:opacity-60",
+          "[--liquid-glass-bg:var(--button-background)] [--liquid-glass-border-color:var(--button-border)] text-button-foreground hover:opacity-60",
         secondary:
-          "bg-button-background/20 text-button-foreground border-2 border-button-border/50 hover:opacity-60",
+          "[--liquid-glass-bg:color-mix(in_srgb,var(--button-background)_20%,transparent)] [--liquid-glass-border-width:2px] [--liquid-glass-border-color:color-mix(in_srgb,var(--button-border)_50%,transparent)] text-button-foreground hover:opacity-60",
       },
     },
     defaultVariants: {

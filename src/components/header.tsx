@@ -93,7 +93,7 @@ const Header = ({
     <div
       ref={headerRef}
       className={cn(
-        "fixed top-0 z-50 flex items-center gap-x-2 w-full border-b border-x border-secondary/5 backdrop-blur-3xl bg-white/50 px-3.5 py-3",
+        "liquid-glass fixed top-0 z-50 flex items-center gap-x-2 w-full px-3.5 py-3",
         container_className,
       )}
     >
@@ -238,7 +238,7 @@ const Header = ({
             <Button
               variant="primary"
               onClick={() => fileInputRef.current?.click()}
-              className="text-sm md:text-sm px-2.5 py-0.5 backdrop-blur-3xl text-nowrap"
+              className="text-sm md:text-sm px-2.5 py-0.5 text-nowrap"
             >
               {t("general.new_story")}
             </Button>

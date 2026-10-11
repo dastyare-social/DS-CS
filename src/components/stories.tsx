@@ -725,7 +725,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerLeave}
                 onPointerCancel={handlePointerCancel}
-                className="relative w-full cursor-pointer overflow-hidden flex flex-col border border-secondary/5 backdrop-blur-3xl bg-white/50 aspect-9/16 min-w-xs select-none"
+                className="liquid-glass relative w-full cursor-pointer overflow-hidden flex flex-col aspect-9/16 min-w-xs select-none"
               >
                 {/* media area */}
                 <div className="p-1 absolute inset-0">
@@ -795,7 +795,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
                         <div
                           key={story.id}
                           className={cn(
-                            "rounded-full bg-secondary/5 flex-1 backdrop-blur-3xl",
+                            "liquid-glass rounded-full flex-1",
                             isPreloading || mediaLoading
                               ? "bg-secondary/5"
                               : "bg-white/50",
@@ -952,7 +952,7 @@ const Stories = ({ size, opened }: { size: number; opened?: boolean }) => {
             dir={dir}
             ref={menuRef}
             onClick={(e) => e.stopPropagation()}
-            className="fixed z-[60] w-36 px-1 py-1 rounded-xl border border-secondary/10 bg-white/80 backdrop-blur-3xl overflow-hidden pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-150 outline-0 ring-0"
+            className="liquid-glass fixed z-[60] w-36 px-1 py-1 rounded-xl overflow-hidden pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-150 outline-0 ring-0"
             style={{
               top: menuPos.y,
               left: Math.max(8, menuPos.x - MENU_WIDTH),

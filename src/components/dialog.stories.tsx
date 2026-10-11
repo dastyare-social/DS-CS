@@ -26,7 +26,7 @@ export const Default: Story = {
   args: { defaultOpen: true },
   render: (args) => (
     <Dialog {...args}>
-      <DialogContent className="w-[90vw] max-w-sm rounded-3xl bg-background/90 p-6 backdrop-blur-2xl">
+      <DialogContent className="liquid-glass w-[90vw] max-w-sm rounded-3xl p-6">
         <h2 className="text-lg font-semibold">Hello</h2>
         <p className="text-sm opacity-70">
           A lightweight dialog built on top of Radix primitives.
@@ -42,7 +42,7 @@ export const WithCloseButton: Story = {
     <Dialog {...args}>
       <DialogContent
         showCloseButton
-        className="w-[90vw] max-w-sm rounded-3xl bg-background/90 p-6 backdrop-blur-2xl"
+        className="liquid-glass w-[90vw] max-w-sm rounded-3xl p-6"
       >
         <h2 className="text-lg font-semibold">Settings</h2>
         <p className="text-sm opacity-70">
@@ -57,7 +57,7 @@ export const Controlled: Story = {
   args: { defaultOpen: true },
   render: (args) => (
     <Dialog {...args}>
-      <DialogContent className="w-[90vw] max-w-sm rounded-3xl bg-background/90 p-6 backdrop-blur-2xl">
+      <DialogContent className="liquid-glass w-[90vw] max-w-sm rounded-3xl p-6">
         <h2 className="text-lg font-semibold">Dismissible</h2>
         <p className="text-sm opacity-70 mb-2">
           Use DialogClose for an explicit close action.
@@ -76,7 +76,7 @@ export const TriggerFlow: Story = {
       <DialogTrigger asChild>
         <Button variant="primary">Open dialog</Button>
       </DialogTrigger>
-      <DialogContent className="w-[90vw] max-w-sm rounded-3xl bg-background/90 p-6 backdrop-blur-2xl">
+      <DialogContent className="liquid-glass w-[90vw] max-w-sm rounded-3xl p-6">
         <h2 className="text-lg font-semibold">Opened from a trigger</h2>
         <p className="text-sm opacity-70">
           Click the button again to toggle, or press Escape.

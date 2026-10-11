@@ -72,6 +72,129 @@ body {
     var(--color-primary) 10%,
     transparent
   );
+
+  /* Liquid Glass — a translucent material built from a blurred, saturated
+     backdrop plus specular edge highlights, so surfaces read as thick glass
+     rather than a flat translucent wash. Every knob is a token so a surface
+     can re-tint the glass without re-implementing the effect. */
+  --liquid-glass-blur: 2px;
+  --liquid-glass-saturate: 180%;
+  --liquid-glass-bg: color-mix(in srgb, white 55%, transparent);
+  --liquid-glass-wash-top: color-mix(in srgb, white 65%, transparent);
+  --liquid-glass-wash-bottom: color-mix(in srgb, white 15%, transparent);
+  --liquid-glass-border-width: 1px;
+  /* Dark hairline, not a white rim: this app is light-only (--background is
+     near-white), so a white rim is invisible against the page. Deliberately
+     matches `border-secondary/5`, the rim the install/update banners use, so
+     every glass surface reads with the same edge weight. */
+  --liquid-glass-border-color: color-mix(in srgb, var(--secondary) 5%, transparent);
+  /* Figma-style soft inset stroke — the CSS equivalent of an "Inner shadow"
+     effect applied to a stroke. Kept separate from the border because it is a
+     different job: the border sets the edge weight to match the rest of the
+     app, this adds the luminous smoothed rim that makes the pane read as
+     glass. Never casts outside the element. */
+  --liquid-glass-stroke: white;
+  --liquid-glass-stroke-opacity: 60%;
+  --liquid-glass-stroke-blur: 2px;
+  --liquid-glass-sheen: color-mix(in srgb, white 70%, transparent);
+
+  /* Corner smoothing applied to every rounded surface. 0.6 == 60% smoothing,
+     i.e. superellipse(0.6) — the CSS spelling of an iOS/Figma continuous
+     corner. Single source of truth for the whole app; see the base-layer rule
+     below. Do not restate superellipse() in a component. */
+  --corner-smoothing: superellipse(0.6);
+}
+
+/* Apply to any element that should sit on the page as glass. Tinting is done
+   by overriding the tokens, never by restating the effect:
+     <div class="liquid-glass [--liquid-glass-bg:var(--brand-tint)]" />
+   Pseudo-element sheen needs `isolation` so its negative z-index stays
+   inside this element instead of falling behind the page background. */
+@utility liquid-glass {
+  position: relative;
+  isolation: isolate;
+
+  --liquid-glass-filter: blur(var(--liquid-glass-blur))
+    saturate(var(--liquid-glass-saturate));
+
+  background-color: var(--liquid-glass-bg);
+  background-image: linear-gradient(
+    to bottom,
+    var(--liquid-glass-wash-top),
+    var(--liquid-glass-wash-bottom)
+  );
+
+  -webkit-backdrop-filter: var(--liquid-glass-filter);
+  backdrop-filter: var(--liquid-glass-filter);
+
+  border-width: var(--liquid-glass-border-width);
+  border-color: var(--liquid-glass-border-color);
+
+  /* The one sanctioned shadow in the app: an inset stroke only. A blurred
+     inset ring is what gives the rim its smoothed, Figma-style edge — it
+     fades inward and can never cast outside the element, so the surface still
+     sits flush and carries no depth. See docs/design-system.md §2.1. */
+  box-shadow: inset 0 0 var(--liquid-glass-stroke-blur) 0
+    color-mix(
+      in srgb,
+      var(--liquid-glass-stroke) var(--liquid-glass-stroke-opacity),
+      transparent
+    );
+
+  /* Tailwind's `backdrop-blur-*` utilities emit a bare `backdrop-filter` at
+     the same specificity but later in the utilities layer, so a call site
+     still passing `backdrop-blur-3xl` would clobber the composite filter
+     above and silently drop its saturate leg. Repeating the compound
+     selector keeps the glass filter authoritative; every other declaration
+     here stays overridable by utilities. */
+  &.liquid-glass {
+    -webkit-backdrop-filter: var(--liquid-glass-filter);
+    backdrop-filter: var(--liquid-glass-filter);
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(
+      120% 90% at 50% -25%,
+      var(--liquid-glass-sheen),
+      transparent 65%
+    );
+    opacity: 0;
+    transition: opacity 500ms ease;
+  }
+
+  &:hover::before,
+  &:focus-visible::before {
+    opacity: 1;
+  }
+}
+
+/* Dark liquid glass — for surfaces that float ON media (photo/video
+   overlays, progress rings, play buttons) rather than on the app background.
+   The light-theme tokens cannot be reused there: a white wash over a photo
+   destroys the white-text contrast these rely on. Inverting the tint and rim
+   keeps them legible against any frame while reading as the same material.
+
+   Self-contained (applies the material itself), so it is used alone:
+     <div class="liquid-glass-dark rounded-full" />
+   Overrides still work per surface via the usual tokens. */
+@utility liquid-glass-dark {
+  @apply liquid-glass;
+
+  --liquid-glass-blur: 8px;
+  --liquid-glass-saturate: 140%;
+  --liquid-glass-bg: color-mix(in srgb, black 32%, transparent);
+  --liquid-glass-wash-top: color-mix(in srgb, white 22%, transparent);
+  --liquid-glass-wash-bottom: color-mix(in srgb, black 18%, transparent);
+  --liquid-glass-border-color: color-mix(in srgb, white 18%, transparent);
+  --liquid-glass-stroke: white;
+  --liquid-glass-stroke-opacity: 60%;
+  --liquid-glass-sheen: color-mix(in srgb, white 55%, transparent);
 }
 
 @layer base {
@@ -96,6 +219,22 @@ body {
   ::after {
     @apply duration-500;
   }
+
+  /* Corner smoothing — 60%, everywhere.
+     `corner-shape: superellipse(0.6)` is the CSS equivalent of a 60% corner
+     smoothing (Figma / iOS continuous corners). It re-shapes corners *inside*
+     the existing border-radius, so `rounded-*` still controls the size.
+
+     `:where()` keeps this at specificity 0 so any component can opt out with a
+     single utility. `.rounded-full` is excluded because a 50% radius is meant
+     to be a true circle — smoothing it would square off every avatar, pill and
+     round button (54 call sites).
+
+     Experimental: Chromium-only today. Elsewhere the declaration is dropped and
+     plain border-radius corners render — a graceful downgrade, not a break. */
+  :where(*):not(.rounded-full) {
+    corner-shape: var(--corner-smoothing);
+  }
 }
 
 ::-moz-selection {
@@ -107,6 +246,22 @@ body {
 ::selection {
   color: var(--selection-foreground);
   background: var(--selection-background);
+}
+
+/* Design rule: this application renders no shadows, anywhere. See
+   docs/design-system.md §2.
+   Declared unlayered deliberately — unlayered declarations outrank every
+   @layer, including Tailwind's `shadow-*` utilities, so no shadow can be
+   reintroduced by adding a utility class to a component. A reset placed in
+   @layer base would lose to `shadow-lg` on layer order alone.
+   `.liquid-glass` is the single exception: it carries an INSET stroke (the
+   Figma "Inner shadow" on a stroke) for its rim. It still casts nothing
+   outside itself, and no outer/drop shadow exists anywhere. */
+*:not(.liquid-glass),
+::before,
+::after {
+  box-shadow: none;
+  text-shadow: none;
 }
 
 .none-scroll-bar {
@@ -162,6 +317,11 @@ body {
 
 .progress-ring {
   position: relative;
+  /* Ring colours are tokens because the ring sits on very different surfaces:
+     a near-invisible glass wash over a photo, or an opaque dark chip. The
+     previous hardcoded white was invisible on the former. */
+  --progress-ring-color: rgba(255, 255, 255, 0.8);
+  --progress-ring-track: rgba(255, 255, 255, 0.1);
 }
 
 .progress-ring::before {
@@ -171,8 +331,8 @@ body {
   border-radius: inherit;
   padding: 2px;
   background: conic-gradient(
-    rgba(255, 255, 255, 0.8) var(--ring-progress),
-    rgba(255, 255, 255, 0.1) var(--ring-progress)
+    var(--progress-ring-color) var(--ring-progress),
+    var(--progress-ring-track) var(--ring-progress)
   );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
@@ -190,4 +350,10 @@ body {
 .progress-ring.progress-ring-sm::before {
   inset: -1.5px;
   padding: 1.5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass::before {
+    transition: none;
+  }
 }

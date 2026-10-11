@@ -212,6 +212,7 @@ Full schemas: `/openapi.json` → `components.schemas`
 - **Schemas:** Drizzle schema → drizzle-zod → route validation
 - **OpenAPI:** Annotate route handlers with JSDoc; run `bun run openapi:generate`
 - **Config:** Edit YAML, never hand-edit `app.config.json`; `about.config.yml` is parsed fresh on every request — keep its `enabled` key first
+- **Corners:** every rounded surface gets **60% corner smoothing** (`corner-shape: superellipse(0.6)`), applied globally in `src/styles/globals.css` via `--corner-smoothing`. Don't restate `superellipse()` in a component; `.rounded-full` stays a true circle. See `docs/design-system.md` §3
 - **Do not** refactor unrelated code; match existing patterns
 
 ## Environment variables

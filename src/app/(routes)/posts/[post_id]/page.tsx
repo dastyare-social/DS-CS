@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
 import Post from "@/components/post";
 import NewsletterModal from "@/components/modals/notifications";
 import Loader from "@/components/loader";
+import LazyImageLoader from "@/components/lazy-image-loader";
 import Header from "@/components/header";
 import type { PostWithReactions } from "@/lib/api/posts";
 import { useTranslations } from "next-intl";
@@ -220,7 +221,9 @@ const Page = () => {
           {/* Loading state */}
           {isLoading && (
             <div className="grid place-items-center">
-              <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
+              <LazyImageLoader>
+                <Loader className="size-12 border border-primary/10 text-primary/50 p-2 rounded-full backdrop-blur-3xl bg-white/50" />
+              </LazyImageLoader>
             </div>
           )}
 
@@ -247,7 +250,7 @@ const Page = () => {
         <div className="flex gap-x-1.5 sm:gap-x-2 px-4 pb-3 lg:pb-5 justify-center items-center">
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="text-sm md:text-sm px-3.5 py-1.5 backdrop-blur-3xl bg-white/50 text-nowrap">
+              <Button className="text-sm md:text-sm px-3.5 py-1.5 text-nowrap">
                 {t("general.join_my_channel")}
               </Button>
             </DialogTrigger>
@@ -259,7 +262,7 @@ const Page = () => {
 
           <Button
             variant="primary"
-            className="text-sm md:text-sm px-3.5 py-1.5 backdrop-blur-3xl text-nowrap"
+            className="text-sm md:text-sm px-3.5 py-1.5 text-nowrap"
             onClick={() => router.push("/")}
           >
             {t("general.view_other_contents")}

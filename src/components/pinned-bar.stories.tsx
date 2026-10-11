@@ -38,15 +38,34 @@ const wrapperStyle = {
   "--chat-header-height": "56px",
 } as CSSProperties;
 
+/* PinnedBar is `fixed`, so the glass needs real content behind it to refract.
+   A flat white canvas renders the material invisible. */
+function Stage({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative min-h-[420px] w-full" style={wrapperStyle}>
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,#f97316_0%,transparent_45%),radial-gradient(circle_at_85%_30%,#0ea5e9_0%,transparent_40%),radial-gradient(circle_at_50%_90%,#a855f7_0%,transparent_45%)]"
+      />
+      <div className="relative mx-auto flex max-w-2xl flex-col gap-3 px-4 pt-24 pb-6">
+        <div className="h-24 rounded-2xl bg-white/25" />
+        <div className="h-32 rounded-2xl bg-white/25" />
+        <div className="h-24 rounded-2xl bg-white/25" />
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export const SinglePinned: Story = {
   args: {
     pinnedPosts: [fakePosts[0]],
     activeIndex: 0,
   },
   render: (args) => (
-    <div className="w-full max-w-2xl" style={wrapperStyle}>
+    <Stage>
       <PinnedBar {...args} />
-    </div>
+    </Stage>
   ),
 };
 
@@ -56,8 +75,8 @@ export const MultiplePinned: Story = {
     activeIndex: 1,
   },
   render: (args) => (
-    <div className="w-full max-w-2xl" style={wrapperStyle}>
+    <Stage>
       <PinnedBar {...args} />
-    </div>
+    </Stage>
   ),
 };

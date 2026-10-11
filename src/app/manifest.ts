@@ -34,18 +34,9 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
         purpose: "any",
       },
     ],
-    screenshots: [
-      // {
-      //   src: "/screenshots/wide-1280x720.png",
-      //   sizes: "1280x720",
-      //   type: "image/png",
-      //   form_factor: "wide",
-      // },
-      // {
-      //   src: "/screenshots/mobile-750x1334.png",
-      //   sizes: "750x1334",
-      //   type: "image/png",
-      // },
-    ],
+    // No `screenshots` entry on purpose. Browsers that support it (Chrome on
+    // Android/Desktop) render those images as preview cards inside the install
+    // prompt. Omitting the key leaves the dialog screenshot-free instead of
+    // showing stale captures of the UI.
   };
 }

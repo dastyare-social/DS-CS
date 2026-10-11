@@ -133,7 +133,7 @@ export default function StoryPreviewModal({
     <>
     <Dialog open={open} onOpenChange={isBusy ? undefined : handleClose}>
       <DialogContent
-        className="w-[95vw] max-w-[420px] h-[80vh] bg-background/95 backdrop-blur-2xl border border-border/50 rounded-3xl p-0 overflow-hidden flex flex-col"
+        className="liquid-glass w-[95vw] max-w-[420px] h-[80vh] rounded-3xl p-0 overflow-hidden flex flex-col"
         showCloseButton={false}
         onPointerDownOutside={isBusy ? (e) => e.preventDefault() : undefined}
         onInteractOutside={isBusy ? (e) => e.preventDefault() : undefined}

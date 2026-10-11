@@ -23,7 +23,7 @@ export default function OfflineIndicator() {
   if (!isOffline) return null;
 
   return (
-    <div className="sticky top-0 left-0 right-0 z-[100] flex items-center justify-center gap-2 bg-primary/90 backdrop-blur-sm text-white text-xs font-medium py-1.5 px-3">
+    <div className="liquid-glass-dark sticky top-0 left-0 right-0 z-[100] flex items-center justify-center gap-2 text-white text-xs font-medium py-1.5 px-3 [--liquid-glass-bg:color-mix(in_srgb,var(--primary)_90%,transparent)]">
       <WifiOffIcon className="size-3.5" />
       You are offline
     </div>

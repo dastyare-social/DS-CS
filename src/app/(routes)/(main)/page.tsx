@@ -425,7 +425,7 @@ const Page = () => {
           <div
             onClick={scrollToBottom}
             style={{ bottom: `calc(var(--chat-footer-height) + var(--install-banner-height, 0px) - 5px)` }}
-            className="absolute right-4 z-40 border border-secondary/5 p-1 rounded-full backdrop-blur-sm cursor-pointer hover:bg-secondary/3 text-foreground/80"
+            className="liquid-glass absolute right-4 z-40 p-1 rounded-full cursor-pointer text-foreground/80"
           >
             <ChevronDownIcon className="size-6 stroke-1 text-foreground/60" />
           </div>
@@ -437,7 +437,7 @@ const Page = () => {
           <div className="flex w-full gap-x-1.5 sm:gap-x-2 px-4 pb-3 lg:pb-5 justify-center items-center">
             <Dialog>
               <DialogTrigger asChild>
-                <Button className="text-sm md:text-sm px-3.5 py-1.5 backdrop-blur-3xl bg-white/50">
+                <Button className="text-sm md:text-sm px-3.5 py-1.5">
                   {t("general.join_my_channel")}
                 </Button>
               </DialogTrigger>
