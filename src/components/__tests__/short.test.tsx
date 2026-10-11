@@ -41,7 +41,11 @@ vi.mock('lucide-react', () => ({
   LineSquiggleIcon: (props: any) => React.createElement('div', { ...props, 'data-testid': 'line-squiggle' }),
 }));
 
-vi.mock('../loader', () => ({
+// Mock the exact specifier `short.tsx` imports. A relative '../loader' only
+// works while both specifiers resolve to the same module, which is not
+// guaranteed across platforms — on CI the mock silently missed and the
+// loader tests failed.
+vi.mock('@/components/loader', () => ({
   default: ({ className }: any) => React.createElement('div', { className, 'data-testid': 'loader' }),
 }));
 
