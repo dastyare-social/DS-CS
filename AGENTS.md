@@ -312,6 +312,53 @@ npx -y @posthog/wizard@latest
 
 	3. Client init is centralized in `src/lib/analytics/client.ts`. Agents should not attempt to read or fetch `POSTHOG_API_KEY` (server secret).
 
+## Release & versioning
+
+**Whenever someone — a human or an agent — says "stage and push changes", treat it as a release, not just a commit.** Do not push a bare commit.
+
+The sequence, in order:
+
+1. **Review the changes first.** `git status`, `git diff`, and `git diff --cached`. Decide what is actually being released and whether anything unrelated is in the working tree.
+2. **Stage selectively.** Stage only the files belonging to this change. If unrelated edits are present, leave them unstaged and say so explicitly — never sweep them in silently.
+3. **Bump the version in `package.json`** based on the nature of the change (see the table below). `next.config.ts` bakes it into the build as `NEXT_PUBLIC_APP_VERSION`, which drives the in-app update banner.
+4. **Commit and push.**
+5. **Tag the commit you just pushed** as `v<new version>` (annotated), and push the tag:
+   ```bash
+   git tag -a v0.3.4 -m "v0.3.4"
+   git push origin main --follow-tags
+   ```
+6. **Report** the new version, the tag, and anything you deliberately left out.
+
+### Version bump rules
+
+Keep-a-Changelog / SemVer. Judge the bump from the diff, not from the commit message.
+
+| Change | Bump | Example |
+|---|---|---|
+| Bug fix, refactor, internal/infra change with no user-visible effect | **patch** | `v0.3.3` → `v0.3.4` |
+| New feature, new endpoint, new capability | **minor** | `v0.3.4` → `v0.4.0` |
+| Breaking change — removed/renamed public API, config or env var changes, DB migrations that break existing data | **major** | `v0.4.0` → `v1.0.0` |
+
+Notes:
+
+- Never skip a number. Read the current version from `package.json` first — it is the source of truth.
+- A version bump is **always** included; never push without one.
+- Do not bump for a bump alone. If the diff is empty or contains only whitespace, stop and ask.
+- If the changes are ambiguous between two levels, choose the **lower** one and mention the alternative in your report.
+
+### Tag convention
+
+Tags are annotated and named `vMAJOR.MINOR.PATCH`. The tag points at the commit that carries that version — matching history: `v0.3.3` → `bdf48a1`, `v0.3.2` → `03edf03`, `v0.3.1` → `9d18494`.
+
+Before tagging, confirm nothing is already tagged at that name:
+
+```bash
+git tag -l            # existing tags
+git tag -l v0.3.4     # must be empty before you create it
+```
+
+Never move or force-update an existing tag that has already been pushed. If a tag already exists, stop and ask.
+
 ## Common commands
 
 ```bash
