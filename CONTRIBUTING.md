@@ -69,6 +69,7 @@ Commit both the route changes and the regenerated `public/openapi.json`.
 ## Pull request checklist
 
 - [ ] `bun run lint` passes
+- [ ] `bun run test` passes — via the script, never bare `bun test`. The script adds `--isolate`, which Bun cannot default from `bunfig.toml`; without it, one file's `vi.mock` leaks into every file that runs after it.
 - [ ] API changes include JSDoc annotations and regenerated OpenAPI
 - [ ] Schema changes include a Drizzle migration
 - [ ] No secrets or `.env` files in the diff

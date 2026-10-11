@@ -367,7 +367,20 @@ bun run openapi:generate     # Regenerate OpenAPI from route JSDoc
 bun run db:generate          # New migration after schema change
 bun run db:migrate           # Apply migrations
 bun run lint                 # ESLint
+bun run test                 # Test suite — ALWAYS via this script (see below)
 ```
+
+### Always run tests with `bun run test`, never bare `bun test`
+
+The `test` script passes `--isolate`, which gives each test file a fresh global. Without it, Bun shares one module registry across every test file, so a `vi.mock('../some-component')` in one file silently replaces that module for **every file that runs after it**.
+
+This is not hypothetical — it broke CI on Linux while passing on macOS:
+
+- `src/components/__tests__/shorts.test.tsx` mocks `../short`
+- `short.test.tsx` then imported the **stub** instead of the real component, and the two loader tests failed with `Unable to find [data-testid="loader"]`
+- File discovery order is filesystem-dependent, so it passed locally (macOS) and failed on CI (Linux)
+
+`--isolate` is a **CLI flag only** — Bun's `bunfig.toml` `[test]` section has no `isolate` key and silently ignores unknown keys, so it cannot be defaulted in config. Always go through `bun run test`.
 
 ## Deployment helpers
 
