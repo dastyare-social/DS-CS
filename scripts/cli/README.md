@@ -3,8 +3,8 @@
 The CLI for [Dastyare Social — CS](https://cs.dastyare.social). Installs agent skills, wires up MCP, and authenticates to a channel.
 
 ```bash
-npx ds-cs init
-npx ds-cs add post-with-media
+npx @dastyaresocial/ds-cs init
+npx @dastyaresocial/ds-cs add post-with-media
 ```
 
 ## Why

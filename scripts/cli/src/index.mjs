@@ -31,7 +31,8 @@ const VERSION = await readVersion();
 const USAGE = `${bold("ds-cs")} — skills and tooling for Dastyare Social — CS
 
 ${bold("Usage")}
-  ds-cs <command> [options]
+  npx @dastyaresocial/ds-cs <command> [options]
+  (or \`ds-cs <command>\` once installed / linked globally)
 
 ${bold("Commands")}
   init [dir]              Prepare a project for DS-CS skills

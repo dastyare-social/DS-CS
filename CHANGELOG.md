@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `db-migration`, `release`; product: `post-with-media`, `manage-stories`,
   `webhooks`, `brand-config`, `self-host-deploy`, `mcp-connect`) — instructions
   that tell an agent how to work on this codebase and operate a channel
-- `ds-cs` CLI (`scripts/cli`, publishable as `npx ds-cs`) — installs skills from
+- `ds-cs` CLI (`scripts/cli`, published as `@dastyaresocial/ds-cs`) — installs skills from
   DS-CS or any other skills repo, wires up MCP config for OpenCode / Claude Code /
   Cursor / Codex / Windsurf, and stores channel credentials with a login check.
   Shares the `skills-lock.json` format with `npx skills`, so both can install

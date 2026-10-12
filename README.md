@@ -560,9 +560,9 @@ agent needs to work on this codebase or operate a channel. Install them with the
 [`ds-cs`](./scripts/cli) CLI:
 
 ```bash
-npx ds-cs init
-npx ds-cs add                   # browse the registry
-npx ds-cs add post-with-media   # install one by name
+npx @dastyaresocial/ds-cs init
+npx @dastyaresocial/ds-cs add                   # browse the registry
+npx @dastyaresocial/ds-cs add post-with-media   # install one by name
 ```
 
 `ds-cs add` also installs from any other skills repository —
@@ -578,8 +578,8 @@ coexist without clobbering each other.
 The CLI also wires up the MCP server and stores channel credentials:
 
 ```bash
-npx ds-cs login --url https://your-channel.com --api-key "$API_KEY"
-npx ds-cs mcp claude-code    # write .mcp.json
+npx @dastyaresocial/ds-cs login --url https://your-channel.com --api-key "$API_KEY"
+npx @dastyaresocial/ds-cs mcp claude-code    # write .mcp.json
 ```
 
 ---

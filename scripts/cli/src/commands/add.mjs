@@ -13,12 +13,17 @@ import { discoverSkills } from "../skills/discover.mjs";
 import { toArray } from "../args.mjs";
 import { CliError } from "../utils/errors.mjs";
 import { cyan, log, table } from "../utils/log.mjs";
+import { isInteractive } from "../utils/prompt.mjs";
 import { resolveRequest } from "./target.mjs";
 
 export async function addCommand(positional, flags, { projectRoot }) {
   const { source, names } = resolveRequest(positional, flags);
 
-  if (flags.list) {
+  // `ds-cs add` on its own means "show me what there is" — the interactive
+  // picker when there is a terminal, the plain listing when there is not (CI, a
+  // pipe, an agent shell). Erroring on a missing TTY would make the documented
+  // "browse everything" form fail in exactly the places people run it.
+  if (flags.list || (names.length === 0 && !isInteractive())) {
     await listSource(source, projectRoot);
     return;
   }

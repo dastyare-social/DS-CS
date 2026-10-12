@@ -3,9 +3,9 @@
 First-party skills for [Dastyare Social — CS](https://cs.dastyare.social). Install them with:
 
 ```bash
-npx ds-cs init
-npx ds-cs add                  # browse everything
-npx ds-cs add post-with-media  # or install one by name
+npx @dastyaresocial/ds-cs init
+npx @dastyaresocial/ds-cs add                  # browse everything
+npx @dastyaresocial/ds-cs add post-with-media  # or install one by name
 ```
 
 ## What is here
@@ -60,7 +60,7 @@ Add `metadata.internal: true` to hide a skill from discovery until `INSTALL_INTE
 While inside a DS-CS checkout, `ds-cs add` installs from this directory rather than from GitHub, so edits take effect immediately:
 
 ```bash
-npx ds-cs add brand-config --force
+npx @dastyaresocial/ds-cs add brand-config --force
 ```
 
 Run it from a scratch directory to test what a user actually gets:

@@ -97,9 +97,9 @@ actually cause errors — upload media before referencing its URL, `kind=image` 
 installable agent skills.
 
 ```bash
-npx ds-cs init
-npx ds-cs add post-with-media      # install from the DS-CS registry
-npx ds-cs add owner/repo@skill     # or from any other skills repository
+npx @dastyaresocial/ds-cs init
+npx @dastyaresocial/ds-cs add post-with-media      # install from the DS-CS registry
+npx @dastyaresocial/ds-cs add owner/repo@skill     # or from any other skills repository
 ```
 
 | Skill | Purpose |
@@ -115,8 +115,8 @@ npx ds-cs add owner/repo@skill     # or from any other skills repository
 | `self-host-deploy` | Install, update and back up a self-hosted channel |
 | `mcp-connect` | Connect an agent over MCP, remote or stdio |
 
-The CLI also prints MCP config for every major client (`npx ds-cs mcp`) and stores channel credentials
-(`npx ds-cs login --url … --api-key …`, written outside the repository at mode 0600).
+The CLI also prints MCP config for every major client (`npx @dastyaresocial/ds-cs mcp`) and stores channel credentials
+(`npx @dastyaresocial/ds-cs login --url … --api-key …`, written outside the repository at mode 0600).
 
 ## Optional
 
