@@ -156,7 +156,7 @@ It is declared once, in the base layer of `src/styles/globals.css`, against
 every element:
 
 ```css
-:where(*):not(.rounded-full) {
+:where(*):not(.rounded-full):not(.w-full) {
   corner-shape: var(--corner-smoothing);
 }
 ```
@@ -167,14 +167,23 @@ if a surface genuinely needs a different curve, and say why.
 
 ### Rules
 
-- **Every `rounded-*` gets 60% smoothing** — `rounded-lg`, `rounded-xl`,
-  `rounded-2xl`, `rounded-3xl`, or a raw `border-radius`. No exceptions.
+- **Cards, panels and dialogs get 60% smoothing** — anything `rounded-*` that
+  holds content: `rounded-lg` through `rounded-3xl`, or a raw `border-radius`.
 - **True circles stay circles.** `.rounded-full` is excluded. A 50% radius means
   "circle", and smoothing it would square off every avatar, pill and round
   button (54 call sites). If you add another circle, use `rounded-full` so the
   exclusion keeps working.
+- **Full-bleed bars keep circular corners.** `.w-full` is excluded — the install
+  and update banners, and the pinned-posts bar. Their radius is proportionally
+  huge next to their short height (a 16px radius on a 48px-tall bar is a third
+  of its height), and a superellipse there reads as an **angular wedge** rather
+  than a smooth curve. This was a real regression when the rule was applied to
+  every element; don't reintroduce it.
 - **`:where()` keeps specificity at 0**, so any single utility can override the
   shape without `!important`.
+
+If you build a new short, wide, full-width bar, it already inherits the correct
+behaviour — do nothing.
 
 ### Browser support
 

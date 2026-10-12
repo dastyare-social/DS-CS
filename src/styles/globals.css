@@ -98,6 +98,14 @@ body {
   --liquid-glass-stroke-blur: 2px;
   --liquid-glass-sheen: color-mix(in srgb, white 70%, transparent);
 
+  /* Reflection — a single specular band swept across the surface at 45deg,
+     full scale. Deliberately zero dispersion and zero frost: one clean
+     colour with hard stops, no blur and no chromatic split, so it reads as a
+     reflection on glass rather than a glow or a lens flare. */
+  --liquid-glass-reflection-angle: 45deg;
+  --liquid-glass-reflection-color: color-mix(in srgb, white 55%, transparent);
+  --liquid-glass-reflection-opacity: 45%;
+
   /* Corner smoothing applied to every rounded surface. 0.6 == 60% smoothing,
      i.e. superellipse(0.6) — the CSS spelling of an iOS/Figma continuous
      corner. Single source of truth for the whole app; see the base-layer rule
@@ -168,6 +176,23 @@ body {
     transition: opacity 500ms ease;
   }
 
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    /* Single hard-stopped band: no blur (frost 0) and one colour
+       (dispersion 0). */
+    background: linear-gradient(
+      var(--liquid-glass-reflection-angle),
+      transparent 38%,
+      var(--liquid-glass-reflection-color) 50%,
+      transparent 62%
+    );
+    opacity: var(--liquid-glass-reflection-opacity);
+  }
+
   &:hover::before,
   &:focus-visible::before {
     opacity: 1;
@@ -220,19 +245,25 @@ body {
     @apply duration-500;
   }
 
-  /* Corner smoothing — 60%, everywhere.
+  /* Corner smoothing — 60%, on content surfaces.
      `corner-shape: superellipse(0.6)` is the CSS equivalent of a 60% corner
      smoothing (Figma / iOS continuous corners). It re-shapes corners *inside*
      the existing border-radius, so `rounded-*` still controls the size.
 
      `:where()` keeps this at specificity 0 so any component can opt out with a
-     single utility. `.rounded-full` is excluded because a 50% radius is meant
-     to be a true circle — smoothing it would square off every avatar, pill and
-     round button (54 call sites).
+     single utility.
+
+     Two exclusions, both deliberate:
+     - `.rounded-full` — a 50% radius means "circle"; smoothing it would square
+       off every avatar, pill and round button (54 call sites).
+     - `.w-full` — full-bleed bars (install/update banners, pinned bar). Their
+       radius is proportionally huge next to their short height, so a
+       superellipse reads as an angular wedge instead of a clean curve. Cards
+       and panels keep the smoothing; bars keep circular corners.
 
      Experimental: Chromium-only today. Elsewhere the declaration is dropped and
      plain border-radius corners render — a graceful downgrade, not a break. */
-  :where(*):not(.rounded-full) {
+  :where(*):not(.rounded-full):not(.w-full) {
     corner-shape: var(--corner-smoothing);
   }
 }
@@ -327,7 +358,11 @@ body {
 .progress-ring::before {
   content: "";
   position: absolute;
-  inset: -2px;
+  /* Drawn INSIDE the element (inset: 0), not outside it. An element with
+     `backdrop-filter` — e.g. the glass chip the ring sits on — becomes its own
+     compositing layer and clips descendants to its border box, so a ring drawn
+     at a negative inset is clipped away entirely and never renders. */
+  inset: 0;
   border-radius: inherit;
   padding: 2px;
   background: conic-gradient(
@@ -348,7 +383,6 @@ body {
 
 /* thinner ring variant — used on small post-media upload pills */
 .progress-ring.progress-ring-sm::before {
-  inset: -1.5px;
   padding: 1.5px;
 }
 
