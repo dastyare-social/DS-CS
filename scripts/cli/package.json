@@ -5,10 +5,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "ds-cs": "./bin/ds-cs.mjs"
-  },
-  "exports": {
-    ".": "./bin/ds-cs.mjs"
+    "ds-cs": "bin/ds-cs.mjs"
   },
   "files": [
     "bin",
