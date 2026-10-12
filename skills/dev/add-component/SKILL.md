@@ -13,7 +13,7 @@ These are enforced for the **whole codebase**, not per component. Violating them
 
 The single exception is `.liquid-glass`, and only as an **inset** stroke. Inset shadows fade inward and cannot cast outside the element, so the no-depth rule still holds.
 
-**2. Rounded content surfaces use 60% corner smoothing.** `border-radius` controls corner *size* (`rounded-xl`); `corner-shape: superellipse(0.6)` controls corner *shape* (the squircle). It is declared once against every element except `.rounded-full` (true circles stay circles — smoothing them would square off every avatar, pill and round button) and `.w-full` (full-bleed bars — install/update banners, the pinned bar — keep circular corners, because their radius is proportionally huge next to their short height and a superellipse there reads as an angular wedge). Never restate `superellipse()` in a component; override `--corner-smoothing` and say why.
+**2. Rounded content surfaces use 60% corner smoothing.** `border-radius` controls corner *size* (`rounded-xl`); `corner-shape` controls corner *shape* (the squircle). `superellipse()` takes an **exponent, not a percentage**: `2` is a plain circular arc, `2.5` is the continuous iOS/Figma corner, and anything **below `2` cuts the corner inward** — the opposite of smoothing. The app uses `2.5` everywhere via `--corner-smoothing`. It is declared once against every element except `.rounded-full` (true circles stay circles — smoothing pushes them to a square, squaring off every avatar, pill and round button) and `.w-full` (full-bleed bars — install/update banners, the pinned bar — keep circular corners). Never restate `superellipse()` in a component; override `--corner-smoothing` and say why.
 
 ## Tokens
 

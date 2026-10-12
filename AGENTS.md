@@ -248,7 +248,7 @@ CLI tests: `bun run skills:test`.
 - **Schemas:** Drizzle schema → drizzle-zod → route validation
 - **OpenAPI:** Annotate route handlers with JSDoc; run `bun run openapi:generate`
 - **Config:** Edit YAML, never hand-edit `app.config.json`; `about.config.yml` is parsed fresh on every request — keep its `enabled` key first
-- **Corners:** content surfaces (cards, panels, dialogs) get **60% corner smoothing** (`corner-shape: superellipse(0.6)`), applied globally in `src/styles/globals.css` via `--corner-smoothing`. Don't restate `superellipse()` in a component. `.rounded-full` stays a true circle and `.w-full` bars (install/update banners, pinned bar) keep circular corners — smoothing a short wide bar reads as an angular wedge. See `docs/design-system.md` §3
+- **Corners:** content surfaces (cards, panels, dialogs) get **60% corner smoothing**, applied globally in `src/styles/globals.css` via `--corner-smoothing: superellipse(2.5)`. `superellipse()` takes an **exponent, not a percentage** — `2` is a circular arc, `2.5` is the continuous iOS/Figma corner, and anything below `2` cuts corners *inward*. Don't restate `superellipse()` in a component. `.rounded-full` stays a true circle and `.w-full` bars (install/update banners, pinned bar) keep circular corners. See `docs/design-system.md` §3
 - **Do not** refactor unrelated code; match existing patterns
 
 ## Environment variables

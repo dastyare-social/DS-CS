@@ -106,11 +106,14 @@ body {
   --liquid-glass-reflection-color: color-mix(in srgb, white 55%, transparent);
   --liquid-glass-reflection-opacity: 45%;
 
-  /* Corner smoothing applied to every rounded surface. 0.6 == 60% smoothing,
-     i.e. superellipse(0.6) — the CSS spelling of an iOS/Figma continuous
-     corner. Single source of truth for the whole app; see the base-layer rule
-     below. Do not restate superellipse() in a component. */
-  --corner-smoothing: superellipse(0.6);
+  /* Corner smoothing applied to every rounded surface.
+
+     `corner-shape: superellipse(n)` where n is the SUPERELLIPSE EXPONENT,
+     not a percentage: 2 is a circular arc, 2.5 is the continuous iOS/Figma
+     corner, and anything below 2 cuts the corner inward. An earlier value of
+     0.6 read "60%" as the literal number and did exactly that. See the
+     base-layer rule below. Single source of truth for the whole app. */
+  --corner-smoothing: superellipse(2.5);
 }
 
 /* Apply to any element that should sit on the page as glass. Tinting is done
