@@ -15,6 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CONTEXT.md` served at `/context.md` — compact agent context surfaced in `llms.txt`
 - MCP tool call error tracking — `mcp_tool_called` now carries `tool` + `isError`
 - Client error tracking — `window.onerror` / `unhandledrejection` → `client_error` event
+- First-party agent skills in `skills/` (dev: `add-orpc-endpoint`, `add-component`,
+  `db-migration`, `release`; product: `post-with-media`, `manage-stories`,
+  `webhooks`, `brand-config`, `self-host-deploy`, `mcp-connect`) — instructions
+  that tell an agent how to work on this codebase and operate a channel
+- `ds-cs` CLI (`scripts/cli`, publishable as `npx ds-cs`) — installs skills from
+  DS-CS or any other skills repo, wires up MCP config for OpenCode / Claude Code /
+  Cursor / Codex / Windsurf, and stores channel credentials with a login check.
+  Shares the `skills-lock.json` format with `npx skills`, so both can install
+  into one project without clobbering each other
 - Outbound webhooks — register endpoints and receive signed real-time events
   (`post.created|updated|deleted|reacted|viewed`,
   `story.created|updated|deleted|viewed|liked`), with HMAC signature

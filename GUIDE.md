@@ -59,6 +59,7 @@ scripts/
   generate-icons.ts      # app/manifest icons from source art
   mcp-server.ts          # standalone stdio MCP server entrypoint
   validate-sitemap.js    # sitemap sanity check
+  cli/                   # the `ds-cs` CLI — installs agent skills, wires MCP, stores channel credentials
 public/
   sw.js                  # service worker (hand-written, self-contained)
   openapi.json           # generated OpenAPI spec
@@ -86,6 +87,9 @@ webhooks/            # outbound event delivery: WEBHOOK_EVENTS, emitWebhookEvent
   services/locale.ts     # locale resolution
   styles/globals.css
 translations/en.json     # next-intl messages
+skills/
+  dev/                   # skills for changing DS-CS itself (oRPC, components, migrations, release)
+  product/               # skills for operating a live channel (posts, stories, webhooks, deploy)
 ```
 
 ---
@@ -156,6 +160,10 @@ All documented in `.env.example` with comments. Key groups:
 | `bun run openapi:generate` | Regenerate `public/openapi.json` from route JSDoc |
 | `bun run validate:sitemap` | Validate generated sitemap |
 | `bun run mcp` | Start the standalone stdio MCP server |
+| `bun run ds-cs add <skill>` | Install an agent skill from `skills/` (or `owner/repo@skill` from any skills repo) |
+| `bun run ds-cs init` | Create skills directories for this project |
+| `bun run ds-cs list` | Show installed skills and their sources |
+| `bun run skills:test` | Run the `ds-cs` CLI test suite |
 | `bun run bootstrap:posthog` | Provision this product's PostHog dashboard suite (7 dashboards — see `docs/posthog-dashboard-guide.md` → PostHog Bootstrap) |
 | `bunx tsc --noEmit` | Type-check (no emit) |
 | `bunx playwright test` | Run Playwright e2e tests (if configured) |

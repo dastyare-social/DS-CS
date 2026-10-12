@@ -515,7 +515,15 @@ src/
 │   ├── notifications/        # Web push notification logic
 │   └── orpc/                 # oRPC router (dashboard data layer)
 ├── store/                    # Zustand stores (posts, stories, etc.)
+├── mcp/                      # MCP server factory + posts/stories tools
 └── styles/                   # Global styles (Tailwind)
+
+skills/
+├── dev/                      # Skills for changing DS-CS itself (oRPC, components, migrations, release)
+└── product/                  # Skills for operating a live channel (posts, stories, webhooks, deploy)
+
+scripts/
+└── cli/                      # The `ds-cs` CLI — installs skills, wires MCP, stores credentials
 ```
 
 ---
@@ -540,6 +548,39 @@ src/
 | `bun run db:studio`        | Open Drizzle Studio (database GUI)                                  |
 | `bun run openapi:generate` | Regenerate OpenAPI spec                                             |
 | `bun run mcp`              | Run local MCP server (stdio)                                        |
+| `bun run ds-cs`            | Agent skills CLI — `init`, `add`, `list`, `update`, `remove`, `mcp` |
+| `bun run skills:test`      | CLI test suite                                                      |
+
+---
+
+## Agent skills
+
+DS-CS ships first-party agent skills in [`skills/`](./skills) — the instructions an
+agent needs to work on this codebase or operate a channel. Install them with the
+[`ds-cs`](./scripts/cli) CLI:
+
+```bash
+npx ds-cs init
+npx ds-cs add                   # browse the registry
+npx ds-cs add post-with-media   # install one by name
+```
+
+`ds-cs add` also installs from any other skills repository —
+`owner/repo`, a URL, an SSH remote, or a local directory — and reads and writes
+the same `skills-lock.json` as `npx skills`, so third-party and DS-CS skills
+coexist without clobbering each other.
+
+| Group | Skills |
+|---|---|
+| **Working on the codebase** | `add-orpc-endpoint`, `add-component`, `db-migration`, `release` |
+| **Operating a channel** | `post-with-media`, `manage-stories`, `webhooks`, `brand-config`, `self-host-deploy`, `mcp-connect` |
+
+The CLI also wires up the MCP server and stores channel credentials:
+
+```bash
+npx ds-cs login --url https://your-channel.com --api-key "$API_KEY"
+npx ds-cs mcp claude-code    # write .mcp.json
+```
 
 ---
 

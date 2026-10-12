@@ -1,3 +1,4 @@
+import { lstat } from "node:fs/promises";
 import path from "node:path";
 
 import { CANONICAL_AGENT, dedupeDirectories, linkSkill, skillsDirFor } from "./agents.mjs";
@@ -8,11 +9,10 @@ import { CliError } from "./utils/errors.mjs";
 import {
   copyDirectory,
   ensureDir,
-  exists,
   hashDirectory,
   removeDirectory,
 } from "./utils/fs.mjs";
-import { confirm, select } from "./utils/prompt.mjs";
+import { select } from "./utils/prompt.mjs";
 
 /**
  * Install skills from a source into one or more agents.
@@ -63,8 +63,10 @@ export async function installSkills({
     const destination = path.join(canonicalDir, skill.name);
 
     // Replace rather than merge: a reference file removed upstream must not
-    // survive in the installed copy.
-    if (path.resolve(path.dirname(destination)) !== path.resolve(skill.dir)) {
+    // survive in the installed copy. Skipped when the source *is* the target,
+    // which happens if someone points `--source` at an installed skills dir —
+    // the delete below would otherwise destroy the source mid-copy.
+    if (!isSameDirectory(skill.dir, destination)) {
       await removeDirectory(destination);
       await copyDirectory(skill.dir, destination);
     }
@@ -81,6 +83,11 @@ export async function installSkills({
   }
 
   return { installed, resolved };
+}
+
+/** True when a copy from `source` to `destination` would clobber its own input. */
+function isSameDirectory(source, destination) {
+  return path.resolve(source) === path.resolve(destination);
 }
 
 async function chooseSkills(available, names, resolved, { yes }) {
@@ -125,8 +132,10 @@ export async function refreshSkill(projectRoot, entry, options = {}) {
   });
   const destination = path.join(canonicalDir, match.name);
 
-  await removeDirectory(destination);
-  await copyDirectory(match.dir, destination);
+  if (!isSameDirectory(match.dir, destination)) {
+    await removeDirectory(destination);
+    await copyDirectory(match.dir, destination);
+  }
   const hash = await hashDirectory(destination);
 
   await recordSkill(projectRoot, { name: match.name, skillPath: match.skillPath, hash }, resolved);
@@ -134,21 +143,32 @@ export async function refreshSkill(projectRoot, entry, options = {}) {
   return { name: match.name, status: "changed", source: resolved, hash, skill: match };
 }
 
+/**
+ * Uninstall from every target directory.
+ *
+ * Non-canonical directories are swept **first**. They hold symlinks pointing at
+ * the canonical copy, so deleting the target before the links turns them into
+ * dangling symlinks that `stat` then reports as absent — leaving the links
+ * themselves on disk.
+ */
 export async function removeSkill(name, targets) {
   const removed = [];
-  for (const directory of targets) {
+  for (const directory of [...targets].reverse()) {
     const target = path.join(directory, name);
-    if (await removeDirectorySafe(target)) {
+    if (await removePath(target)) {
       removed.push(target);
     }
   }
   return removed;
 }
 
-async function removeDirectorySafe(target) {
-  if (!(await exists(target))) return false;
+/** `lstat`, not `stat`: a dangling symlink still occupies its path. */
+async function removePath(target) {
+  try {
+    await lstat(target);
+  } catch {
+    return false;
+  }
   await removeDirectory(target);
   return true;
 }
-
-export { confirm };

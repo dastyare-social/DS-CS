@@ -40,6 +40,11 @@ function safeJoin(destDir, entryPath) {
 /**
  * Strip the single top-level directory that GitHub wraps tarballs in
  * (`DS-CS-main/…`), so the extraction root looks like a normal checkout.
+ *
+ * Only correct for GitHub-shaped archives — ones where every entry shares one
+ * root. It is used exclusively via `extractTarGz`'s explicit `strip` option,
+ * where the caller already knows it downloaded that shape, rather than as a
+ * general guess applied to arbitrary archives.
  */
 export function stripLeadingDirectory(entries) {
   const roots = new Set(entries.map((entry) => entry.name.split("/")[0]).filter(Boolean));
@@ -52,10 +57,26 @@ export function stripLeadingDirectory(entries) {
     .filter((entry) => entry.name.length > 0);
 }
 
+/**
+ * Entries that are archive noise rather than content.
+ *
+ * macOS `tar` writes AppleDouble sidecars (`._SKILL.md`) next to every real
+ * file to carry extended attributes. They are harmless in isolation and actively
+ * harmful here: they would land in installed skills and change a skill's hash
+ * when a user re-archives the same source, making `ds-cs update` claim a change
+ * that never happened upstream.
+ */
+function isArchiveNoise(name) {
+  const base = name.split("/").pop() ?? name;
+  return base === ".DS_Store" || base.startsWith("._");
+}
+
 async function writeEntries(destDir, entries) {
   let directories = 0;
   let files = 0;
   for (const entry of entries) {
+    if (isArchiveNoise(entry.name)) continue;
+
     if (entry.type === "directory") {
       await fs.mkdir(safeJoin(destDir, entry.name), { recursive: true });
       directories += 1;
@@ -96,7 +117,6 @@ function parseTar(buffer) {
       return raw ? parseInt(raw, 8) : 0;
     };
 
-    const name = readString(0, 100);
     const mode = readString(100, 8);
     const size = readOctal(124, 12);
     const typeFlag = String.fromCharCode(header[156]) || "0";

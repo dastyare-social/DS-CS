@@ -193,6 +193,42 @@ Events: `post.created | post.updated | post.deleted | post.reacted | post.viewed
 
 Full schemas: `/openapi.json` → `components.schemas`
 
+## Skills and the `ds-cs` CLI
+
+DS-CS ships first-party agent skills in [`skills/`](./skills) — instructions that
+tell an agent how to use this codebase and how to operate a channel. Install them
+with the CLI in [`scripts/cli`](./scripts/cli):
+
+```bash
+bun run ds-cs init          # create skills directories (and optionally MCP config)
+bun run ds-cs add           # browse the registry
+bun run ds-cs add db-migration   # install one by name
+bun run ds-cs list          # what is installed, and where it came from
+```
+
+Inside a DS-CS checkout `ds-cs add` installs from the local `skills/` directory
+rather than from GitHub, so edits reinstall immediately.
+
+The CLI reads and writes the same `skills-lock.json` as `npx skills`
+(vercel-labs), so third-party skills and DS-CS skills coexist in one project
+without either clobbering the other's state. `ds-cs update` refuses to overwrite
+a skill with local edits unless `--force` is passed.
+
+| Skill | Covers |
+|-------|--------|
+| [`dev/add-orpc-endpoint`](./skills/dev/add-orpc-endpoint) | Adding a procedure to `src/lib/orpc/router.ts` |
+| [`dev/add-component`](./skills/dev/add-component) | Components without breaking the design system |
+| [`dev/db-migration`](./skills/dev/db-migration) | Drizzle schema changes and migrations |
+| [`dev/release`](./skills/dev/release) | Version bump, annotated tag, push |
+| [`product/post-with-media`](./skills/product/post-with-media) | Posts, media upload, pinning |
+| [`product/manage-stories`](./skills/product/manage-stories) | Ephemeral stories |
+| [`product/webhooks`](./skills/product/webhooks) | Signed event delivery |
+| [`product/brand-config`](./skills/product/brand-config) | Channel identity and the `/about` page |
+| [`product/self-host-deploy`](./skills/product/self-host-deploy) | Install, update, back up |
+| [`product/mcp-connect`](./skills/product/mcp-connect) | Connecting an agent over MCP |
+
+CLI tests: `bun run skills:test`.
+
 ## Code layout for agents editing this repo
 
 | Path | Responsibility |
@@ -369,6 +405,8 @@ bun run db:generate          # New migration after schema change
 bun run db:migrate           # Apply migrations
 bun run lint                 # ESLint
 bun run test                 # Test suite — ALWAYS via this script (see below)
+bun run ds-cs add            # Install agent skills
+bun run skills:test          # CLI test suite
 ```
 
 ### Always run tests with `bun run test`, never bare `bun test`

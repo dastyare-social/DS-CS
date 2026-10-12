@@ -8,7 +8,7 @@ import { promisify } from "node:util";
 import { CliError } from "../utils/errors.mjs";
 import { isDirectory } from "../utils/fs.mjs";
 import { extractBuffer, extractTarGz } from "./archive.mjs";
-import { cachedBuffer, fetchBuffer, fetchText } from "./fetch.mjs";
+import { cachedBuffer, fetchBuffer } from "./fetch.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -27,6 +27,12 @@ export const SOURCE_TYPES = {
 
 function hashKey(value) {
   return crypto.createHash("sha256").update(value).digest("hex").slice(0, 16);
+}
+
+/** Relative when that is readable, absolute when it would be a chain of `../`. */
+function readable(target) {
+  const relative = path.relative(process.cwd(), target);
+  return relative === "" || relative.startsWith("..") ? target : relative;
 }
 
 async function makeTempDir() {
@@ -52,7 +58,7 @@ export async function resolveDsCs({ cwd, preferLocal = true }) {
       type: SOURCE_TYPES.DS_CS,
       root: localRoot,
       origin: "local",
-      describe: () => `${DS_CS_REPO} (local checkout at ${path.relative(process.cwd(), localRoot) || "."})`,
+      describe: () => `${DS_CS_REPO} (local checkout at ${readable(localRoot)})`,
     };
   }
 
@@ -269,7 +275,7 @@ export async function resolveLocal(spec) {
     type: SOURCE_TYPES.LOCAL,
     root,
     origin: "local",
-    describe: () => path.relative(process.cwd(), root) || ".",
+    describe: () => readable(root),
   };
 }
 

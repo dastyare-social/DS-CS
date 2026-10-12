@@ -1,0 +1,125 @@
+# ds-cs
+
+The CLI for [Dastyare Social — CS](https://cs.dastyare.social). Installs agent skills, wires up MCP, and authenticates to a channel.
+
+```bash
+npx ds-cs init
+npx ds-cs add post-with-media
+```
+
+## Why
+
+DS-CS already speaks two agent protocols — a REST API and an MCP server — but neither tells an agent *how* to use them. The constraints that matter (upload before you post; `kind=` filters stories while `type=` counts them; the oRPC URL must be absolute) are scattered across a README an agent will not read.
+
+Skills are that knowledge, in the form agents actually load. This CLI installs them.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `ds-cs init` | Create skills directories, optionally write MCP config |
+| `ds-cs add <skill\|source>` | Install skills from DS-CS or anywhere else |
+| `ds-cs list` | Show what is installed and where it came from |
+| `ds-cs update [skill…]` | Re-fetch skills that changed upstream |
+| `ds-cs remove <skill…>` | Uninstall from every agent |
+| `ds-cs search [query]` | Search installed skills |
+| `ds-cs mcp [agent]` | Print, or write, MCP server config |
+| `ds-cs login` | Store a channel URL and API key |
+| `ds-cs whoami` | Show the stored channel |
+| `ds-cs logout` | Remove stored credentials |
+
+## Sources
+
+```bash
+ds-cs add brand-config              # from the DS-CS registry (the default)
+ds-cs add owner/repo                # any GitHub skills repo
+ds-cs add owner/repo@skill          # one skill from that repo
+ds-cs add owner/repo@a,b            # several
+ds-cs add https://github.com/o/r/tree/main/skills/x
+ds-cs add ./my-skills               # a local directory
+ds-cs add https://…/SKILL.md        # a direct URL
+ds-cs add https://…/archive.tar.gz  # a zip or tarball of skills
+ds-cs add git@github.com:o/r.git    # any other git host
+ds-cs add owner/repo --list         # browse without installing
+```
+
+A bare word is a skill name from the DS-CS registry, because knowing where a skill lives should not be the user's problem. Anything source-shaped — `owner/repo`, a URL, a path — is treated as a source.
+
+GitHub repositories are fetched as tarballs rather than cloned: one HTTP request, no `git` binary required, and no repository hooks executed. Only non-GitHub git hosts fall back to `git clone`.
+
+## Where skills land
+
+The canonical copy always goes to `.agents/skills/<name>` — the directory OpenCode, Cursor, Codex and a dozen others already read. Every other target is symlinked to it, so an update lands everywhere at once and there is one source of truth per project.
+
+```bash
+ds-cs add brand-config -a claude-code        # also link into .claude/skills
+ds-cs add brand-config -a ./my-agent/skills  # or any directory you name
+ds-cs add brand-config --copy                # copy instead of symlink
+```
+
+Symlinks are the default because agents that disagree about skill content is a worse problem than agents that disagree about inode counts. `--copy` is there for filesystems where symlinks do not work; the CLI falls back to copying automatically if a symlink fails.
+
+Run `ds-cs init --list-agents` for the full table.
+
+## Lockfile
+
+Installs are recorded in `skills-lock.json`, in the same v1 format `npx skills` (vercel-labs) reads and writes. The two tools interoperate in one project without clobbering each other:
+
+```bash
+ds-cs add brand-config        # DS-CS skills
+npx skills add emilkowalski/skill   # third-party skills
+ds-cs list                   # reports both
+```
+
+Each entry records the source, the skill's path within it, and a content hash. `ds-cs update` compares against that hash and **refuses to overwrite a skill you have edited locally** — an agent's tweak to a skill is usually deliberate. `--force` overrides.
+
+## MCP
+
+```bash
+ds-cs login --url https://cs.example.com --api-key "$API_KEY"
+ds-cs mcp                    # print every client format
+ds-cs mcp claude-code        # write .mcp.json
+ds-cs mcp opencode           # write opencode.json
+```
+
+An existing config file is never overwritten. The snippet is printed for you to merge — clobbering a working MCP config to add one server is a bad trade.
+
+Remote (HTTP) works everywhere and is what most people want. Local (stdio, `bun run mcp`) is faster and works offline but needs a clone with `DATABASE_URL` set.
+
+## Credentials
+
+`ds-cs login` verifies the channel before saving, so a mistyped key surfaces at login rather than mid-task inside an agent. Credentials land in `~/.config/ds-cs/auth.json` at mode `0600` — outside the project, because a key that can delete content is one `git add -A` away from being published.
+
+```bash
+ds-cs whoami     # shows a redacted key
+ds-cs logout
+```
+
+`DS_CS_URL` and `DS_CS_API_KEY` override the stored values. `DS_CS_CONFIG_DIR` relocates the file.
+
+## Publishing a skill to the registry
+
+DS-CS skills live in [`skills/`](../../skills) in this repository. A skill is a directory with a `SKILL.md` whose frontmatter carries a `name` and a `description`:
+
+```
+skills/
+  dev/add-orpc-endpoint/SKILL.md
+  product/post-with-media/SKILL.md
+```
+
+The description is the whole interface — it is what an agent reads to decide whether to load the skill. Write it as "use when X", and name the sibling skills it should *not* be used for. Reference files, scripts and templates sit next to `SKILL.md` in the same directory and travel with it.
+
+Set `metadata.internal: true` to hide a skill from discovery until `INSTALL_INTERNAL_SKILLS=1`.
+
+## Development
+
+```bash
+npm test          # node:test, no dependencies
+npm run dev -- --help
+```
+
+While working inside a DS-CS checkout, `ds-cs add` prefers the local `skills/` directory over the published registry, so edits reinstall immediately. Pass a source path explicitly to bypass that.
+
+## Requirements
+
+Node 18.17+. Zero runtime dependencies.

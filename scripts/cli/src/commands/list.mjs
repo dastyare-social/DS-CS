@@ -54,7 +54,7 @@ export async function listCommand(positional, flags, { projectRoot }) {
     { key: "name", title: "NAME" },
     { key: "status", title: "STATUS" },
     { key: "source", title: "SOURCE" },
-    { key: "description", title: "DESCRIPTION" },
+    { key: "description", title: "DESCRIPTION", flex: true },
   ]);
 
   const missing = rows.filter((row) => row.status === "MISSING");

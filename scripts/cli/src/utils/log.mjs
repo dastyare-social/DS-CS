@@ -41,15 +41,45 @@ export function heading(text) {
   console.log(`\n${bold(text)}`);
 }
 
-export function table(rows, columns) {
+const MAX_COLUMN_WIDTH = 60;
+
+/**
+ * Render an aligned table.
+ *
+ * Columns are capped and the total is checked against the terminal width: skill
+ * descriptions are a full sentence or more, so an uncapped table wraps into an
+ * unreadable wall and pushes the source column off screen.
+ */
+export function table(rows, columns, { maxWidth = process.stdout.columns || 100 } = {}) {
   if (rows.length === 0) return;
-  const widths = columns.map((column) =>
-    Math.max(column.title.length, ...rows.map((row) => String(row[column.key] ?? "").length))
-  );
+
+  const capped = columns.map((column) => ({
+    ...column,
+    width: Math.min(
+      MAX_COLUMN_WIDTH,
+      Math.max(column.title.length, ...rows.map((row) => String(row[column.key] ?? "").length))
+    ),
+  }));
+
+  // Hand whatever width the fixed columns leave over to the flexible one.
+  const fixedWidth = capped.reduce((sum, column) => sum + column.width + 2, 0);
+  const flexible = capped.find((column) => column.flex);
+  if (flexible && maxWidth > fixedWidth) {
+    flexible.width = Math.min(MAX_COLUMN_WIDTH, maxWidth - fixedWidth);
+  }
+
+  const format = (value, column) => {
+    const text = String(value ?? "");
+    const clipped = text.length > column.width ? `${text.slice(0, column.width - 1)}…` : text;
+    return clipped.padEnd(column.width);
+  };
+
+  // `cells` is a row of values, so the column has to be paired in explicitly —
+  // passing `format` straight to map would hand it the array index instead.
   const line = (cells) =>
-    cells.map((cell, index) => String(cell ?? "").padEnd(widths[index])).join("  ");
-  console.log(dim(line(columns.map((column) => column.title))));
+    cells.map((value, index) => format(value, capped[index])).join("  ").trimEnd();
+  console.log(dim(line(capped.map((column) => column.title))));
   for (const row of rows) {
-    console.log(line(columns.map((column) => row[column.key])));
+    console.log(line(capped.map((column) => row[column.key])));
   }
 }

@@ -19,7 +19,7 @@
     "node": ">=18.17"
   },
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test test/*.test.mjs",
     "dev": "node ./bin/ds-cs.mjs"
   },
   "keywords": [

@@ -1,3 +1,4 @@
+import fs from "node:fs/promises";
 import path from "node:path";
 
 import { CliError } from "../utils/errors.mjs";
@@ -122,4 +123,48 @@ export function assertSkillExists(skills, name) {
         ? `Available: ${available.join(", ")}`
         : "That source contains no skills.",
   });
+}
+
+/**
+ * List skills already installed into an agent directory.
+ *
+ * `discoverSkills` is for *source* trees, where skills sit inside a `skills/`
+ * container. An installed directory is already that container, so its skills are
+ * one level down — running discovery against it would search for containers
+ * inside itself and find nothing.
+ */
+export async function listInstalledSkills(skillsDirectory) {
+  if (!(await isDirectory(skillsDirectory))) return [];
+
+  const entries = await fs.readdir(skillsDirectory, { withFileTypes: true });
+  const skills = [];
+
+  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+    if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
+
+    const dir = path.join(skillsDirectory, entry.name);
+    const skillFile = path.join(dir, "SKILL.md");
+    if (!(await isFile(skillFile))) continue;
+
+    let manifest;
+    try {
+      manifest = await readSkillManifest(skillFile);
+    } catch {
+      // A directory that is not a skill (a stray file, an unrelated folder) is
+      // not an error — it just is not a skill.
+      continue;
+    }
+
+    skills.push({
+      name: manifest.name,
+      description: manifest.description,
+      internal: manifest.internal,
+      dir,
+      skillFile,
+      skillPath: `${entry.name}/SKILL.md`,
+      hash: await hashDirectory(dir),
+    });
+  }
+
+  return skills;
 }

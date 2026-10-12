@@ -41,7 +41,17 @@ export async function writeJson(file, value) {
   await fs.writeFile(file, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
-const IGNORED_ENTRIES = new Set([".DS_Store", "node_modules", ".git"]);
+/**
+ * Entries that are never part of a skill.
+ *
+ * `.DS_Store` is obvious. The `._*` AppleDouble sidecars are not: macOS `tar`
+ * writes them alongside every real file, so an archive made on a Mac carries a
+ * ghost copy of the whole tree. Copying them in would install junk, and hashing
+ * them would make a skill look changed when nothing upstream did.
+ */
+function isIgnorable(name) {
+  return name === ".DS_Store" || name.startsWith("._") || name === "node_modules" || name === ".git";
+}
 
 /**
  * Recursively list files under `dir`, returning paths relative to `dir` and
@@ -51,7 +61,7 @@ export async function listFiles(dir, base = dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   const files = [];
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-    if (IGNORED_ENTRIES.has(entry.name)) continue;
+    if (isIgnorable(entry.name)) continue;
     const absolute = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       files.push(...(await listFiles(absolute, base)));
@@ -86,7 +96,6 @@ export async function copyDirectory(from, to) {
     await fs.copyFile(path.join(from, file), target);
   }
 }
-
 export async function removeDirectory(dir) {
   await fs.rm(dir, { recursive: true, force: true });
 }

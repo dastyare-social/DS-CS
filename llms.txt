@@ -89,6 +89,35 @@ Connect a remote MCP client:
 
 For a local stdio server against the database, run `bun run mcp` (write tools enabled when `MCP_API_KEY` or `API_KEY` is set).
 
+## Agent skills (ds-cs CLI)
+
+The API tells an agent what it *can* do; skills tell it *how* to do it correctly. The constraints that
+actually cause errors — upload media before referencing its URL, `kind=image` filters stories while
+`type=count` counts them, sign the raw webhook body and not re-serialized JSON — are packaged as
+installable agent skills.
+
+```bash
+npx ds-cs init
+npx ds-cs add post-with-media      # install from the DS-CS registry
+npx ds-cs add owner/repo@skill     # or from any other skills repository
+```
+
+| Skill | Purpose |
+|---|---|
+| `add-orpc-endpoint` | Add a procedure to the internal oRPC router (developer guide) |
+| `add-component` | Add a component without breaking the design system (developer guide) |
+| `db-migration` | Drizzle schema changes and migrations (developer guide) |
+| `release` | Version bump, annotated tag, push (developer guide) |
+| `post-with-media` | Create, read, edit, pin and delete posts; media upload limits |
+| `manage-stories` | Create, list, view, like and delete ephemeral stories |
+| `webhooks` | Register endpoints and verify `x-ds-webhook-signature` |
+| `brand-config` | Channel identity, `config/*.yml`, the `/about` page |
+| `self-host-deploy` | Install, update and back up a self-hosted channel |
+| `mcp-connect` | Connect an agent over MCP, remote or stdio |
+
+The CLI also prints MCP config for every major client (`npx ds-cs mcp`) and stores channel credentials
+(`npx ds-cs login --url … --api-key …`, written outside the repository at mode 0600).
+
 ## Optional
 
 - oRPC endpoint at `/api/rpc` is for internal frontend use; external agents should use REST

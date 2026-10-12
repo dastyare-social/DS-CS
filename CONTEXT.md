@@ -28,6 +28,9 @@ keeps that reach working for you on your own infrastructure.
 - **Public site:** home feed `/`, explore `/explore`, single post `/posts/{id}`, optional `/about`
 - **Creator panel (auth):** `/os`, login `/os/register`
 - **Agent surfaces:** `/api/mcp` (MCP tools), `/openapi.json`, `/docs` (Scalar), `/llms.txt`, `/agents.md`, `/context.md`
+- **Agent skills:** first-party skills in `skills/` (dev + product), installed with the
+  `ds-cs` CLI in `scripts/cli` — `bun run ds-cs add <skill>`. Shares `skills-lock.json`
+  with `npx skills`, so both can install into one project
 
 ## Key conventions (drives all decisions)
 
@@ -59,6 +62,7 @@ bun run db:generate         # migration after schema change
 bun run db:migrate          # apply migrations
 bun run lint                # ESLint
 bun run mcp                 # local stdio MCP server
+bun run ds-cs add           # install an agent skill
 ```
 
 ## Where to look for everything
@@ -70,6 +74,8 @@ bun run mcp                 # local stdio MCP server
 | Analytics setup | `docs/posthog-dashboard-guide.md` |
 | PWA + push history | `docs/pwa-guide.md` |
 | MCP client setup | `docs/mcp-guide.md` |
+| Agent skills registry | `skills/README.md` |
+| Skills CLI | `scripts/cli/README.md` |
 | Crawl / LLM map | `llms.txt` |
 
 *Last updated: August 2026*

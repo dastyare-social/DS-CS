@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { CANONICAL_AGENT, detectAgents, skillsDirFor } from "../agents.mjs";
 import { toArray } from "../args.mjs";
+import { MCP_TARGETS, buildMcpConfig } from "../mcp-config.mjs";
 import { exists, ensureDir } from "../utils/fs.mjs";
 import { cyan, log } from "../utils/log.mjs";
 import { printAgents } from "./list.mjs";
@@ -12,12 +13,6 @@ const GITIGNORE_BLOCK = `# ds-cs
 # context, shared with the team, the same way source is. Add .agents/ here only
 # if you want every agent's skills to stay local to one machine.
 `;
-
-const MCP_CONFIG_FILES = [
-  { agent: "opencode", file: "opencode.json" },
-  { agent: "claude-code", file: ".mcp.json" },
-  { agent: "cursor", file: ".cursor/mcp.json" },
-];
 
 /**
  * Prepare a project for DS-CS skills.
@@ -41,6 +36,11 @@ export async function initCommand(positional, flags, { projectRoot }) {
   for (const agent of agents) {
     const directory = skillsDirFor(agent, { projectRoot, global });
     await ensureDir(directory);
+  }
+
+  // Many agents share one directory (OpenCode, Cursor and Codex all read
+  // `.agents/skills`), so report each real directory once.
+  for (const directory of new Set(agents.map((agent) => skillsDirFor(agent, { projectRoot, global })))) {
     log.success(`Skills directory ready: ${display(directory)}`);
   }
 
@@ -84,47 +84,22 @@ async function explainGitignore(projectRoot) {
 }
 
 async function writeMcpConfigs(projectRoot, flags) {
-  const url = (flags.url ?? "https://cs.dastyare.social").replace(/\/+$/, "");
+  const url = flags.url ?? "https://cs.dastyare.social";
 
-  for (const target of MCP_CONFIG_FILES) {
+  for (const target of MCP_TARGETS) {
     const file = path.join(projectRoot, target.file);
     if (await exists(file)) {
       log.warn(`Skipped ${display(file)} — it already exists`);
       continue;
     }
 
-    const config = {
-      $schema:
-        target.agent === "opencode"
-          ? "https://opencode.ai/config.json"
-          : undefined,
-      mcpServers: {
-        "ds-cs": {
-          type: target.agent === "opencode" ? "remote" : undefined,
-          url: `${url}/api/mcp`,
-          ...(flags.apiKey ? { headers: { Authorization: `Bearer ${flags.apiKey}` } } : {}),
-        },
-      },
-    };
-
-    // Drop the undefined placeholders — `JSON.stringify` keeps keys whose value
-    // is explicitly `undefined` when written via a spread above, and a config
-    // with `"type": undefined` is not valid for some clients to read back.
-    pruneUndefined(config);
-
     await fs.mkdir(path.dirname(file), { recursive: true });
-    await fs.writeFile(file, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+    await fs.writeFile(
+      file,
+      `${JSON.stringify(buildMcpConfig(target.agent, url, flags.apiKey), null, 2)}\n`,
+      "utf8"
+    );
     log.success(`MCP server "ds-cs" written to ${display(file)}`);
-  }
-}
-
-function pruneUndefined(value) {
-  for (const key of Object.keys(value)) {
-    if (value[key] === undefined) {
-      delete value[key];
-    } else if (typeof value[key] === "object" && value[key] !== null) {
-      pruneUndefined(value[key]);
-    }
   }
 }
 
