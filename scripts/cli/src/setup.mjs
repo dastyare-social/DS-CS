@@ -106,7 +106,7 @@ export async function resolveInstallTarget(flags, { projectRoot }) {
       message: "Which agents should read these skills?",
       choices: agentChoices(detected),
       initialSelected: seed,
-      hint: "type to filter · space to toggle · enter to confirm",
+      hint: "type to filter · space toggle · a all · enter confirm",
       required: true,
     });
     agents = picked.map((choice) => choice.value);
@@ -175,7 +175,7 @@ export async function pickSkills(skills) {
       description: skill.skillPath.replace(/SKILL\.md$/, ""),
       keywords: `${skill.name} ${skill.skillPath} ${skill.description ?? ""}`,
     })),
-    hint: "type to filter · space to toggle · enter to install",
+    hint: "type to filter · space toggle · a all · enter install",
     required: true,
   });
   return picked.map((choice) => choice.value);

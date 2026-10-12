@@ -23,20 +23,24 @@ Run it with no flags and `ds-cs` asks, in this order:
   Global (every project)           your user directory — OpenCode, Claude Code
 
 ? Which agents should read these skills?
-  type to filter · space to toggle · enter to confirm
+  type to filter · space toggle · a all · enter confirm
+  ❯ ◉ Select all
     ◉ OpenCode          .agents/skills
     ◉ Cursor            .agents/skills
     ◉ Codex             .agents/skills
     ◉ Claude Code       .claude/skills
     ○ Windsurf          .windsurf/skills
-  …
+  … 8 more
+
+(15 selected: opencode, claude-code, cursor, codex, …)
 
 ? How should the files be shared between agents?
 ❯ Symlink                          one copy, updates land everywhere
   Copy                              independent files per agent
 
 ? Which skills would you like to install?
-  type to filter · space to toggle · enter to install
+  type to filter · space toggle · a all · enter install
+  ❯ ◉ Select all
     ○ add-component     skills/dev/add-component/
     ○ add-orpc-endpoint skills/dev/add-orpc-endpoint/
   …
@@ -44,6 +48,10 @@ Run it with no flags and `ds-cs` asks, in this order:
 
 Scope first, because it decides which directories exist; then which agents read
 the skills; then how those agents share one copy; then what to install.
+
+Both multi-selects open on a **Select all** row — space on it, or `a` anywhere,
+takes everything; pressing it again clears the selection. That is what you want
+on a first run and never again.
 
 **Your last choices are remembered** in `~/.config/ds-cs/preferences.json`, so
 the next run preselects them and you can just hit enter three times. Delete the
@@ -183,10 +191,15 @@ npm run dev -- --help
 The prompts are hand-rolled keypress handling, which cannot be exercised without
 a terminal — every automated check would otherwise stop at `isInteractive()` and
 test the non-interactive path instead. `test/pty_harness.py` runs the real
-binary under a pty, sends keystrokes, and prints the transcript:
+binary under a pty, sends keystrokes, and prints the final screen.
+
+It splits the raw stream into repaint frames rather than counting occurrences of
+a menu in it. A prompt redraws by emitting cursor-up and erase sequences, so the
+byte stream contains every frame ever drawn; counting them there would report a
+correctly-repainting prompt as one that duplicates its menu:
 
 ```bash
-python3 test/pty_harness.py "ENTER,ENTER,ENTER,s,t,o,SPACE,ENTER" \
+python3 test/pty_harness.py "ENTER,SPACE,ENTER,ENTER,s,t,o,SPACE,ENTER" \
   node bin/ds-cs.mjs add
 ```
 
