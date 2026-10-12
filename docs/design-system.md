@@ -228,13 +228,13 @@ All overridable per surface.
 
 | Token | Default | Controls |
 |-------|---------|----------|
-| `--liquid-glass-blur` | `16px` | refraction radius |
+| `--liquid-glass-blur` | `2px` | refraction radius |
 | `--liquid-glass-saturate` | `180%` | vibrancy behind the glass |
 | `--liquid-glass-bg` | `white` @ 55% | base tint |
 | `--liquid-glass-wash-top` | `white` @ 65% | gradient top |
 | `--liquid-glass-wash-bottom` | `white` @ 15% | gradient bottom |
 | `--liquid-glass-border-width` | `1px` | rim thickness |
-| `--liquid-glass-border-color` | `white` @ 60% | rim colour |
+| `--liquid-glass-border-color` | `--secondary` @ 5% | rim colour — a dark hairline, not a white rim (this app is light-only, so a white rim is invisible); matches `border-secondary/5`, the rim the install/update banners use |
 | `--liquid-glass-sheen` | `white` @ 70% | hover highlight |
 | `--liquid-glass-stroke` | `white` | Figma-style inset stroke (§2.1) |
 | `--liquid-glass-stroke-opacity` | `60%` | inset stroke strength |
@@ -274,7 +274,7 @@ stays legible against any frame while reading as the same material.
 | `--liquid-glass-wash-top` | `white` @ 22% |
 | `--liquid-glass-wash-bottom` | `black` @ 18% |
 | `--liquid-glass-border-color` | `white` @ 18% |
-| `--liquid-glass-stroke-opacity` | `45%` |
+| `--liquid-glass-stroke-opacity` | `60%` |
 
 Per-surface overrides still work exactly as with `liquid-glass`, which is how
 the media carousel dots express their active/inactive states.
