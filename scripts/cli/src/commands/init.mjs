@@ -1,11 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { CANONICAL_AGENT, detectAgents, skillsDirFor } from "../agents.mjs";
-import { toArray } from "../args.mjs";
 import { MCP_TARGETS, buildMcpConfig } from "../mcp-config.mjs";
+import { agentDirectories, resolveInstallTarget } from "../setup.mjs";
 import { exists, ensureDir } from "../utils/fs.mjs";
-import { cyan, log } from "../utils/log.mjs";
+import { bold, cyan, dim, log } from "../utils/log.mjs";
 import { printAgents } from "./list.mjs";
 
 const GITIGNORE_BLOCK = `# ds-cs
@@ -17,10 +16,11 @@ const GITIGNORE_BLOCK = `# ds-cs
 /**
  * Prepare a project for DS-CS skills.
  *
- * `init` deliberately installs nothing by itself. It creates the directories and
- * optionally the MCP wiring, then prints what to run next — a new user who has
- * not asked for a specific skill should not silently end up with forty of them
- * in their repository.
+ * Interactive: asks where to install, which agents read them, and how files are
+ * shared. Non-interactive: flags and detection decide, so CI is unchanged.
+ *
+ * `init` deliberately installs no skills. A user who has not asked for a
+ * specific one should not silently end up with forty in their repository.
  */
 export async function initCommand(positional, flags, { projectRoot }) {
   if (flags.listAgents) {
@@ -28,21 +28,21 @@ export async function initCommand(positional, flags, { projectRoot }) {
     return;
   }
 
-  const global = Boolean(flags.global);
-  const detected = await detectAgents({ projectRoot, global });
-  const requested = toArray(flags.agent);
-  const agents = requested.length > 0 ? requested : detected;
+  const target = await resolveInstallTarget(flags, { projectRoot });
+  const { global, agents, copy } = target;
 
-  for (const agent of agents) {
-    const directory = skillsDirFor(agent, { projectRoot, global });
+  const directories = agentDirectories(agents, { projectRoot, global });
+  for (const directory of directories) {
     await ensureDir(directory);
   }
 
-  // Many agents share one directory (OpenCode, Cursor and Codex all read
-  // `.agents/skills`), so report each real directory once.
-  for (const directory of new Set(agents.map((agent) => skillsDirFor(agent, { projectRoot, global })))) {
-    log.success(`Skills directory ready: ${display(directory)}`);
+  const scopeLabel = global ? "global" : "project";
+  log.success(`Skills will install to the ${bold(scopeLabel)} scope.`);
+  for (const directory of directories) {
+    const relative = display(directory);
+    log.plain(`  ${cyan("→")} ${relative}`);
   }
+  log.plain(dim(`  ${copy ? "copied into each agent" : "symlinked from one canonical copy"}`));
 
   if (!global) {
     await explainGitignore(projectRoot);
@@ -60,7 +60,8 @@ export async function initCommand(positional, flags, { projectRoot }) {
 }
 
 function display(target) {
-  return path.relative(process.cwd(), target) || ".";
+  const relative = path.relative(process.cwd(), target);
+  return relative === "" || relative.startsWith("..") ? target : relative;
 }
 
 /**
@@ -102,5 +103,3 @@ async function writeMcpConfigs(projectRoot, flags) {
     log.success(`MCP server "ds-cs" written to ${display(file)}`);
   }
 }
-
-export { CANONICAL_AGENT };

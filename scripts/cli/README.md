@@ -13,15 +13,66 @@ DS-CS already speaks two agent protocols — a REST API and an MCP server — bu
 
 Skills are that knowledge, in the form agents actually load. This CLI installs them.
 
+## The interactive flow
+
+Run it with no flags and `ds-cs` asks, in this order:
+
+```
+? Where should ds-cs install skills?
+❯ This project                    committed, shared with your team
+  Global (every project)           your user directory — OpenCode, Claude Code
+
+? Which agents should read these skills?
+  type to filter · space to toggle · enter to confirm
+    ◉ OpenCode          .agents/skills
+    ◉ Cursor            .agents/skills
+    ◉ Codex             .agents/skills
+    ◉ Claude Code       .claude/skills
+    ○ Windsurf          .windsurf/skills
+  …
+
+? How should the files be shared between agents?
+❯ Symlink                          one copy, updates land everywhere
+  Copy                              independent files per agent
+
+? Which skills would you like to install?
+  type to filter · space to toggle · enter to install
+    ○ add-component     skills/dev/add-component/
+    ○ add-orpc-endpoint skills/dev/add-orpc-endpoint/
+  …
+```
+
+Scope first, because it decides which directories exist; then which agents read
+the skills; then how those agents share one copy; then what to install.
+
+**Your last choices are remembered** in `~/.config/ds-cs/preferences.json`, so
+the next run preselects them and you can just hit enter three times. Delete the
+file to reset. It lives in your user directory, not the repo — scope and agent
+choice are habits, not project configuration.
+
+In the skill picker, typing filters against names, paths **and descriptions**, so
+`webh` finds `webhooks` and `manage-stories` (both mention webhooks). Space
+toggles, so you can take several at once.
+
+Without a terminal — CI, a pipe, an agent — nothing prompts. `ds-cs add` prints
+a listing, and flags decide:
+
+```bash
+ds-cs add --global                     # scope
+ds-cs add brand-config -a opencode     # agent (repeatable, or a directory path)
+ds-cs add --copy                       # independent copies
+ds-cs add -y                           # accept defaults, no prompts
+```
+
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `ds-cs init` | Create skills directories, optionally write MCP config |
+| `ds-cs init` | Prepare skills directories, optionally write MCP config |
 | `ds-cs add <skill\|source>` | Install skills from DS-CS or anywhere else |
 | `ds-cs list` | Show what is installed and where it came from |
 | `ds-cs update [skill…]` | Re-fetch skills that changed upstream |
-| `ds-cs remove <skill…>` | Uninstall from every agent |
+| `ds-cs remove <skill…]` | Uninstall skills from every agent |
 | `ds-cs search [query]` | Search installed skills |
 | `ds-cs mcp [agent]` | Print, or write, MCP server config |
 | `ds-cs login` | Store a channel URL and API key |
@@ -124,8 +175,19 @@ Set `metadata.internal: true` to hide a skill from discovery until `INSTALL_INTE
 ## Development
 
 ```bash
-npm test          # node:test, no dependencies
+npm test                    # node:test, no dependencies
+npm run sync-skills         # refresh the bundled registry copy
 npm run dev -- --help
+```
+
+The prompts are hand-rolled keypress handling, which cannot be exercised without
+a terminal — every automated check would otherwise stop at `isInteractive()` and
+test the non-interactive path instead. `test/pty_harness.py` runs the real
+binary under a pty, sends keystrokes, and prints the transcript:
+
+```bash
+python3 test/pty_harness.py "ENTER,ENTER,ENTER,s,t,o,SPACE,ENTER" \
+  node bin/ds-cs.mjs add
 ```
 
 While working inside a DS-CS checkout, `ds-cs add` prefers the local `skills/` directory over the published registry, so edits reinstall immediately. Pass a source path explicitly to bypass that.

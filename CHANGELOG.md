@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Cursor / Codex / Windsurf, and stores channel credentials with a login check.
   Shares the `skills-lock.json` format with `npx skills`, so both can install
   into one project without clobbering each other
+- Interactive setup flow for `ds-cs init` and `ds-cs add` — asks whether to
+  install into this project or the user directory, which agents should read the
+  skills (searchable multi-select, preselected from what was last chosen or what
+  is detected), and whether files are symlinked or copied. `ds-cs add` also gets
+  a searchable skill picker that matches names, paths and descriptions and takes
+  several skills at once. Choices persist per user in
+  `~/.config/ds-cs/preferences.json`. Non-interactive runs are unchanged.
 - Outbound webhooks — register endpoints and receive signed real-time events
   (`post.created|updated|deleted|reacted|viewed`,
   `story.created|updated|deleted|viewed|liked`), with HMAC signature

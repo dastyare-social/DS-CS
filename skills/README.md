@@ -3,10 +3,13 @@
 First-party skills for [Dastyare Social — CS](https://cs.dastyare.social). Install them with:
 
 ```bash
-npx @dastyaresocial/ds-cs init
-npx @dastyaresocial/ds-cs add                  # browse everything
-npx @dastyaresocial/ds-cs add post-with-media  # or install one by name
+npx @dastyaresocial/ds-cs init   # project or global? which agents? symlink or copy?
+npx @dastyaresocial/ds-cs add   # searchable picker over every skill
 ```
+
+Both are interactive and remember your last choices. To skip the prompts, pass a
+skill name (`ds-cs add post-with-media`) or flags (`--global`, `-a opencode`,
+`--copy`, `-y`).
 
 ## What is here
 

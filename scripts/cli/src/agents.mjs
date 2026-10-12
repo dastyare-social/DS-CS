@@ -14,21 +14,21 @@ import { exists, isDirectory } from "./utils/fs.mjs";
  * `--agent-dir <path>`.
  */
 export const AGENTS = [
-  { name: "opencode", project: ".agents/skills", global: ".config/opencode/skills", detect: ".opencode" },
-  { name: "cursor", project: ".agents/skills", global: ".cursor/skills", detect: ".cursor" },
-  { name: "codex", project: ".agents/skills", global: ".codex/skills", detect: ".codex" },
-  { name: "claude-code", project: ".claude/skills", global: ".claude/skills", detect: ".claude" },
-  { name: "windsurf", project: ".windsurf/skills", global: ".codeium/windsurf/skills", detect: ".windsurf" },
-  { name: "amp", project: ".agents/skills", global: ".config/agents/skills", detect: ".amp" },
-  { name: "gemini-cli", project: ".agents/skills", global: ".gemini/skills", detect: ".gemini" },
-  { name: "github-copilot", project: ".agents/skills", global: ".copilot/skills", detect: ".github" },
-  { name: "goose", project: ".goose/skills", global: ".config/goose/skills", detect: ".goose" },
-  { name: "devin", project: ".devin/skills", global: ".config/devin/skills", detect: ".devin" },
-  { name: "kilo-code", project: ".agents/skills", global: ".kilocode/skills", detect: ".kilocode" },
-  { name: "cline", project: ".agents/skills", global: ".cline/skills", detect: ".cline" },
-  { name: "roo", project: ".roo/skills", global: ".roo/skills", detect: ".roo" },
-  { name: "crush", project: ".crush/skills", global: ".config/crush/skills", detect: ".crush" },
-  { name: "aider-desk", project: ".aider-desk/skills", global: ".aider-desk/skills", detect: ".aider-desk" },
+  { name: "opencode", label: "OpenCode", project: ".agents/skills", global: ".config/opencode/skills", detect: ".opencode", globalRoot: ".config/opencode" },
+  { name: "cursor", label: "Cursor", project: ".agents/skills", global: ".cursor/skills", detect: ".cursor", globalRoot: ".cursor" },
+  { name: "codex", label: "Codex", project: ".agents/skills", global: ".codex/skills", detect: ".codex", globalRoot: ".codex" },
+  { name: "claude-code", label: "Claude Code", project: ".claude/skills", global: ".claude/skills", detect: ".claude", globalRoot: ".claude" },
+  { name: "windsurf", label: "Windsurf", project: ".windsurf/skills", global: ".codeium/windsurf/skills", detect: ".windsurf", globalRoot: ".codeium" },
+  { name: "gemini-cli", label: "Gemini CLI", project: ".agents/skills", global: ".gemini/skills", detect: ".gemini", globalRoot: ".gemini" },
+  { name: "github-copilot", label: "GitHub Copilot", project: ".agents/skills", global: ".copilot/skills", detect: ".github", globalRoot: ".copilot" },
+  { name: "amp", label: "Amp", project: ".agents/skills", global: ".config/agents/skills", detect: ".amp", globalRoot: ".config/agents" },
+  { name: "goose", label: "Goose", project: ".goose/skills", global: ".config/goose/skills", detect: ".goose", globalRoot: ".config/goose" },
+  { name: "devin", label: "Devin", project: ".devin/skills", global: ".config/devin/skills", detect: ".devin", globalRoot: ".config/devin" },
+  { name: "kilo-code", label: "Kilo Code", project: ".agents/skills", global: ".kilocode/skills", detect: ".kilocode", globalRoot: ".kilocode" },
+  { name: "cline", label: "Cline", project: ".agents/skills", global: ".cline/skills", detect: ".cline", globalRoot: ".cline" },
+  { name: "roo", label: "Roo Code", project: ".roo/skills", global: ".roo/skills", detect: ".roo", globalRoot: ".roo" },
+  { name: "crush", label: "Crush", project: ".crush/skills", global: ".config/crush/skills", detect: ".crush", globalRoot: ".config/crush" },
+  { name: "aider-desk", label: "AiderDesk", project: ".aider-desk/skills", global: ".aider-desk/skills", detect: ".aider-desk", globalRoot: ".aider-desk" },
 ];
 
 /**

@@ -12,7 +12,7 @@ import {
   hashDirectory,
   removeDirectory,
 } from "./utils/fs.mjs";
-import { select } from "./utils/prompt.mjs";
+import { pickSkills } from "./setup.mjs";
 
 /**
  * Install skills from a source into one or more agents.
@@ -30,6 +30,7 @@ export async function installSkills({
   global = false,
   copy = false,
   yes = false,
+  interactive = false,
   preferLocal = true,
 }) {
   const resolved = await resolveSource(sourceSpec, { cwd: projectRoot, preferLocal });
@@ -44,7 +45,7 @@ export async function installSkills({
     });
   }
 
-  const chosen = await chooseSkills(available, names, resolved, { yes });
+  const chosen = await chooseSkills(available, names, resolved, { yes, interactive });
   if (chosen.length === 0) return { installed: [], resolved };
 
   const canonicalDir = skillsDirFor(CANONICAL_AGENT, { projectRoot, global });
@@ -90,22 +91,22 @@ function isSameDirectory(source, destination) {
   return path.resolve(source) === path.resolve(destination);
 }
 
-async function chooseSkills(available, names, resolved, { yes }) {
+async function chooseSkills(available, names, resolved, { yes, interactive }) {
   if (names.includes("*")) return available;
 
   if (names.length > 0) {
     return names.map((name) => assertSkillExists(available, name));
   }
 
-  if (yes) return [available[0]];
+  // Interactive with no names means "browse": let the user search and take as
+  // many as they want. `addCommand` routes the no-TTY case to the plain
+  // listing before it ever reaches here.
+  if (interactive && !yes) {
+    const picked = await pickSkills(available);
+    return picked.map((name) => assertSkillExists(available, name));
+  }
 
-  const picked = await select(`Which skills from ${resolved.describe()}?`, available.map((skill) => ({
-    label: skill.name,
-    value: skill,
-    description: skill.description,
-  })));
-
-  return picked.map((choice) => choice.value);
+  return [available[0]];
 }
 
 /**

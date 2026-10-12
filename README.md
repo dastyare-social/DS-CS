@@ -560,10 +560,16 @@ agent needs to work on this codebase or operate a channel. Install them with the
 [`ds-cs`](./scripts/cli) CLI:
 
 ```bash
-npx @dastyaresocial/ds-cs init
-npx @dastyaresocial/ds-cs add                   # browse the registry
-npx @dastyaresocial/ds-cs add post-with-media   # install one by name
+npx @dastyaresocial/ds-cs init        # asks: project or global, which agents, symlink or copy
+npx @dastyaresocial/ds-cs add        # browse the registry in a searchable picker
+npx @dastyaresocial/ds-cs add post-with-media   # or skip the prompts entirely
 ```
+
+Both commands are interactive: they ask whether to install into this project or
+your user directory, which agents should read the skills, and whether the files
+are symlinked or copied. Your last choices are remembered, so repeat runs are
+three presses of enter. With no terminal — CI, a pipe, an agent — nothing prompts
+and flags decide instead.
 
 `ds-cs add` also installs from any other skills repository —
 `owner/repo`, a URL, an SSH remote, or a local directory — and reads and writes

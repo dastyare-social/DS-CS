@@ -97,9 +97,10 @@ actually cause errors — upload media before referencing its URL, `kind=image` 
 installable agent skills.
 
 ```bash
-npx @dastyaresocial/ds-cs init
-npx @dastyaresocial/ds-cs add post-with-media      # install from the DS-CS registry
-npx @dastyaresocial/ds-cs add owner/repo@skill     # or from any other skills repository
+npx @dastyaresocial/ds-cs init      # asks: this project or global? which agents? symlink or copy?
+npx @dastyaresocial/ds-cs add      # searchable picker over every skill
+npx @dastyaresocial/ds-cs add post-with-media    # or install one by name, skipping the prompts
+npx @dastyaresocial/ds-cs add owner/repo@skill   # or from any other skills repository
 ```
 
 | Skill | Purpose |

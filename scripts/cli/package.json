@@ -1,6 +1,6 @@
 {
   "name": "@dastyaresocial/ds-cs",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "CLI for Dastyare Social — CS. Install DS-CS skills and third-party agent skills, wire up MCP, and authenticate to a channel.",
   "license": "MIT",
   "type": "module",
