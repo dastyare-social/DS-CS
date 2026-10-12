@@ -97,6 +97,16 @@ ds-cs logout
 
 `DS_CS_URL` and `DS_CS_API_KEY` override the stored values. `DS_CS_CONFIG_DIR` relocates the file.
 
+## Where the registry comes from
+
+`ds-cs add` resolves the DS-CS registry in this order:
+
+1. **A local checkout** — a DS-CS repo found by walking up from the current directory. Edit a skill and reinstall it and you get your edit, not whatever `main` says.
+2. **The copy bundled in this package** — `prepack` copies `skills/` into the published package. This is the normal path for an installed CLI, and it works with no network at all. It also guarantees the registry matches the CLI version you have.
+3. **GitHub** — a fallback for a CLI older than the skills it wants. Only the `skills/` subtree is fetched; the full repo tarball is ~28MB, almost all of it `public/` and generated assets, and reading it to get ten markdown files is not a trade worth making.
+
+The repo's `skills/` is the source of truth. The copy inside this package is a build artefact, regenerated on `prepack` and gitignored.
+
 ## Publishing a skill to the registry
 
 DS-CS skills live in [`skills/`](../../skills) in this repository. A skill is a directory with a `SKILL.md` whose frontmatter carries a `name` and a `description`:

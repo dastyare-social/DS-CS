@@ -2,13 +2,14 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import { CliError } from "../utils/errors.mjs";
 import { isDirectory } from "../utils/fs.mjs";
 import { extractBuffer, extractTarGz } from "./archive.mjs";
-import { cachedBuffer, fetchBuffer } from "./fetch.mjs";
+import { cachedBuffer, fetchBuffer, fetchJson, fetchText } from "./fetch.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -44,44 +45,21 @@ async function makeTempDir() {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Resolve the DS-CS registry to a directory of skills.
+ * Where the registry can be found inside this package.
  *
- * Order matters: a local checkout always wins. When you are editing skills in
- * the repo, `ds-cs add` should install what is on your disk, not what `main`
- * happens to say — otherwise the loop "edit skill, reinstall it" cannot work.
+ * Two layouts have to work. In a DS-CS checkout the CLI lives at
+ * `scripts/cli/src/registry/`, so the registry is the repo root's `skills/`.
+ * Published to npm, `sync-skills` copies the registry to `scripts/cli/skills/`
+ * so it travels inside the package. Both are checked against the package root,
+ * cheapest first.
  */
-export async function resolveDsCs({ cwd, preferLocal = true }) {
-  const localRoot = await findLocalCheckout(cwd);
-  if (preferLocal && localRoot) {
-    return {
-      id: DS_CS_REPO,
-      type: SOURCE_TYPES.DS_CS,
-      root: localRoot,
-      origin: "local",
-      describe: () => `${DS_CS_REPO} (local checkout at ${readable(localRoot)})`,
-    };
-  }
-
-  const url = `https://codeload.github.com/${DS_CS_REPO}/tar.gz/refs/heads/${DS_CS_REF}`;
-  const buffer = await cachedBuffer(url, hashKey(url));
-  const extraction = await makeTempDir();
-
-  await extractTarGz(buffer, extraction, { strip: 1 });
-  const skillsRoot = path.join(extraction, DS_CS_SKILLS_DIR);
-
-  if (!(await isDirectory(skillsRoot))) {
-    throw new CliError(`The DS-CS repository at ${DS_CS_REF} has no ${DS_CS_SKILLS_DIR}/ directory`, {
-      hint: "The skills directory may have moved. Pass an explicit source instead.",
-    });
-  }
-
-  return {
-    id: DS_CS_REPO,
-    type: SOURCE_TYPES.DS_CS,
-    root: extraction,
-    origin: "remote",
-    describe: () => `${DS_CS_REPO}@${DS_CS_REF}`,
-  };
+function bundledRegistryRoots() {
+  // `../..` from src/registry/ is the package root in both layouts.
+  const packageRoot = fileURLToPath(new URL("../..", import.meta.url));
+  return [
+    path.join(packageRoot, "skills"), // published layout: <pkg>/skills
+    path.resolve(packageRoot, "..", "..", "skills"), // checkout: <repo>/skills
+  ];
 }
 
 /** Walk up from `cwd` looking for a DS-CS checkout that ships a `skills/` dir. */
@@ -95,6 +73,98 @@ async function findLocalCheckout(cwd) {
     directory = parent;
   }
   return null;
+}
+
+/**
+ * Fetch only the `skills/` subtree of the DS-CS repository.
+ *
+ * The full repo tarball is ~28MB — almost all of it `public/` and generated
+ * assets — to read a handful of markdown files. Listing the tree once and
+ * pulling just the registry's files keeps the fallback under a megabyte, and
+ * keeps it working under the archive size limit.
+ */
+async function fetchRegistrySubtree(ref) {
+  const listing = await fetchJson(
+    `https://api.github.com/repos/${DS_CS_REPO}/git/trees/${ref}?recursive=1`
+  );
+
+  if (!Array.isArray(listing.tree)) {
+    throw new CliError(`GitHub returned no tree for ${DS_CS_REPO}@${ref}`, {
+      hint: "The branch may not exist, or the API rate limit may be reached.",
+    });
+  }
+
+  const wanted = listing.tree.filter(
+    (node) =>
+      node.type === "blob" &&
+      node.path.startsWith(`${DS_CS_SKILLS_DIR}/`) &&
+      // Skip build artefacts that would otherwise ride along in the registry.
+      !node.path.endsWith("/.DS_Store") &&
+      !path.posix.basename(node.path).startsWith("._")
+  );
+
+  if (wanted.length === 0) {
+    throw new CliError(`No ${DS_CS_SKILLS_DIR}/ directory at ${DS_CS_REPO}@${ref}`);
+  }
+
+  const extraction = await makeTempDir();
+  for (const node of wanted) {
+    const target = path.join(extraction, node.path);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    const body = await fetchText(
+      `https://raw.githubusercontent.com/${DS_CS_REPO}/${ref}/${node.path}`
+    );
+    await fs.writeFile(target, body);
+  }
+
+  return { root: extraction, fileCount: wanted.length };
+}
+
+/**
+ * Resolve the DS-CS registry to a directory of skills.
+ *
+ * Order matters, and each step exists for a reason:
+ *
+ *  1. A local checkout — so editing a skill in the repo and reinstalling it
+ *     works, instead of resolving against whatever `main` says.
+ *  2. The copy bundled in this package — works offline, matches the CLI
+ *     version the user actually has, and needs no network at all.
+ *  3. GitHub — a last resort for a CLI older than the skills it wants.
+ */
+export async function resolveDsCs({ cwd, preferLocal = true }) {
+  if (preferLocal) {
+    const localRoot = await findLocalCheckout(cwd);
+    if (localRoot) {
+      return {
+        id: DS_CS_REPO,
+        type: SOURCE_TYPES.DS_CS,
+        root: localRoot,
+        origin: "local",
+        describe: () => `${DS_CS_REPO} (local checkout at ${readable(localRoot)})`,
+      };
+    }
+  }
+
+  for (const bundled of bundledRegistryRoots()) {
+    if (await isDirectory(bundled)) {
+      return {
+        id: DS_CS_REPO,
+        type: SOURCE_TYPES.DS_CS,
+        root: path.resolve(bundled, ".."),
+        origin: "bundled",
+        describe: () => `${DS_CS_REPO} (bundled with this CLI)`,
+      };
+    }
+  }
+
+  const { root, fileCount } = await fetchRegistrySubtree(DS_CS_REF);
+  return {
+    id: DS_CS_REPO,
+    type: SOURCE_TYPES.DS_CS,
+    root,
+    origin: "remote",
+    describe: () => `${DS_CS_REPO}@${DS_CS_REF} (${fileCount} files)`,
+  };
 }
 
 /* -------------------------------------------------------------------------- */

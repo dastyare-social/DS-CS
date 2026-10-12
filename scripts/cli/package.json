@@ -13,6 +13,7 @@
   "files": [
     "bin",
     "src",
+    "skills",
     "README.md"
   ],
   "engines": {
@@ -20,7 +21,9 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "dev": "node ./bin/ds-cs.mjs"
+    "dev": "node ./bin/ds-cs.mjs",
+    "sync-skills": "node ./scripts/sync-skills.mjs",
+    "prepack": "node ./scripts/sync-skills.mjs"
   },
   "keywords": [
     "ds-cs",
