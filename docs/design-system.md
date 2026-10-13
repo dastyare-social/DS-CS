@@ -52,6 +52,9 @@ a Tailwind utility should be able to reach it.
 | `--icon-border` | `primary` @ 15% | |
 | `--selection-foreground` / `--selection-background` | `primary` / `primary` @ 10% | |
 
+Material tokens (`--liquid-glass-*`, `--scroll-fade-*`) are documented with
+the utility that consumes them, in §4 and §5.
+
 ---
 
 ## 2. No shadows — global rule
@@ -305,7 +308,106 @@ element. Override the tokens instead.
 
 ---
 
-## 5. Button
+## 5. Scroll safe zone
+
+`scroll-safe-zone-*` — `src/components/scroll-safe-zone.tsx`. The band that
+hides the seam where a scrolling list runs under fixed chrome, so items
+dissolve into the header and footer instead of being sliced off by a hard
+line.
+
+It is deliberately **not** glass. It has no rim, no inset stroke and no
+specular band: its job is to dissolve content, not to read as a surface.
+
+| Token | Default |
+|-------|---------|
+| `--scroll-safe-inset` | `0px` |
+| `--scroll-fade-size` | `76px` |
+| `--scroll-fade-blur` | `2px` |
+| `--scroll-fade-wash` | `--background` @ 40% |
+
+`--scroll-fade-blur` is the **ceiling**, and it is deliberately low. The band is
+meant to soften the seam, not to erase what it covers — anything stronger reads
+as the chrome frosting the list rather than the list receding behind it.
+
+### 5.1 Each edge is two layers, not one
+
+The blur and the wash are separate elements — `scroll-safe-zone-blur` and
+`scroll-safe-zone-wash` — because they want **different fade curves**.
+
+Masking a blur by alpha `a` composites it as `a·blur_B(S) + (1-a)·S`. Because a
+blur is a linear operator, that is equivalent to a blur of roughly `√a·B`. So
+with a *linear* mask the radius goes as `√a`: it is already at ~95% of the
+ceiling after the first 10% of the band and then crawls for the rest. It reads
+as a flat blur with a fade laid over it, not as a blur that deepens.
+
+The blur layer therefore masks on **`(1-s)²`**, so `√a = 1-s` and the radius
+falls evenly from the ceiling to nothing:
+
+| depth into band | mask alpha | implied radius |
+|-----------------|-----------|----------------|
+| 0 (screen edge) | 1 | 2.00px |
+| 0.25 | 0.5625 | 1.50px |
+| 0.50 | 0.25 | 1.00px |
+| 0.75 | 0.0625 | 0.50px |
+| 1.00 | 0 | 0px |
+
+The wash keeps a gentler linear ramp — it has no sharpness to lose, and holding
+it back lets the blur read as the thing doing the work. A sharp wash fade would
+leave crisp text ghosting through at half strength.
+
+### 5.2 The fade runs from the screen edge, not from under the chrome
+
+The band has **no opaque prefix**. An earlier version held full strength across
+`--scroll-safe-inset` and only ramped below it, which buried the strongest part
+of the blur behind the header/footer — so content appeared at its blurriest
+exactly where it emerged from under the chrome. Ramping from the screen edge
+means it is already easing off by the time it comes into view.
+
+`--scroll-safe-inset` therefore only *sizes* the band: it is how far past the
+chrome the fade has to run before it reaches nothing.
+
+Callers pass **half** the floating bar's height as part of the inset, so the
+fade is measured against the middle of the pinned bar at the top and the middle
+of the install/update banner at the bottom:
+
+```tsx
+topInset="calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) / 2)"
+bottomInset="calc(var(--chat-footer-height) + var(--install-banner-height, 0px) / 2)"
+```
+
+### 5.3 The mask is composed in the utility, not in a token
+
+A `var()` nested inside a custom property resolves against the element that
+**declares** it, not the element that inherits it. A `--scroll-fade-mask-*`
+token in `:root` would therefore bake in `:root`'s `--scroll-safe-inset`, and
+every per-surface override would be silently ignored. Same split `liquid-glass`
+already uses: scalar colours as tokens, gradient as composition.
+
+Each concrete layer also declares its own anchoring (`top: 0` / `bottom: 0`)
+rather than inheriting one and overriding it — two same-specificity rules
+otherwise resolve by source order, which the build does not guarantee.
+
+### 5.4 Per-edge visibility is the caller's business
+
+`useScrollEdges` (`src/lib/hooks/use-scroll-edges.ts`) reports, per edge,
+whether there is list hidden behind it. `ScrollSafeZone` drives each layer's
+`opacity` from that, so **an edge with nothing behind it is never covered by a
+fade that has nothing to fade** — the start and the end of a list stay clean.
+The utility itself does not decide this.
+
+The hook handles both a normal scroller and `flex-col-reverse` (the feeds,
+where `scrollTop` starts at the visual bottom and runs negative) by reading
+`flex-direction` off the element, so a call site cannot get it backwards.
+
+Its edge slack is DPR-scaled. `scrollHeight`/`clientHeight` are whole CSS
+pixels and `scrollTop` is clamped to whole *device* pixels, so on a
+fractional-DPR display the furthest reachable offset lands a pixel or two
+short of `scrollHeight - clientHeight` — measured at 1.09px at 1.1x. A 1px
+slack leaves the band stuck on at the very end of the list.
+
+---
+
+## 6. Button
 
 `src/components/button.tsx`. `buttonVariants` is `cva`; `asChild` renders
 through a Radix `Slot`.

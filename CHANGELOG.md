@@ -34,8 +34,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Outbound webhooks — register endpoints and receive signed real-time events
   (`post.created|updated|deleted|reacted|viewed`,
   `story.created|updated|deleted|viewed|liked`), with HMAC signature
-  verification, automatic retries with backoff, and per-webhook delivery status
+  verification, automatic retries with backoff, and per-endpoint delivery status
   (`lastStatus`, `lastAttemptAt`, `failureCount`)
+- Scroll safe zone on every scrolling list (`/`, `/os`, `/posts/[id]`,
+  `/explore`) — a gradient that blurs and washes out content where it passes
+  under fixed chrome, so items dissolve into the header and footer instead of
+  being sliced off by a hard line. Instagram-style, but per edge: a band only
+  appears while its own edge has more list behind it, so the start and end of a
+  list are never covered by a fade that has nothing to fade. Masked crossfade
+  yields a *ramping* blur radius (`√alpha`), so the blur is a second layer with
+  its own curve rather than being flattened by the wash's; `--scroll-fade-blur`
+  caps it at 2px. Documented in `docs/design-system.md` §5.
 
 ## [0.1.0] - Initial release
 

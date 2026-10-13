@@ -98,6 +98,59 @@ body {
   --liquid-glass-stroke-blur: 2px;
   --liquid-glass-sheen: color-mix(in srgb, white 70%, transparent);
 
+  /* Scroll safe zone — the band that hides the seam where a scrolling list runs
+     under fixed chrome. It is NOT glass: there is no rim and no specular band,
+     because the job is to dissolve content into the chrome rather than to read
+     as a surface.
+
+     The blur is split from the wash into two layers, because they want
+     different curves (see §5 of docs/design-system.md):
+
+     • `--scroll-fade-blur` is the ceiling, and it is deliberately low (2px).
+       The band is meant to soften the seam, not to erase what it covers —
+       anything stronger reads as the chrome frosting the list rather than the
+       list receding behind it.
+     • The blur ramps across the WHOLE band, starting at the screen edge. It
+       does not hold at full strength under the header/footer and only start
+       fading below them: that buries the strongest part of the blur behind the
+       glass, so content would appear at its blurriest exactly where it comes
+       out from under the chrome. Ramping from the edge means it is already
+       easing off by the time it comes into view.
+     • The wash keeps a gentler linear ramp, because a sharp crossfade there
+       would leave crisp text ghosting through at half strength.
+
+     Both layers mask LINEARLY, 1 → 0 across the band. Masking a blur by alpha
+     `a` composites it as `a·blur_B(S) + (1-a)·S`, and since a blur is a linear
+     operator that is a blur of roughly `√a·B` — so a linear mask yields a radius
+     falling as `√(1-s)`: still ~70% of the ceiling two thirds of the way down.
+     That is deliberate. Squaring the mask to force the radius down linearly
+     instead drains nearly all the blur before the content clears the chrome,
+     and since the strong end of the band sits behind the glass, what survives
+     reads as nothing at all. See §5.1.
+
+     The wash is near-opaque on its own (82%) for the same reason: on a light
+     background 2px of blur alone is barely perceptible, so the wash is what
+     actually carries the read.
+
+     `--scroll-safe-inset` now only sets how far the band reaches past the
+     chrome (its height); the fade itself is relative to the screen edge.
+
+     Only scalars live here. The masks are composed inside the utilities, not
+     as tokens, because a `var()` nested in a custom property resolves against
+     the element that *declares* it — a mask token in `:root` would bake in
+     `:root`'s `--scroll-safe-inset` and every per-surface override would be
+     silently ignored. Same split `liquid-glass` uses: colours as tokens,
+     gradient as composition. */
+  --scroll-safe-inset: 0px;
+  --scroll-fade-size: 76px;
+  --scroll-fade-blur: 2px;
+  /* A finished colour, not a percentage — the way `--liquid-glass-bg` is
+     written. Referencing a bare `--background` would leave Tailwind emitting
+     it as the fallback for the `color-mix` below, i.e. an opaque bar on any
+     engine without `color-mix`, which is the one browser that cannot afford
+     an opaque bar. */
+  --scroll-fade-wash: color-mix(in srgb, var(--background) 82%, transparent);
+
   /* Reflection — a single specular band swept across the surface at 45deg,
      full scale. Deliberately zero dispersion and zero frost: one clean
      colour with hard stops, no blur and no chromatic split, so it reads as a
@@ -114,6 +167,34 @@ body {
      0.6 read "60%" as the literal number and did exactly that. See the
      base-layer rule below. Single source of truth for the whole app. */
   --corner-smoothing: superellipse(2.5);
+}
+
+/* Radius compensation for the superellipse corner.
+   A superellipse corner is *fuller* than the circular arc it replaces, so the
+   same border-radius reads visibly tighter once smoothing is on — modals at
+   `rounded-3xl` looked like they had lost about a third of their corner.
+
+   How far the corner reaches along the 45deg diagonal scales with
+   (1 − 2^(−1/n)):
+       n = 2    → 0.414 · r     (circular arc)
+       n = 2.5  → 0.342 · r     (our squircle)
+   Matching the old visual size therefore needs r' = 0.414/0.342 · r ≈ 1.21 r.
+
+   Every step of the scale is pre-multiplied by 1.21 so `rounded-*` keeps the
+   corner SIZE it always had, and `corner-shape` only changes the corner SHAPE.
+   `--radius-full` is untouched — `.rounded-full` opts out of smoothing
+   entirely, so it needs no compensation.
+
+   Change this only together with `--corner-smoothing`: the factor is derived
+   from that exponent. */
+@theme {
+  --radius-sm: 0.302rem; /*  4px →  4.8px */
+  --radius-md: 0.454rem; /*  6px →  7.3px */
+  --radius-lg: 0.605rem; /*  8px →  9.7px */
+  --radius-xl: 0.908rem; /* 12px → 14.5px */
+  --radius-2xl: 1.21rem; /* 16px → 19.4px */
+  --radius-3xl: 1.814rem; /* 24px → 29.0px */
+  --radius-4xl: 2.42rem; /* 32px → 38.7px */
 }
 
 /* Apply to any element that should sit on the page as glass. Tinting is done
@@ -225,6 +306,149 @@ body {
   --liquid-glass-sheen: color-mix(in srgb, white 55%, transparent);
 }
 
+/* Scroll safe zone — the band that hides the seam where a scrolling list meets
+   fixed chrome. It is split across two elements (wash + blur) because the two
+   need different fade curves; this utility carries only what they share.
+
+   Anchored to the viewport edge, with the fade running from that edge across
+   the whole band — there is no opaque prefix holding full strength under the
+   chrome, because that would make content emerge from under the header at its
+   blurriest. `--scroll-safe-inset` only sizes the band: it is how far past the
+   chrome the fade needs to run before it has reached nothing.
+
+   Per-edge visibility is the caller's business — they set `opacity` — and the
+   transition is what lets a band arrive without the gradient snapping.
+
+   No anchoring here: each concrete layer declares its own, so nothing depends
+   on the order these utilities happen to be emitted in. */
+@utility scroll-safe-zone {
+  position: absolute;
+  inset-inline: 0;
+  height: calc(var(--scroll-safe-inset) + var(--scroll-fade-size));
+  pointer-events: none;
+  /* Above the list it covers, below the fixed chrome (z-40/z-50) and the
+     scroll-to-bottom affordance that share that range. */
+  z-index: 30;
+
+  transition: opacity 200ms ease;
+}
+
+/* Wash layer — the page colour laid over the list. Masks on a gentle linear
+   ramp: it has no sharpness to lose, and holding it back lets the blur read as
+   the thing doing the work. */
+@utility scroll-safe-zone-wash {
+  @apply scroll-safe-zone;
+
+  top: 0;
+  background-color: var(--scroll-fade-wash);
+
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 1) 0,
+    rgb(0 0 0 / 0.86) 24%,
+    rgb(0 0 0 / 0.64) 47%,
+    rgb(0 0 0 / 0.4) 68%,
+    rgb(0 0 0 / 0.17) 86%,
+    rgb(0 0 0 / 0) 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 1) 0,
+    rgb(0 0 0 / 0.86) 24%,
+    rgb(0 0 0 / 0.64) 47%,
+    rgb(0 0 0 / 0.4) 68%,
+    rgb(0 0 0 / 0.17) 86%,
+    rgb(0 0 0 / 0) 100%
+  );
+}
+
+/* Blur layer — the ramp itself. Masked on `(1-s)²` rather than linearly, so the
+   radius climbs evenly from nothing to the `--scroll-fade-blur` cap instead of
+   arriving at full strength immediately and sitting there. That squaring is
+   what turns "the mask fades" into "the blur deepens". */
+@utility scroll-safe-zone-blur {
+  @apply scroll-safe-zone;
+
+  top: 0;
+
+  -webkit-backdrop-filter: blur(var(--scroll-fade-blur));
+  backdrop-filter: blur(var(--scroll-fade-blur));
+
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 1) 0,
+    rgb(0 0 0 / 0.82) 22%,
+    rgb(0 0 0 / 0.58) 45%,
+    rgb(0 0 0 / 0.33) 68%,
+    rgb(0 0 0 / 0.13) 86%,
+    rgb(0 0 0 / 0) 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 1) 0,
+    rgb(0 0 0 / 0.82) 22%,
+    rgb(0 0 0 / 0.58) 45%,
+    rgb(0 0 0 / 0.33) 68%,
+    rgb(0 0 0 / 0.13) 86%,
+    rgb(0 0 0 / 0) 100%
+  );
+}
+
+/* Bottom-edge layers — same materials, anchored from the other end and faded
+   the other way so the effect is strongest flush against the edge it
+   protects. */
+@utility scroll-safe-zone-wash-bottom {
+  @apply scroll-safe-zone-wash;
+
+  top: auto;
+  bottom: 0;
+
+  -webkit-mask-image: linear-gradient(
+    to top,
+    rgb(0 0 0 / 1) 0,
+    rgb(0 0 0 / 0.86) 24%,
+    rgb(0 0 0 / 0.64) 47%,
+    rgb(0 0 0 / 0.4) 68%,
+    rgb(0 0 0 / 0.17) 86%,
+    rgb(0 0 0 / 0) 100%
+  );
+  mask-image: linear-gradient(
+    to top,
+    rgb(0 0 0 / 1) 0,
+    rgb(0 0 0 / 0.86) 24%,
+    rgb(0 0 0 / 0.64) 47%,
+    rgb(0 0 0 / 0.4) 68%,
+    rgb(0 0 0 / 0.17) 86%,
+    rgb(0 0 0 / 0) 100%
+  );
+}
+
+@utility scroll-safe-zone-blur-bottom {
+  @apply scroll-safe-zone-blur;
+
+  top: auto;
+  bottom: 0;
+
+  -webkit-mask-image: linear-gradient(
+    to top,
+    rgb(0 0 0 / 1) 0,
+    rgb(0 0 0 / 0.82) 22%,
+    rgb(0 0 0 / 0.58) 45%,
+    rgb(0 0 0 / 0.33) 68%,
+    rgb(0 0 0 / 0.13) 86%,
+    rgb(0 0 0 / 0) 100%
+  );
+  mask-image: linear-gradient(
+    to top,
+    rgb(0 0 0 / 1) 0,
+    rgb(0 0 0 / 0.82) 22%,
+    rgb(0 0 0 / 0.58) 45%,
+    rgb(0 0 0 / 0.33) 68%,
+    rgb(0 0 0 / 0.13) 86%,
+    rgb(0 0 0 / 0) 100%
+  );
+}
+
 @layer base {
   body {
     @apply bg-background text-foreground;
@@ -249,24 +473,43 @@ body {
   }
 
   /* Corner smoothing — 60%, on content surfaces.
-     `corner-shape: superellipse(0.6)` is the CSS equivalent of a 60% corner
-     smoothing (Figma / iOS continuous corners). It re-shapes corners *inside*
-     the existing border-radius, so `rounded-*` still controls the size.
+     `corner-shape: superellipse(n)` where n is the SUPERELLIPSE EXPONENT,
+     not a percentage. Measured behaviour, verified in-browser:
 
-     `:where()` keeps this at specificity 0 so any component can opt out with a
-     single utility.
+        n = 2    circular arc (Figma smoothing 0%)
+        n = 2.5  fuller, continuous squircle corner — this is what we want
+        n = 3+   pushes the corner out to the edge; at our radii it reads as a
+                 plain square and loses all rounding
+        n < 2    corners cut INWARD (octagonal) — the opposite of iOS
 
-     Two exclusions, both deliberate:
-     - `.rounded-full` — a 50% radius means "circle"; smoothing it would square
-       off every avatar, pill and round button (54 call sites).
-     - `.w-full` — full-bleed bars (install/update banners, pinned bar). Their
-       radius is proportionally huge next to their short height, so a
-       superellipse reads as an angular wedge instead of a clean curve. Cards
-       and panels keep the smoothing; bars keep circular corners.
+     2.5 is the value that reads as iOS/Figma smoothing at every radius this
+     app actually uses (8px rounded-lg through 24px rounded-3xl) without
+     squaring the corner off. An earlier value of 0.6 was a misreading of
+     "60%" as the literal number and cut every corner inward.
+
+     It re-shapes corners *inside* the existing border-radius, so `rounded-*`
+     still controls the size. `:where()` keeps this at specificity 0 so any
+     component can opt out with a single utility.
+
+     One exclusion, and it is not optional:
+     - `.rounded-full` — a 50% radius means "circle". Smoothing pushes it out
+       to a square, so this class must opt out (58 call sites: avatars, pills,
+       round buttons).
+
+     A `.w-full` exclusion used to live here, on the grounds that short
+     full-bleed bars "read as an angular wedge". That was a symptom of the
+     broken 0.6 exponent, which cut corners inward; at 2.5 the corners are
+     fuller, not angular. Worse, `:not(.w-full)` matched far more than the
+     three bars it was meant for — 12 elements carry both `w-full` and a
+     rounded class (not-found modals, error banners, story-preview cards), and
+     all of them were silently rendering plain circular corners. Removed.
+
+     If a specific surface genuinely needs a circular corner, opt it out
+     explicitly with `corner-shape: round` on that element and say why.
 
      Experimental: Chromium-only today. Elsewhere the declaration is dropped and
      plain border-radius corners render — a graceful downgrade, not a break. */
-  :where(*):not(.rounded-full):not(.w-full) {
+  :where(*):not(.rounded-full) {
     corner-shape: var(--corner-smoothing);
   }
 }

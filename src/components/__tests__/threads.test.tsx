@@ -16,6 +16,12 @@ vi.mock('../new-threads-banner', () => ({
   default: ({ count }: any) => <div data-testid="new-threads-banner">{count}</div>,
 }))
 
+// Reads a bare global getComputedStyle on mount, which this suite does not
+// register — it only installs globalThis.window/document/navigator.
+vi.mock('../scroll-safe-zone', () => ({
+  default: () => null,
+}))
+
 vi.mock('../loader', () => ({
   default: () => <div data-testid="loader" />,
 }))

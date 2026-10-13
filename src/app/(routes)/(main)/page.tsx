@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
 import Header from "@/components/header";
 import InstallBanner from "@/components/install-banner";
+import ScrollSafeZone from "@/components/scroll-safe-zone";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { setUserLocale } from "@/services/locale";
@@ -419,6 +420,15 @@ const Page = () => {
             )}
           </div>
         </div>
+
+        {/* Scroll safe zone — blurs the feed where it passes under the chrome.
+            Edges with nothing behind them stay clear. */}
+        <ScrollSafeZone
+          scrollRef={pageRef}
+          topInset="calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) / 2)"
+          bottomInset="calc(var(--chat-footer-height) + var(--install-banner-height, 0px) / 2)"
+          enabled={!isInitialLoading && !isEmpty}
+        />
 
         {/* Scroll to bottom — anchored to the feed column, hidden while at the bottom */}
         {showScrollToBottom && (

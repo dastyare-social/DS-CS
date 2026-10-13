@@ -5,6 +5,7 @@ import Loader from "@/components/loader";
 import Thread from "@/components/thread";
 import PullRefreshLoader from "@/components/pull-refresh-loader";
 import NewThreadsBanner from "@/components/new-threads-banner";
+import ScrollSafeZone from "@/components/scroll-safe-zone";
 import type { PostWithReactions } from "@/lib/api/posts";
 
 interface ThreadsProps {
@@ -94,7 +95,7 @@ export default function Threads({
     <div
       ref={threadsPageRef}
       style={{ height: "100dvh" }}
-      className="flex flex-col-reverse w-full justify-start"
+      className="relative flex flex-col-reverse w-full justify-start"
     >
       <div
         ref={threadsScrollRef}
@@ -137,6 +138,15 @@ export default function Threads({
           <div ref={threadsSentinelRef} />
         </div>
       </div>
+
+      {/* Blur the list where it passes under the chrome. The new-threads
+          banner is sticky at the top, so the top band stays suppressed until
+          the list is actually scrolled. */}
+      <ScrollSafeZone
+        scrollRef={threadsScrollRef}
+        topInset="var(--chat-header-height)"
+        bottomInset="var(--chat-footer-height)"
+      />
     </div>
   );
 }

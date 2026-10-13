@@ -41,6 +41,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/context-menu";
 import UpdateBanner from "@/components/update-banner";
+import ScrollSafeZone from "@/components/scroll-safe-zone";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
 import type { MediaPayload, PostWithReactions } from "@/lib/api/posts";
 import { Locale } from "@/config/locale";
@@ -1397,6 +1398,15 @@ const Page = () => {
             </div>
           </div>
         )}
+
+        {/* Scroll safe zone — blurs the feed where it passes under the chrome.
+            Edges with nothing behind them stay clear. */}
+        <ScrollSafeZone
+          scrollRef={pageRef}
+          topInset="calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) / 2)"
+          bottomInset="calc(var(--chat-footer-height) + var(--update-banner-height, 0px) / 2)"
+          enabled={!isInitialLoading && !isEmpty}
+        />
 
         {/* Scroll to bottom — anchored to the feed column, hidden while at the bottom */}
         {showScrollToBottom && (
