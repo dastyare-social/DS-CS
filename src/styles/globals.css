@@ -155,9 +155,6 @@ body {
      full scale. Deliberately zero dispersion and zero frost: one clean
      colour with hard stops, no blur and no chromatic split, so it reads as a
      reflection on glass rather than a glow or a lens flare. */
-  --liquid-glass-reflection-angle: 45deg;
-  --liquid-glass-reflection-color: color-mix(in srgb, white 55%, transparent);
-  --liquid-glass-reflection-opacity: 45%;
 
   /* Corner smoothing applied to every rounded surface.
 
@@ -258,23 +255,6 @@ body {
     );
     opacity: 0;
     transition: opacity 500ms ease;
-  }
-
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    /* Single hard-stopped band: no blur (frost 0) and one colour
-       (dispersion 0). */
-    background: linear-gradient(
-      var(--liquid-glass-reflection-angle),
-      transparent 38%,
-      var(--liquid-glass-reflection-color) 50%,
-      transparent 62%
-    );
-    opacity: var(--liquid-glass-reflection-opacity);
   }
 
   &:hover::before,
