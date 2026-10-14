@@ -141,64 +141,51 @@ material built from those tools, **not** a shadow.
 
 ---
 
-## 3. Corner smoothing — 60%, global rule
+## 3. Corners — plain border-radius
 
-**Every rounded surface in this app uses 60% corner smoothing. This is not a
-per-component preference; it is enforced for the whole codebase.**
+**Corners are plain `border-radius`. No `corner-shape` is applied anywhere in
+this app, and the radius scale is not overridden.**
 
-```css
-corner-shape: superellipse(0.6);
-```
+`rounded-*` is stock Tailwind v4:
 
-That is the CSS spelling of a **60% corner smoothing** — the continuous
-"squircle" corner that Figma and iOS use. `superellipse(0.6)` re-shapes the
-corners *inside* the existing `border-radius`, so `rounded-*` still controls the
-corner **size** while this controls the corner **shape**.
+| utility | radius |
+|---|---|
+| `rounded-sm` | 4px |
+| `rounded-md` | 6px |
+| `rounded-lg` | 8px |
+| `rounded-xl` | 12px |
+| `rounded-2xl` | 16px |
+| `rounded-3xl` | 24px |
+| `rounded-4xl` | 32px |
+| `rounded-full` | 50% (true circle) |
 
-It is declared once, in the base layer of `src/styles/globals.css`, against
-every element:
+To change a corner, change `rounded-*` at the call site. Never override the
+scale globally.
 
-```css
-:where(*):not(.rounded-full):not(.w-full) {
-  corner-shape: var(--corner-smoothing);
-}
-```
+### Corner smoothing was tried and removed
 
-`--corner-smoothing: superellipse(0.6)` in `:root` is the single source of
-truth. **Never restate `superellipse()` in a component** — override the token
-if a surface genuinely needs a different curve, and say why.
+Figma/iOS "corner smoothing" is the continuous squircle corner. The only CSS
+route to it is `corner-shape: superellipse(n)`, where **n is an exponent, not
+a percentage** — `n = 2` is a circular arc, above 2 is a squircle, below 2 cuts
+the corner inward into an octagon.
 
-### Rules
+It was applied app-wide and then removed, because in practice it read as a
+change to corner **size** rather than shape and could not be reconciled with
+the previous look. Two radius-compensation scales were tried on top of it —
+×1.21 derived from the diagonal-reach geometry, then ×1.15 — and both visibly
+oversized every corner, worst on the short full-bleed bars (pinned-posts bar,
+install/update banners) where the radius approaches half the element height.
+All of it is gone.
 
-- **Cards, panels and dialogs get 60% smoothing** — anything `rounded-*` that
-  holds content: `rounded-lg` through `rounded-3xl`, or a raw `border-radius`.
-- **True circles stay circles.** `.rounded-full` is excluded. A 50% radius means
-  "circle", and smoothing it would square off every avatar, pill and round
-  button (54 call sites). If you add another circle, use `rounded-full` so the
-  exclusion keeps working.
-- **Full-bleed bars keep circular corners.** `.w-full` is excluded — the install
-  and update banners, and the pinned-posts bar. Their radius is proportionally
-  huge next to their short height (a 16px radius on a 48px-tall bar is a third
-  of its height), and a superellipse there reads as an **angular wedge** rather
-  than a smooth curve. This was a real regression when the rule was applied to
-  every element; don't reintroduce it.
-- **`:where()` keeps specificity at 0**, so any single utility can override the
-  shape without `!important`.
+If this is revisited, two things worth knowing:
 
-If you build a new short, wide, full-width bar, it already inherits the correct
-behaviour — do nothing.
-
-### Browser support
-
-`corner-shape` is **experimental and Chromium-only** at time of writing. Where
-it is unsupported the declaration is dropped and plain `border-radius` corners
-render — a graceful downgrade, never a broken layout. Do not add a JS or
-polyfill workaround for it.
-
-> **Terminology note:** "iOS smoothing" also refers to the liquid-glass *inset
-> stroke* (§2.1), which is a blurred rim, not a corner curve. They are unrelated
-> mechanisms that share a name. This section is about corner **shape**; §2.1 is
-> about edge **softness**.
+- **Do not use the `@toolwind/corner-shape` npm package.** It is a `0.0.8-3`
+  pre-release whose `superellipse` support is commented out in its own source —
+  it only ships `round`/`scoop`/`bevel`/`notch`/`square`/`squircle` keywords. It
+  also imports `@toolwind/v4-modifier-parser` without declaring it as a
+  dependency or peer, so installing it breaks the Tailwind build.
+- Use the native property directly, and scope it to the surfaces that need it
+  rather than setting it on `*`.
 
 ---
 
@@ -295,7 +282,56 @@ transition is disabled under `prefers-reduced-motion: reduce`.
 `z-index` must stay inside the element rather than falling behind the page
 background. Do not remove it.
 
-### 4.5 Do not pass `backdrop-blur-*` alongside the utility
+### 4.5 Reflection
+
+Every glass surface carries a specular reflection via `::after`: **45°, full
+scale, zero dispersion, zero frost** — one colour with hard gradient stops, so
+it reads as a reflection rather than a glow or a lens flare.
+
+| Token | Default |
+|-------|---------|
+| `--liquid-glass-reflection-angle` | `45deg` |
+| `--liquid-glass-reflection-color` | `white` @ 55% |
+| `--liquid-glass-reflection-opacity` | `45%` |
+
+`liquid-glass-dark` overrides these so the band reads as a highlight on a dark
+pane. Dispersion (chromatic split) and frost (blur) are deliberately absent —
+the band is a single gradient with no `filter: blur()`.
+
+On a light surface the band is assertive at the default opacity. Drop
+`--liquid-glass-reflection-opacity` to ~25% if a panel looks washed out.
+
+### 4.6 Never combine `liquid-glass` with `progress-ring` on one element
+
+This is a hard constraint, not a style preference.
+
+Both classes paint through `::before`:
+
+- `.liquid-glass::before` — the hover sheen, `z-index: -1`, `opacity: 0`
+- `.progress-ring::before` — the conic progress arc, masked to a thin ring
+
+On one element the two rules target **the same pseudo-element**, so the
+sheen's `opacity: 0` wins and the ring never renders — no arc, at any
+progress value. Nest the ring inside the glass chip instead:
+
+```tsx
+// ✗ ring is invisible at every progress value
+<div className="liquid-glass-dark progress-ring progress-ring-sm" />
+
+// ✓
+<div className="liquid-glass-dark rounded-full size-10 relative grid place-items-center">
+  <span className="progress-ring progress-ring-sm absolute inset-0 rounded-full" />
+</div>
+```
+
+### 4.7 The progress ring is drawn inside the element
+
+`.progress-ring::before` uses `inset: 0`, not a negative inset. An element
+carrying `backdrop-filter` becomes its own compositing layer and clips
+descendants to its border box, so a ring drawn at `inset: -2px` is clipped
+away entirely. Keep the ring inside.
+
+### 4.8 Do not pass `backdrop-blur-*` alongside the utility
 
 Tailwind's `backdrop-blur-*` emits a bare `backdrop-filter` at the same
 specificity but later in the utilities layer, so it clobbers the composite
@@ -407,7 +443,37 @@ slack leaves the band stuck on at the very end of the list.
 
 ---
 
-## 6. Button
+## 6. Loading images — `LazyImageLoader`
+
+`src/components/lazy-image-loader.tsx`. Stacks a WebGL shader *under* an
+existing loader, so media that resolves quickly never allocates GPU work.
+
+```tsx
+<LazyImageLoader>
+  <Loader className="size-10" />
+</LazyImageLoader>
+```
+
+Three rules:
+
+- **Armed only after a delay (default 300ms).** If the media resolves first,
+  nothing mounts. This is what keeps a fast feed off the GPU.
+- **`img-fx` is loaded with `next/dynamic` and `ssr: false`.** It pulls in
+  `three` and touches WebGL; it must never run on the server.
+- **The existing `Loader` is kept on top.** The shader is an addition, not a
+  replacement — do not delete the CSS spinner.
+
+`img-fx` renders every instance through a **single shared
+`THREE.WebGLRenderer`** with an `instances: Set`, and its rAF loop sleeps when
+nothing is visible. Many mounted instances are therefore cheap, but the 300ms
+delay is still what keeps a feed of fast-loading media off the GPU entirely.
+
+Cost to be aware of when adding it somewhere new: `three` is ~20MB unpacked
+on disk.
+
+---
+
+## 7. Button
 
 `src/components/button.tsx`. `buttonVariants` is `cva`; `asChild` renders
 through a Radix `Slot`.
@@ -424,7 +490,118 @@ Rule: a variant may only set `--liquid-glass-*` tokens. Adding a shadow or a
 
 ---
 
-## 6. General conventions
+## 8. Context menu
+
+`src/components/context-menu.tsx`. Fully custom — no Radix, no menu library. One
+`ContextMenu` root per target card; only one menu can be open at a time
+(module-level `activeMenuId`), so opening a second closes the first.
+
+### 8.1 The container
+
+`ContextMenuContent` and `ContextMenuSubContent` share one base:
+
+```
+liquid-glass z-50 flex max-h-[min(80vh,400px)] min-w-[8rem]
+flex-col gap-y-[2px] overflow-x-hidden overflow-y-auto p-1 text-foreground
+```
+
+| Decision | Value | Why |
+|---|---|---|
+| Layout | `flex flex-col` | The menu is a stack of rows, not free-flowing content |
+| Row gap | `gap-y-[2px]` | Exactly 2px between every row — items, labels and separators alike. Spacing belongs to the container, so no item sets its own margin |
+| Corner | `rounded-[15px]` | The content pane. Deliberately off-scale: 2px past `rounded-2xl` |
+| Padding | `p-1` | 4px inset, so a row's 1px border sits 4px off the pane edge |
+| Height | `min(80vh, 400px)` | Caps against the viewport *and* an absolute 400px ceiling |
+
+`ContextMenuSubContent` keeps `rounded-xl` (12px), **not** 15px. The 3px step
+down is what makes a nested pane read as inset rather than as a second
+top-level menu.
+
+Positioning is clamped to the viewport with `WINDOW_PAD_PX = 25` on every edge,
+measured from a ref callback so the clamp runs the moment the node attaches.
+
+### 8.2 Item borders are always on
+
+The single most important rule: **a context menu item's border is never
+transparent.** It is part of the resting state, not a hover affordance.
+
+```
+border border-secondary/5 hover:border-secondary/8
+```
+
+| State | Border | Background |
+|---|---|---|
+| Rest | `secondary/5` | transparent |
+| Hover | `secondary/8` | `secondary/3` |
+| Focus | `secondary/5` | `secondary/5` |
+
+Hover is a **brightening step on an existing line**, not the line appearing. The
++3% delta is deliberately small — enough to register as "this row is live",
+not enough to look like a state change.
+
+Everything else on the item:
+
+```
+relative flex items-center gap-2 rounded-[10px] px-2 py-1.5 text-sm
+cursor-pointer select-none outline-none transition-all duration-500
+```
+
+`rounded-[10px]` sits between `rounded-lg` (8px) and `rounded-xl` (12px) so the
+row corner follows the pane corner without matching it. `duration-500` is not
+local — it is the global base value (§8).
+
+> **Tailwind v4 trap:** the `border` utility is required and cannot be dropped.
+> Preflight resets every element to `border: 0 solid`, so `border-secondary/5`
+> on its own sets *only* the colour and the width stays 0 — the border silently
+> does not render, at rest or on hover. `border border-secondary/5`.
+
+### 8.3 Variants
+
+`variant?: "default" | "destructive" | "primary"`, surfaced to CSS through
+`data-variant` on the `<li>`.
+
+| Variant | Rest border | Rest background | Rest text | Hover border | Hover background |
+|---|---|---|---|---|---|
+| `default` | `secondary/5` | — | foreground | `secondary/8` | `secondary/3` |
+| `primary` | `primary/5` | `primary/3` | `primary` | `primary/8` | `primary/5` |
+| `destructive` | `secondary/5` | — | `destructive` | `secondary/8` | `destructive/10` (`/20` dark) |
+
+**`primary` is tinted at rest, not on hover.** It carries a persistent
+`bg-primary/3` plus `text-primary` while the menu is idle, and its hover step
+(`/3` → `/5` background, `/5` → `/8` border) is the same size as the default
+variant's. A primary item is therefore the most legible row in a closed menu —
+it is the affirmative action, and it should be identifiable before the pointer
+arrives.
+
+**`destructive` stays hover-only for its background.** It tints on hover
+(`destructive/10`, `/20` in dark) and never at rest; only its text colour is
+static. A destructive action that is permanently red reads as a second primary
+and competes with it. The asymmetry between the two is intentional.
+
+Currently the post menu's **Delete post** item is the `primary` variant
+(`post.tsx`). It was a plain default item before the variant existed.
+
+### 8.4 Rows other than `ContextMenuItem`
+
+`ContextMenuCheckboxItem`, `ContextMenuRadioItem` and `ContextMenuSubTrigger`
+still sit one step behind — they carry `border-secondary/3` → `hover:border-secondary/8`
+and `rounded-lg` (8px):
+
+| Component | Rest border | Corner |
+|---|---|---|
+| `ContextMenuItem` | `secondary/5` | `rounded-[10px]` |
+| `ContextMenuCheckboxItem` | `secondary/3` | `rounded-lg` |
+| `ContextMenuRadioItem` | `secondary/3` | `rounded-lg` |
+| `ContextMenuSubTrigger` | `secondary/3` | `rounded-lg` |
+
+This is the live state, not the intent — `ContextMenuItem` was reworked and the
+other three were not carried with it. Note also that the checkbox, radio and
+sub-trigger rows use `pl-8` to reserve the indicator gutter, whereas
+`ContextMenuItem` uses plain `px-2` and gets its indent from `data-[inset]:pl-8`.
+
+---
+
+## 9. General conventions
 
 - Tokens in `:root`; Tailwind mappings in `@theme inline`.
 - Prefer a token override over a one-off utility when theming a surface.

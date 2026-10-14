@@ -151,48 +151,26 @@ body {
      an opaque bar. */
   --scroll-fade-wash: color-mix(in srgb, var(--background) 82%, transparent);
 
-  /* Reflection — a single specular band swept across the surface at 45deg,
-     full scale. Deliberately zero dispersion and zero frost: one clean
-     colour with hard stops, no blur and no chromatic split, so it reads as a
-     reflection on glass rather than a glow or a lens flare. */
-
-  /* Corner smoothing applied to every rounded surface.
-
-     `corner-shape: superellipse(n)` where n is the SUPERELLIPSE EXPONENT,
-     not a percentage: 2 is a circular arc, 2.5 is the continuous iOS/Figma
-     corner, and anything below 2 cuts the corner inward. An earlier value of
-     0.6 read "60%" as the literal number and did exactly that. See the
-     base-layer rule below. Single source of truth for the whole app. */
-  --corner-smoothing: superellipse(2.5);
+  /* Corner smoothing is intentionally NOT applied — see the note in @layer base. */
 }
 
-/* Radius compensation for the superellipse corner.
-   A superellipse corner is *fuller* than the circular arc it replaces, so the
-   same border-radius reads visibly tighter once smoothing is on — modals at
-   `rounded-3xl` looked like they had lost about a third of their corner.
+/* Corners are plain `border-radius`. No `corner-shape` is applied anywhere,
+   and the radius scale is not overridden — `rounded-lg` = 8px through
+   `rounded-4xl` = 32px are stock Tailwind.
 
-   How far the corner reaches along the 45deg diagonal scales with
-   (1 − 2^(−1/n)):
-       n = 2    → 0.414 · r     (circular arc)
-       n = 2.5  → 0.342 · r     (our squircle)
-   Matching the old visual size therefore needs r' = 0.414/0.342 · r ≈ 1.21 r.
+   Corner smoothing was tried and removed. `corner-shape: superellipse(n)` is
+   the only CSS route to an iOS/Figma continuous corner (n = 2 is a circular
+   arc, above 2 is a squircle), but in practice it read as a change to corner
+   SIZE rather than shape and could not be reconciled against the previous
+   look. Two radius-compensation scales were also tried (x1.21 from geometry,
+   then x1.15); both visibly oversized every corner, worst on the short
+   full-bleed bars. Both are gone.
 
-   Every step of the scale is pre-multiplied by 1.21 so `rounded-*` keeps the
-   corner SIZE it always had, and `corner-shape` only changes the corner SHAPE.
-   `--radius-full` is untouched — `.rounded-full` opts out of smoothing
-   entirely, so it needs no compensation.
-
-   Change this only together with `--corner-smoothing`: the factor is derived
-   from that exponent. */
-@theme {
-  --radius-sm: 0.302rem; /*  4px →  4.8px */
-  --radius-md: 0.454rem; /*  6px →  7.3px */
-  --radius-lg: 0.605rem; /*  8px →  9.7px */
-  --radius-xl: 0.908rem; /* 12px → 14.5px */
-  --radius-2xl: 1.21rem; /* 16px → 19.4px */
-  --radius-3xl: 1.814rem; /* 24px → 29.0px */
-  --radius-4xl: 2.42rem; /* 32px → 38.7px */
-}
+   If this is revisited: the only npm wrapper, @toolwind/corner-shape, cannot
+   help — its `superellipse` support is commented out in its source, and it
+   imports @toolwind/v4-modifier-parser without declaring it, so installing it
+   breaks the Tailwind build. Use the native property directly, and change it
+   at a call site rather than globally. */
 
 /* Apply to any element that should sit on the page as glass. Tinting is done
    by overriding the tokens, never by restating the effect:
@@ -452,46 +430,6 @@ body {
     @apply duration-500;
   }
 
-  /* Corner smoothing — 60%, on content surfaces.
-     `corner-shape: superellipse(n)` where n is the SUPERELLIPSE EXPONENT,
-     not a percentage. Measured behaviour, verified in-browser:
-
-        n = 2    circular arc (Figma smoothing 0%)
-        n = 2.5  fuller, continuous squircle corner — this is what we want
-        n = 3+   pushes the corner out to the edge; at our radii it reads as a
-                 plain square and loses all rounding
-        n < 2    corners cut INWARD (octagonal) — the opposite of iOS
-
-     2.5 is the value that reads as iOS/Figma smoothing at every radius this
-     app actually uses (8px rounded-lg through 24px rounded-3xl) without
-     squaring the corner off. An earlier value of 0.6 was a misreading of
-     "60%" as the literal number and cut every corner inward.
-
-     It re-shapes corners *inside* the existing border-radius, so `rounded-*`
-     still controls the size. `:where()` keeps this at specificity 0 so any
-     component can opt out with a single utility.
-
-     One exclusion, and it is not optional:
-     - `.rounded-full` — a 50% radius means "circle". Smoothing pushes it out
-       to a square, so this class must opt out (58 call sites: avatars, pills,
-       round buttons).
-
-     A `.w-full` exclusion used to live here, on the grounds that short
-     full-bleed bars "read as an angular wedge". That was a symptom of the
-     broken 0.6 exponent, which cut corners inward; at 2.5 the corners are
-     fuller, not angular. Worse, `:not(.w-full)` matched far more than the
-     three bars it was meant for — 12 elements carry both `w-full` and a
-     rounded class (not-found modals, error banners, story-preview cards), and
-     all of them were silently rendering plain circular corners. Removed.
-
-     If a specific surface genuinely needs a circular corner, opt it out
-     explicitly with `corner-shape: round` on that element and say why.
-
-     Experimental: Chromium-only today. Elsewhere the declaration is dropped and
-     plain border-radius corners render — a graceful downgrade, not a break. */
-  :where(*):not(.rounded-full) {
-    corner-shape: var(--corner-smoothing);
-  }
 }
 
 ::-moz-selection {
