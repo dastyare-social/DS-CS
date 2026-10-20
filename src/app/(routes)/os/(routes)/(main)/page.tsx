@@ -16,24 +16,23 @@ import {
 import {
   CheckIcon,
   FileIcon,
-  HardDriveIcon,
   PauseIcon,
   PlayIcon,
   ChevronDownIcon,
   RotateCcwIcon,
   SendHorizonalIcon,
   UploadIcon,
-  WifiOffIcon,
   XIcon,
   XCircleIcon,
   EyeIcon,
-  GalleryHorizontalIcon,
-  GalleryVerticalEndIcon,
+  DoorOpenIcon,
 } from "lucide-react";
 import { filterString } from "@/lib/filters";
 import Header from "@/components/header";
 import PinnedBar from "@/components/pinned-bar";
 import LazyImageLoader from "@/components/lazy-image-loader";
+import { IconButton, IconFileButton } from "@/components/icon-button";
+import FolderIcon from "@/components/icons/folder-icon";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -42,6 +41,7 @@ import {
 } from "@/components/context-menu";
 import UpdateBanner from "@/components/update-banner";
 import ScrollSafeZone from "@/components/scroll-safe-zone";
+import { raiseError } from "@/lib/error-bar";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
 import type { MediaPayload, PostWithReactions } from "@/lib/api/posts";
 import { Locale } from "@/config/locale";
@@ -135,125 +135,125 @@ const VoiceAttachment = ({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-          <div
-            dir="ltr"
-            className={cn(
-              "relative rounded-2xl border border-primary/5 bg-primary/5 px-3 py-2 flex items-center gap-3",
-              error && "cursor-pointer",
-            )}
-            onClick={error ? onRetry : undefined}
-          >
-            {/* Progress button — same ring as posts' download circle */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (error) onRetry();
-                else if (ready) togglePlay();
-              }}
-              disabled={!ready && !error}
-              className="relative flex items-center justify-center rounded-full outline-none border-[1.5px] border-primary/10 hover:bg-primary/3 cursor-pointer text-primary/60 w-9 h-9 disabled:cursor-default disabled:hover:bg-transparent"
-            >
-          {!error && !ready && (
-            <svg className="absolute inset-0 h-full w-full -rotate-90">
-              <circle
-                cx="50%"
-                cy="50%"
-                r="45%"
-                className="stroke-primary/20"
-                strokeWidth="2"
-                fill="none"
-              />
-              <circle
-                cx="50%"
-                cy="50%"
-                r="45%"
-                className="stroke-primary"
-                strokeWidth="2"
-                fill="none"
-                strokeDasharray={circumference}
-                strokeDashoffset={(1 - ratio) * circumference}
-                strokeLinecap="round"
-              />
-            </svg>
+        <div
+          dir="ltr"
+          className={cn(
+            "relative rounded-2xl border border-primary/5 bg-primary/5 px-3 py-2 flex items-center gap-3",
+            error && "cursor-pointer",
           )}
-          {error ? (
-            <RotateCcwIcon className="w-5 h-5 relative z-10 stroke-1" />
-          ) : !ready ? (
-            done ? (
-              <CheckIcon className="w-5 h-5 relative z-10 stroke-1" />
-            ) : (
-              <UploadIcon className="w-5 h-5 relative z-10 stroke-1 animate-pulse" />
-            )
-          ) : playing ? (
-            <PauseIcon className="w-5 h-5 relative z-10 stroke-1" />
-          ) : (
-            <PlayIcon className="w-5 h-5 relative z-10 stroke-1" />
-          )}
-        </button>
-
-        {ready && (
-          <audio
-            ref={audioRef}
-            src={objectUrl ?? undefined}
-            preload="metadata"
-            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-            onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-            onEnded={() => setPlaying(false)}
-            className="hidden"
-          />
-        )}
-
-        <div className="flex-1 flex flex-col gap-1">
-          <div
-            onClick={handleWaveformClick}
-            className={cn(
-              "w-40 max-w-full h-10 flex items-center gap-[2px]",
-              ready && "cursor-pointer select-none",
-            )}
+          onClick={error ? onRetry : undefined}
+        >
+          {/* Progress button — same ring as posts' download circle */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (error) onRetry();
+              else if (ready) togglePlay();
+            }}
+            disabled={!ready && !error}
+            className="relative flex items-center justify-center rounded-full outline-none border-[1.5px] border-primary/10 hover:bg-primary/3 cursor-pointer text-primary/60 w-9 h-9 disabled:cursor-default disabled:hover:bg-transparent"
           >
-            {bars.map((h, idx) => {
-              const barRatio = bars.length > 1 ? idx / (bars.length - 1) : 0;
-              // Upload progress tint before ready, playback fill after — same
-              // colors as posts' VoicePlayer (download /20, played /50)
-              let bgClass = "bg-primary/10";
-              if (!ready && !error && ratio >= barRatio)
-                bgClass = "bg-primary/20";
-              if (ready && playedRatio >= barRatio) bgClass = "bg-primary/50";
-              return (
-                <div
-                  key={idx}
-                  className={cn(
-                    "flex-1 rounded-full transition-colors duration-150",
-                    bgClass,
-                  )}
-                  style={{ height: `${h}px` }}
+            {!error && !ready && (
+              <svg className="absolute inset-0 h-full w-full -rotate-90">
+                <circle
+                  cx="50%"
+                  cy="50%"
+                  r="45%"
+                  className="stroke-primary/20"
+                  strokeWidth="2"
+                  fill="none"
                 />
-              );
-            })}
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] text-primary">
-            {uploading ? (
-              <span>Uploading {Math.floor(ratio * 100)}%</span>
-            ) : error ? (
-              <span>Failed — Try Again</span>
-            ) : ready && duration ? (
-              <>
-                <span className="opacity-60 tabular-nums">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </span>
-                <span className="opacity-60">{formatSize(file.size)}</span>
-              </>
-            ) : (
-              <span className="opacity-60">done</span>
+                <circle
+                  cx="50%"
+                  cy="50%"
+                  r="45%"
+                  className="stroke-primary"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={(1 - ratio) * circumference}
+                  strokeLinecap="round"
+                />
+              </svg>
             )}
+            {error ? (
+              <RotateCcwIcon className="w-5 h-5 relative z-10 stroke-1" />
+            ) : !ready ? (
+              done ? (
+                <CheckIcon className="w-5 h-5 relative z-10 stroke-1" />
+              ) : (
+                <UploadIcon className="w-5 h-5 relative z-10 stroke-1 animate-pulse" />
+              )
+            ) : playing ? (
+              <PauseIcon className="w-5 h-5 relative z-10 stroke-1" />
+            ) : (
+              <PlayIcon className="w-5 h-5 relative z-10 stroke-1" />
+            )}
+          </button>
+
+          {ready && (
+            <audio
+              ref={audioRef}
+              src={objectUrl ?? undefined}
+              preload="metadata"
+              onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+              onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+              onEnded={() => setPlaying(false)}
+              className="hidden"
+            />
+          )}
+
+          <div className="flex-1 flex flex-col gap-1">
+            <div
+              onClick={handleWaveformClick}
+              className={cn(
+                "w-40 max-w-full h-10 flex items-center gap-[2px]",
+                ready && "cursor-pointer select-none",
+              )}
+            >
+              {bars.map((h, idx) => {
+                const barRatio = bars.length > 1 ? idx / (bars.length - 1) : 0;
+                // Upload progress tint before ready, playback fill after — same
+                // colors as posts' VoicePlayer (download /20, played /50)
+                let bgClass = "bg-primary/10";
+                if (!ready && !error && ratio >= barRatio)
+                  bgClass = "bg-primary/20";
+                if (ready && playedRatio >= barRatio) bgClass = "bg-primary/50";
+                return (
+                  <div
+                    key={idx}
+                    className={cn(
+                      "flex-1 rounded-full transition-colors duration-150",
+                      bgClass,
+                    )}
+                    style={{ height: `${h}px` }}
+                  />
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-primary">
+              {uploading ? (
+                <span>Uploading {Math.floor(ratio * 100)}%</span>
+              ) : error ? (
+                <span>Failed — Try Again</span>
+              ) : ready && duration ? (
+                <>
+                  <span className="opacity-60 tabular-nums">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </span>
+                  <span className="opacity-60">{formatSize(file.size)}</span>
+                </>
+              ) : (
+                <span className="opacity-60">done</span>
+              )}
+            </div>
           </div>
-        </div>
         </div>
       </ContextMenuTrigger>
 
-      <ContextMenuContent className="w-44">
+      <ContextMenuContent className="w-36">
         {/* Same as clicking the waveform: toggles playback in place. */}
         {ready && (
           <ContextMenuItem
@@ -264,7 +264,9 @@ const VoiceAttachment = ({
               setPlaying(!(audioRef.current?.paused ?? true));
             }}
           >
-            <div className="flex-1">{playing ? "Pause audio" : "Play audio"}</div>
+            <div className="flex-1">
+              {playing ? "Pause audio" : "Play audio"}
+            </div>
             {playing ? (
               <PauseIcon className="stroke-[1.5px] size-4" />
             ) : (
@@ -275,15 +277,16 @@ const VoiceAttachment = ({
 
         <ContextMenuItem
           className="flex gap-x-2 py-1.5"
+          variant="primary"
           onClick={(e) => {
             e.stopPropagation();
             onRemove();
           }}
         >
           <div className="flex-1">
-            {uploading ? "Cancel upload" : "Remove from post"}
+            {uploading ? "cancel upload" : "remove —"}
           </div>
-          <XCircleIcon className="stroke-[1.5px] size-4" />
+          <XIcon className="stroke-[1.5px] size-4" />
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
@@ -438,8 +441,17 @@ const controlGlass =
   "liquid-glass-dark [--liquid-glass-bg:color-mix(in_srgb,black_55%,transparent)] " +
   "[--liquid-glass-wash-top:color-mix(in_srgb,white_12%,transparent)]";
 
-/* Uploading — a full-round progress ring on the image. The numeric text sits
-   below the image (see StatusText), not inside the ring. */
+/* Upload progress — a full-round ring on the image.
+
+   The glass chip and the progress ring MUST be separate elements: both
+   `.liquid-glass` and `.progress-ring` paint through `::before`, so sharing one
+   element makes them collide and the ring never renders at all (design-system
+   §4.6).
+
+   Module scope, not inside `Page`: a component declared in a render is a new
+   type on every render, so React unmounts and remounts the subtree — which
+   restarts the ring's `--ring-progress` transition from 0 each time and makes
+   the progress appear frozen. */
 const UploadRingOverlay = ({ progress }: { progress: number }) => (
   <div
     className={cn(
@@ -449,16 +461,22 @@ const UploadRingOverlay = ({ progress }: { progress: number }) => (
   >
     <div
       className={cn(
-        "progress-ring progress-ring-sm rounded-full size-8",
+        "relative grid place-items-center size-8 rounded-full",
         controlGlass,
       )}
-      style={{ "--ring-progress": `${progress}%` } as React.CSSProperties}
-    />
+    >
+      <span
+        className="progress-ring progress-ring-sm absolute inset-0 rounded-full"
+        style={{ "--ring-progress": `${progress}%` } as React.CSSProperties}
+      />
+    </div>
   </div>
 );
 
 /* Failed — retry icon on the image, larger, still clickable. The label moves
-   below the image; nothing on the overlay tints it red. */
+   below the image; nothing on the overlay tints it red. Same chip/ring split
+   as above, minus the ring: there is no progress to show once it has failed.
+   Module scope for the same reason as `UploadRingOverlay`. */
 const RetryOverlay = ({ onRetry }: { onRetry: () => void }) => (
   <div
     className={cn(
@@ -474,12 +492,11 @@ const RetryOverlay = ({ onRetry }: { onRetry: () => void }) => (
         onRetry();
       }}
       className={cn(
-        "progress-ring progress-ring-sm text-white rounded-full p-2 grid place-items-center cursor-pointer outline-none",
+        "relative grid place-items-center text-white rounded-full size-8 cursor-pointer outline-none",
         controlGlass,
       )}
-      style={{ "--ring-progress": "0%" } as React.CSSProperties}
     >
-      <RotateCcwIcon className="size-6 stroke-[1.5px] shrink-0" />
+      <RotateCcwIcon className="size-5 stroke-[1.5px] shrink-0 relative z-10 opacity-80" />
     </button>
   </div>
 );
@@ -515,18 +532,18 @@ const MediaAttachment = ({
 
   const viewable = error === null && media !== null && objectUrl !== null;
 
-  const viewLabel = isImage ? "View image" : "View video";
-  const removeLabel = uploading ? "Cancel upload" : "Remove from post";
+  const viewLabel = isImage ? "view image" : "view video";
+  const removeLabel = uploading ? "cancel upload" : "remove —";
 
   /* Square, unrounded media box — matches how images and videos are rendered
      everywhere else in the app (see post.tsx renderMedia). Only the surrounding
      glass panel is rounded, never the media itself. */
-  const thumbClasses = "relative block w-24 h-24 border border-primary/5 bg-primary/3";
+  const thumbClasses =
+    "relative block w-24 h-24 border border-primary/5 bg-primary/3";
 
   /* The media itself sits 2px inside the border and carries 1px of its own
      padding, mirroring the parent's 1px border. */
-  const mediaBox =
-    "absolute inset-[2px] p-px overflow-hidden";
+  const mediaBox = "absolute inset-[2px] p-px overflow-hidden";
 
   const mediaFrame = (
     <div className={mediaBox}>
@@ -602,7 +619,10 @@ const MediaAttachment = ({
         mediaFrame
       )}
 
-      {uploading && <UploadRingOverlay progress={progress} />}
+      {/* Held over the media for 2s after the transfer completes, so the ring
+          can actually reach 100% and the user sees the upload land before the
+          picture is revealed (see useDoneRevealTimer). */}
+      {showOverlay && <UploadRingOverlay progress={progress} />}
       {error && <RetryOverlay onRetry={onRetry} />}
     </div>
   );
@@ -616,7 +636,7 @@ const MediaAttachment = ({
         </div>
       </ContextMenuTrigger>
 
-      <ContextMenuContent className="w-44">
+      <ContextMenuContent className="w-36">
         {/* Same action as clicking the media — opens the viewer. */}
         {viewable && (
           <ContextMenuItem
@@ -624,7 +644,7 @@ const MediaAttachment = ({
             onClick={() => setViewerOpen(true)}
           >
             <div className="flex-1">{viewLabel}</div>
-            <EyeIcon className="stroke-[1.5px] size-4" />
+            <DoorOpenIcon className="stroke-[1.5px] size-4" />
           </ContextMenuItem>
         )}
 
@@ -632,17 +652,18 @@ const MediaAttachment = ({
             that is still in flight. */}
         <ContextMenuItem
           className="flex gap-x-2 py-1.5"
+          variant="primary"
           onClick={(e) => {
             e.stopPropagation();
             onRemove();
           }}
         >
           <div className="flex-1">{removeLabel}</div>
-          <XCircleIcon className="stroke-[1.5px] size-4" />
+          <XIcon className="stroke-[1.5px] size-4" />
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
-    );
+  );
 };
 
 const MediaAttachmentThumb = ({
@@ -713,6 +734,13 @@ const Page = () => {
         "--chat-footer-height",
         `${footerHeight + 20}px`,
       );
+      // Where the global error bar floats from the viewport bottom. Declared
+      // here (not inside the bar) because only this page knows its own footer,
+      // and the update banner's height is not known until it decides to show.
+      document.documentElement.style.setProperty(
+        "--error-bar-bottom",
+        "calc(var(--chat-footer-height) + var(--update-banner-height, 0px) - 5px)",
+      );
     });
   };
 
@@ -748,27 +776,8 @@ const Page = () => {
     };
   }, []);
 
-  // Transient error shown when a create/update/delete fails (e.g. demo mode)
-  const [writeError, setWriteError] = useState<string | null>(null);
-  const writeErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showWriteError = (err: unknown) => {
-    const message =
-      err instanceof Error
-        ? err.message
-        : typeof err === "string"
-          ? err
-          : "Operation failed";
-    setWriteError(message);
-    if (writeErrorTimerRef.current) clearTimeout(writeErrorTimerRef.current);
-    writeErrorTimerRef.current = setTimeout(() => setWriteError(null), 5000);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (writeErrorTimerRef.current) clearTimeout(writeErrorTimerRef.current);
-    };
-  }, []);
+  // Transient write/notice failures go to the global error bar
+  // (`@/lib/error-bar`), which this page no longer renders locally.
 
   // Reference to the scroll container (root div)
   const pageRef = useRef<HTMLDivElement | null>(null);
@@ -851,7 +860,7 @@ const Page = () => {
   }, []);
 
   useEffect(() => {
-    refreshPinnedPosts().catch((err) => showWriteError(err));
+    refreshPinnedPosts().catch((err) => raiseError(err));
   }, [refreshPinnedPosts]);
 
   // Re-fetch pinned posts when a post is pinned/unpinned
@@ -991,7 +1000,7 @@ const Page = () => {
           await updatePostContent(editingPostId, trimmed);
         } catch (err) {
           console.error("Failed to edit post", err);
-          showWriteError(err);
+          raiseError(err);
           updatePost(target);
         }
       }
@@ -1019,7 +1028,8 @@ const Page = () => {
       content: trimmed || null,
       views: "0",
       pinnedAt: null,
-      media: validUrls.length > 0 ? ({ url: validUrls[0] } as MediaPayload) : null,
+      media:
+        validUrls.length > 0 ? ({ url: validUrls[0] } as MediaPayload) : null,
       createdAt: new Date(),
       updatedAt: null,
       reactions: [],
@@ -1062,7 +1072,7 @@ const Page = () => {
       if (failedPost) {
         updatePost({ ...failedPost, _status: "error" });
       }
-      showWriteError(err);
+      raiseError(err);
     }
   };
 
@@ -1087,11 +1097,12 @@ const Page = () => {
     } catch (err) {
       console.error("Retry failed", err);
       updatePost({ ...post, _status: "error" });
-      showWriteError(err);
+      raiseError(err);
     }
   };
 
   // handle file selection - accept multiple files
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -1099,8 +1110,9 @@ const Page = () => {
     // Allow re-selecting the same file
     e.target.value = "";
 
-    // Add new files to selection (up to max) and start uploading
-    selectFiles(files);
+    // Only one media type per post — the hook enforces it and reports back.
+    const result = selectFiles(files);
+    raiseError(result.error, t("general.error_generic"));
   };
 
   // remove a selected file from the preview
@@ -1249,7 +1261,7 @@ const Page = () => {
       });
       await refreshPinnedPosts().catch(() => {});
       refetch();
-      showWriteError(err);
+      raiseError(err);
     }
   };
 
@@ -1291,7 +1303,7 @@ const Page = () => {
           <div className="flex-1 px-2.5 w-full">
             {/* Initial load */}
             {isInitialLoading && (
-              <div className="w-full grid place-items-center overflow-hidden min-h-[calc(var(--page-height)+var(--pinned-bar-height,0px))] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--update-banner-height,0px))]">
+              <div className="w-full grid place-items-center overflow-hidden min-h-[calc(var(--page-height)+var(--pinned-bar-height,0px))] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--update-banner-height,0px)+var(--error-bar-height,0px))]">
                 {error ? (
                   <p className="text-xl text-center w-full text-red-500">
                     Failed to Load Posts — {error}
@@ -1303,7 +1315,7 @@ const Page = () => {
             )}
 
             {isEmpty && (
-              <div className="w-full grid place-items-center overflow-hidden px-[25px] min-h-[calc(var(--page-height)+var(--pinned-bar-height,0px))] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--update-banner-height,0px))]">
+              <div className="w-full grid place-items-center overflow-hidden px-[25px] min-h-[calc(var(--page-height)+var(--pinned-bar-height,0px))] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--update-banner-height,0px)+var(--error-bar-height,0px))]">
                 {error ? (
                   <p className="text-xl text-center w-full text-red-500">
                     Failed to Load Posts — {error}
@@ -1338,7 +1350,7 @@ const Page = () => {
             {!isInitialLoading && !isEmpty && (
               <div
                 ref={listRef}
-                className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--update-banner-height,0px))]"
+                className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--update-banner-height,0px)+var(--error-bar-height,0px))]"
               >
                 {posts.map((msg: PostWithReactions) => (
                   <div
@@ -1361,7 +1373,7 @@ const Page = () => {
                         if (wasPinned) refreshPinnedPosts();
                       }}
                       onDeleteError={(err) => {
-                        showWriteError(err);
+                        raiseError(err);
                         addPost(msg);
                       }}
                       onPin={handleTogglePinPost}
@@ -1385,26 +1397,12 @@ const Page = () => {
           </div>
         </div>
 
-        {/* Write error toast */}
-        {writeError && (
-          <div
-            className="fixed left-1/2 -translate-x-1/2 z-40 px-4 w-full max-w-2xl pointer-events-none"
-            style={{
-              top: `calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) + 8px)`,
-            }}
-          >
-            <div className="w-full rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-md px-4 py-3 text-center text-sm text-red-500">
-              {writeError}
-            </div>
-          </div>
-        )}
-
         {/* Scroll safe zone — blurs the feed where it passes under the chrome.
             Edges with nothing behind them stay clear. */}
         <ScrollSafeZone
           scrollRef={pageRef}
           topInset="calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) / 2)"
-          bottomInset="calc(var(--chat-footer-height) + var(--update-banner-height, 0px) / 2)"
+          bottomInset="calc(var(--chat-footer-height) + (var(--update-banner-height, 0px) + var(--error-bar-height, 0px)) / 2)"
           enabled={!isInitialLoading && !isEmpty}
         />
 
@@ -1412,7 +1410,9 @@ const Page = () => {
         {showScrollToBottom && (
           <div
             onClick={scrollToBottom}
-            style={{ bottom: `calc(var(--chat-footer-height) + var(--update-banner-height, 0px) - 5px)` }}
+            style={{
+              bottom: `calc(var(--chat-footer-height) + var(--update-banner-height, 0px) + var(--error-bar-height, 0px) - 5px)`,
+            }}
             className="liquid-glass absolute right-4 z-40 p-1 rounded-full cursor-pointer text-foreground/80"
           >
             <ChevronDownIcon className="size-6 stroke-1 text-foreground/60" />
@@ -1502,11 +1502,10 @@ const Page = () => {
                       handleSendMessage();
                     }}
                     ref={inputRef}
-                    placeholder={
-                      isOffline
-                        ? "You are offline"
-                        : t("general.message_input_placeholder")
-                    }
+                    // Deliberately NOT swapped for an offline string — the
+                    // header already says the connection is down, and the
+                    // send/attach controls below carry the disabled state.
+                    placeholder={t("general.message_input_placeholder")}
                     autoComplete="off"
                     autoCorrect="off"
                     autoFocus={false}
@@ -1520,25 +1519,23 @@ const Page = () => {
                   />
                 </div>
 
-                {/* hidden input + clickable icon to open file picker — hidden during edit */}
+                {/* Attach media. Disabled offline — the header already carries the message,
+                    so the state is expressed here by the control itself. */}
                 {!editingPostId && (
-                  <label className="relative">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*,video/*,audio/*,application/*"
-                      className="hidden"
-                      onChange={handleFileChange}
-                      disabled={isOffline}
-                    />
-                    <GalleryVerticalEndIcon
-                      className={`stroke-[1px] flex justify-center items-center opacity-80 w-10 h-10 rounded-full mt-3 lg:mt-5 border border-secondary/3 p-2 cursor-pointer ${isOffline ? "opacity-50 cursor-not-allowed" : ""}`}
-                    />
-                  </label>
+                  <IconFileButton
+                    label={t("general.attach_media")}
+                    accept="image/*,video/*,audio/*,application/*"
+                    multiple
+                    onChange={handleFileChange}
+                    disabled={isOffline}
+                    className="mt-3 lg:mt-5 shrink-0"
+                  >
+                    <FolderIcon className="stroke-[1px] size-full" />
+                  </IconFileButton>
                 )}
 
-                <button
-                  type="button"
+                <IconButton
+                  label={t("general.send")}
                   onClick={handleSendMessage}
                   disabled={
                     isOffline ||
@@ -1546,20 +1543,13 @@ const Page = () => {
                     isUploading ||
                     hasError
                   }
-                  className={cn(
-                    "flex justify-center items-center w-10 h-10 mt-3 lg:mt-5 border border-secondary/3 p-2 rounded-full",
-                    (isOffline ||
-                      (!inputValue.trim() && completedMedia.length === 0) ||
-                      isUploading ||
-                      hasError) &&
-                      "opacity-60",
-                  )}
+                  className="mt-3 lg:mt-5 shrink-0"
                 >
-                  <SendHorizonalIcon className="size-5 stroke-[1.5px] rtl:rotate-180 opacity-80" />
-                </button>
+                  <SendHorizonalIcon className="stroke-[1.5px] size-full rtl:rotate-180" />
+                </IconButton>
               </div>
               <div className="line-clamp-2 md:line-clamp-1 text-sm tracking-tighter opacity-60">
-                  {t("general.lorem_ipsum")}
+                {t("general.lorem_ipsum")}
               </div>
             </div>
           </div>

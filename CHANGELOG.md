@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Global transient error bar (`src/components/error-bar.tsx`, raised through
+  `raiseError()` in `src/lib/error-bar.ts`) — mounted once in
+  `src/app/(routes)/layout.tsx` and available on every route. Identical
+  `liquid-glass` material, size and style to the PWA install bar; parks above
+  the install bar on `/`, above the update bar on `/os`, and above the
+  scroll-to-bottom button on both. Auto-dismisses after 4s, a new message
+  replaces and restarts the timer, an identical repeat is a no-op so a flapping
+  error cannot hold it open, and `X` dismisses early. Replaces the 5s red
+  write-error toast and the 4s rejected-files notice on `/os`. Wired on `/`,
+  `/os`, `/explore` and `/posts/[post_id]` via the `--error-bar-bottom` /
+  `--error-bar-height` chain — see `docs/design-system.md` §6
 - MIT license, security policy, code of conduct, issue/PR templates
 - Open-source readiness cleanup (neutralized default profile config, fixed
   placeholder URLs, fixed CI S3 env var name)

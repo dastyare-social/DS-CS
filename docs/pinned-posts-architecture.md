@@ -107,6 +107,11 @@ The `scrollToPost` function (in both pages):
 | `--pinned-bar-height` | PinnedBar via ResizeObserver | scroll container `pt` (calc with header) |
 | `--page-height` | `updatePageHeight()` | scroll container `min-h` |
 
+The same chain continues under the footer, with each floating bar writing its
+own height — `--install-banner-height`, `--update-banner-height`,
+`--error-bar-height`. See `docs/design-system.md` §6 for the full contract,
+including `--error-bar-bottom` and how to wire a new page with bottom chrome.
+
 ---
 
 ## Common bugs and fixes

@@ -75,10 +75,21 @@ const Header = ({
 
     check();
     window.addEventListener("online", check);
+
+    /* The poll alone is not enough: the `offline` event is what the browser
+       tells us immediately, and the favicon probe is only there for the case
+       where the connection dies without one (a dead captive portal, a dropped
+       VPN). Without this listener the "you lost internet connection" line —
+       and the disabling of New Story that hangs off it — could lag the actual
+       disconnect by a full poll interval. */
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener("offline", handleOffline);
+
     const interval = setInterval(check, 15000);
     return () => {
       cancelled = true;
       window.removeEventListener("online", check);
+      window.removeEventListener("offline", handleOffline);
       clearInterval(interval);
     };
   }, []);
@@ -194,7 +205,11 @@ const Header = ({
               type="file"
               accept="image/*,video/*"
               className="hidden"
+              // Offline: the button is already disabled, but the input can
+              // still be driven by the picker if it was already open when the
+              // connection dropped, so guard the change itself too.
               onChange={(e) => {
+                if (isOffline) return;
                 const file = e.target.files?.[0];
                 if (!file) {
                   e.target.value = "";
@@ -237,7 +252,11 @@ const Header = ({
             />
             <Button
               variant="primary"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                if (isOffline) return;
+                fileInputRef.current?.click();
+              }}
+              disabled={isOffline}
               className="text-sm md:text-sm px-2.5 py-0.5 text-nowrap"
             >
               {t("general.new_story")}

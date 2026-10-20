@@ -233,6 +233,28 @@ export function inferPostType(items: MediaUploadItem[]): PostType {
   return mediaKindToPostType(first.media.kind);
 }
 
+export const mediaKindOf = (file: File): MediaKind => {
+  const type = file.type || "";
+  if (type.startsWith("image/")) return "image";
+  if (type.startsWith("video/")) return "video";
+  if (type.startsWith("audio/")) return "audio";
+  return "file";
+};
+
+const LABEL: Record<MediaKind, string> = {
+  image: "images",
+  video: "videos",
+  audio: "audio",
+  file: "files",
+};
+
+export interface SelectFilesResult {
+  accepted: number;
+  rejected: number;
+  /** User-facing reason, or null when everything was accepted. */
+  error: string | null;
+}
+
 export function useMediaUpload(transport: UploadTransport = defaultTransport) {
   const [items, setItems] = useState<MediaUploadItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -288,10 +310,48 @@ export function useMediaUpload(transport: UploadTransport = defaultTransport) {
   );
 
   const selectFiles = useCallback(
-    (files: File[]) => {
-      if (files.length === 0) return;
+    (files: File[]): SelectFilesResult => {
+      const empty: SelectFilesResult = { accepted: 0, rejected: 0, error: null };
+      if (files.length === 0) return empty;
+
+      const kind = mediaKindOf(files[0]);
+      const existingKind = itemsRef.current[0]
+        ? mediaKindOf(itemsRef.current[0].file)
+        : null;
+
+      // A post carries one media type. The first selection decides which, and
+      // that decision also binds later selections.
+      if (existingKind && existingKind !== kind) {
+        return {
+          accepted: 0,
+          rejected: files.length,
+          error: `This post already has ${LABEL[existingKind]} attached. Remove them before adding ${LABEL[kind]}.`,
+        };
+      }
+
+      let accepted = files.filter((f) => mediaKindOf(f) === kind);
+      let error: string | null = null;
+
+      if (accepted.length < files.length) {
+        error = `Only ${LABEL[kind]} can be attached together. ${
+          files.length - accepted.length
+        } other file${files.length - accepted.length === 1 ? "" : "s"} skipped.`;
+      }
+
+      // Audio is single-instance: one post gets one track.
+      if (kind === "audio" && accepted.length > 1) {
+        error = `Only one audio file can be attached. ${
+          accepted.length - 1
+        } skipped.`;
+        accepted = accepted.slice(0, 1);
+      }
+
+      if (accepted.length === 0) {
+        return { accepted: 0, rejected: files.length, error };
+      }
+
       const startIndex = itemsRef.current.length;
-      const newItems: MediaUploadItem[] = files.map((file) => ({
+      const newItems: MediaUploadItem[] = accepted.map((file) => ({
         id: idFor(),
         file,
         progress: 0,
@@ -309,6 +369,18 @@ export function useMediaUpload(transport: UploadTransport = defaultTransport) {
         beginUpload(item.id!);
         void uploadFile(item.id!, item.file);
       }
+
+      const room = Math.max(0, MAX_ATTACHMENTS - startIndex);
+      const dropped = accepted.length - Math.min(accepted.length, room);
+      if (dropped > 0) {
+        error = `Up to ${MAX_ATTACHMENTS} ${LABEL[kind]} can be attached. ${dropped} skipped.`;
+      }
+
+      return {
+        accepted: Math.min(accepted.length, room),
+        rejected: files.length - Math.min(accepted.length, room),
+        error,
+      };
     },
     [beginUpload, uploadFile]
   );

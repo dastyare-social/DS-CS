@@ -26,6 +26,9 @@
     "join_my_channel": "Join My Channel",
     "new_story": "New Story",
     "story_ratio_error": "Story must be 9:16 aspect ratio (1080×1920)",
+    "attach_media": "Attach media",
+    "send": "Send",
+    "retry_upload": "Retry upload",
     "posts": "Posts",
     "posted": "Posted",
     "published": "Published",
@@ -40,8 +43,8 @@
     "login_panel_title": "Panel — Dastyare Social — CS",
     "login_panel_title_span": "To Manage Your Personal Brand",
     "login_error": "Login Error",
-    "email_required": "Email is required",
-    "all_fields_required": "All fields are required",
+    "email_required": "email is required",
+    "all_fields_required": "all fields are required",
     "logout": "Logout Your Account",
     "sending": "Sending...",
     "try_again": "Try Again",
@@ -54,7 +57,8 @@
     "install_app_text": "Install App For The Best Experience",
     "install": "Install",
     "update": "Update",
-    "update_app_text": "Update App For The Best Experience"
+    "update_app_text": "Update App For The Best Experience",
+    "error_generic": "Something went wrong"
   },
   "last_time": {
     "just_now": "Just now",

@@ -73,6 +73,13 @@ const Page = () => {
         "--chat-footer-height",
         `${footerHeight + 20}px`,
       );
+      // Where the global error bar floats from the viewport bottom. Declared
+      // here (not inside the bar) because only this page knows its own footer,
+      // and the install banner's height is not known until it decides to show.
+      document.documentElement.style.setProperty(
+        "--error-bar-bottom",
+        "calc(var(--chat-footer-height) + var(--install-banner-height, 0px) - 5px)",
+      );
     });
   };
 
@@ -392,7 +399,7 @@ const Page = () => {
             {!isInitialLoading && !isEmpty && (
               <div
                 ref={listRef}
-                className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--install-banner-height,0px))]"
+                className="flex flex-col-reverse min-h-[var(--page-height)] pt-[calc(var(--chat-header-height)+var(--pinned-bar-height,0px))] pb-[calc(var(--chat-footer-height)+var(--install-banner-height,0px)+var(--error-bar-height,0px))]"
               >
                 {posts.map((msg, index) => (
                   <div
@@ -426,7 +433,7 @@ const Page = () => {
         <ScrollSafeZone
           scrollRef={pageRef}
           topInset="calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) / 2)"
-          bottomInset="calc(var(--chat-footer-height) + var(--install-banner-height, 0px) / 2)"
+          bottomInset="calc(var(--chat-footer-height) + (var(--install-banner-height, 0px) + var(--error-bar-height, 0px)) / 2)"
           enabled={!isInitialLoading && !isEmpty}
         />
 
@@ -434,7 +441,9 @@ const Page = () => {
         {showScrollToBottom && (
           <div
             onClick={scrollToBottom}
-            style={{ bottom: `calc(var(--chat-footer-height) + var(--install-banner-height, 0px) - 5px)` }}
+            style={{
+              bottom: `calc(var(--chat-footer-height) + var(--install-banner-height, 0px) + var(--error-bar-height, 0px) - 5px)`,
+            }}
             className="liquid-glass absolute right-4 z-40 p-1 rounded-full cursor-pointer text-foreground/80"
           >
             <ChevronDownIcon className="size-6 stroke-1 text-foreground/60" />

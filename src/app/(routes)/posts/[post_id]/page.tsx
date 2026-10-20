@@ -50,6 +50,12 @@ const Page = () => {
         "--chat-footer-height",
         `${footerHeight + 20}px`
       );
+      // Where the global error bar floats from the viewport bottom. This route
+      // has a footer but no install/update banner.
+      document.documentElement.style.setProperty(
+        "--error-bar-bottom",
+        "calc(var(--chat-footer-height) - 5px)"
+      );
     });
   };
 
@@ -218,8 +224,8 @@ const Page = () => {
             ref={listRef}
             className={
               isInitialState
-                ? "flex w-full overflow-hidden min-h-[calc(100dvh-var(--chat-header-height)-var(--chat-footer-height))] items-center justify-center pt-[var(--chat-header-height)] pb-[var(--chat-footer-height)]"
-                : "flex flex-col-reverse min-h-full pt-[var(--chat-header-height)] pb-[var(--chat-footer-height)] w-full"
+                ? "flex w-full overflow-hidden min-h-[calc(100dvh-var(--chat-header-height)-var(--chat-footer-height)-var(--error-bar-height,0px))] items-center justify-center pt-[var(--chat-header-height)] pb-[calc(var(--chat-footer-height)+var(--error-bar-height,0px))]"
+                : "flex flex-col-reverse min-h-full pt-[var(--chat-header-height)] pb-[calc(var(--chat-footer-height)+var(--error-bar-height,0px))] w-full"
             }
           >
             {/* Loading state */}
@@ -254,7 +260,7 @@ const Page = () => {
       <ScrollSafeZone
         scrollRef={pageRef}
         topInset="var(--chat-header-height)"
-        bottomInset="var(--chat-footer-height)"
+        bottomInset="calc(var(--chat-footer-height) + var(--error-bar-height, 0px) / 2)"
         enabled={!isInitialState}
       />
 

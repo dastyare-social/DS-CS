@@ -15,8 +15,8 @@
   font-display: swap;
   /* Arabic-script unicode blocks: Arabic + Supplement/Extended + Presentation Forms */
   unicode-range:
-    U+0600-06FF, U+0750-077F, U+0870-089F, U+08A0-08FF,
-    U+FB50-FDFF, U+FE70-FEFF, U+1EE00-1EEFF;
+    U+0600-06FF, U+0750-077F, U+0870-089F, U+08A0-08FF, U+FB50-FDFF,
+    U+FE70-FEFF, U+1EE00-1EEFF;
 }
 
 /* Mixed LTR/RTL text surfaces (composer input & post content): Latin from the
@@ -24,8 +24,8 @@
    first so its unicode-range gate lets Arabic-script glyphs hit Estedad while
    Latin glyphs fall through to the app font. */
 .font-bidi {
-  font-family: "Estedad", var(--font-heading), ui-sans-serif, system-ui,
-    sans-serif;
+  font-family:
+    "Estedad", var(--font-heading), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
@@ -87,7 +87,11 @@ body {
      near-white), so a white rim is invisible against the page. Deliberately
      matches `border-secondary/5`, the rim the install/update banners use, so
      every glass surface reads with the same edge weight. */
-  --liquid-glass-border-color: color-mix(in srgb, var(--secondary) 5%, transparent);
+  --liquid-glass-border-color: color-mix(
+    in srgb,
+    var(--secondary) 5%,
+    transparent
+  );
   /* Figma-style soft inset stroke — the CSS equivalent of an "Inner shadow"
      effect applied to a stroke. Kept separate from the border because it is a
      different job: the border sets the edge weight to match the rest of the
@@ -429,7 +433,6 @@ body {
   ::after {
     @apply duration-500;
   }
-
 }
 
 ::-moz-selection {

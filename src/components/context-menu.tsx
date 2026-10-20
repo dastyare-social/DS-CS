@@ -249,8 +249,9 @@ export const ContextMenuContent = React.forwardRef<
   const { open, setOpen, cursorPosition, setMenuRect } =
     useContextMenuContext();
   const contentRef = React.useRef<HTMLDivElement | null>(null);
-  const [adjustedPos, setAdjustedPos] =
-    React.useState<CursorPosition | null>(null);
+  const [adjustedPos, setAdjustedPos] = React.useState<CursorPosition | null>(
+    null,
+  );
 
   // Clamp to viewport so menu never overflows the browser window.
   // The Portal mounts its element via useEffect, so the DOM node does not
@@ -383,7 +384,7 @@ export const ContextMenuContent = React.forwardRef<
         }}
         className={cn(
           // same style as your Radix version
-          "liquid-glass z-50 max-h-[min(80vh,400px)] min-w-[8rem] transition-[opacity,transform] duration-500 overflow-x-hidden overflow-y-auto rounded-xl p-1 text-foreground",
+          "liquid-glass z-50 flex max-h-[min(80vh,400px)] min-w-[8rem] flex-col gap-y-[2px] transition-[opacity,transform] duration-500 overflow-x-hidden overflow-y-auto rounded-[15px] p-1 text-foreground",
           // animations — using tw-animate-css / tailwind animate utils
           "animate-in fade-in-0 zoom-in-95",
           className,
@@ -397,7 +398,7 @@ export const ContextMenuContent = React.forwardRef<
 // Item
 interface ContextMenuItemProps extends React.LiHTMLAttributes<HTMLLIElement> {
   inset?: boolean;
-  variant?: "default" | "destructive";
+  variant?: "default" | "destructive" | "primary";
 }
 
 /**
@@ -425,10 +426,11 @@ export const ContextMenuItem = React.forwardRef<
       data-variant={variant}
       onClick={handleClick}
       className={cn(
-        "focus:bg-secondary/5 border border-transparent hover:bg-secondary/3 hover:border-secondary/3 transition-all duration-500",
-        "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-none",
+        "focus:bg-secondary/5 border border-secondary/5 hover:bg-secondary/3 hover:border-secondary/8 transition-all duration-500",
+        "relative flex cursor-pointer select-none items-center gap-2 rounded-[10px] px-2 py-1.5 text-sm outline-none",
         "data-[variant=destructive]:text-destructive",
         "data-[variant=destructive]:hover:bg-destructive/10 dark:data-[variant=destructive]:hover:bg-destructive/20",
+        "data-[variant=primary]:bg-primary/3 data-[variant=primary]:text-primary data-[variant=primary]:border-primary/5 data-[variant=primary]:hover:border-primary/8 data-[variant=primary]:hover:bg-primary/5",
         className,
       )}
       {...props}
@@ -502,7 +504,7 @@ export const ContextMenuCheckboxItem = React.forwardRef<
       ref={ref}
       onClick={handleClick}
       className={cn(
-        "focus:bg-secondary/5 border border-transparent hover:bg-secondary/3 hover:border-secondary/3",
+        "focus:bg-secondary/5 border border-secondary/3 hover:bg-secondary/3 hover:border-secondary/8",
         "relative flex cursor-pointer select-none items-center gap-2 rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none",
         className,
       )}
@@ -586,7 +588,7 @@ export const ContextMenuRadioItem = React.forwardRef<
       ref={ref}
       onClick={handleClick}
       className={cn(
-        "focus:bg-secondary/5 border border-transparent hover:bg-secondary/3 hover:border-secondary/3",
+        "focus:bg-secondary/5 border border-secondary/3 hover:bg-secondary/3 hover:border-secondary/8",
         "relative flex cursor-pointer select-none items-center gap-2 rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none",
         className,
       )}
@@ -656,7 +658,7 @@ export const ContextMenuSubTrigger = React.forwardRef<
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        "focus:bg-secondary/5 border border-transparent hover:bg-secondary/3 hover:border-secondary/3",
+        "focus:bg-secondary/5 border border-secondary/3 hover:bg-secondary/3 hover:border-secondary/8",
         "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-none",
         "data-[inset]:pl-8",
         className,
@@ -721,7 +723,7 @@ export const ContextMenuSubContent = React.forwardRef<
         ...style,
       }}
       className={cn(
-        "liquid-glass z-50 max-h-[min(80vh,400px)] min-w-[8rem] overflow-x-hidden overflow-y-auto rounded-xl p-1 text-foreground",
+        "liquid-glass z-50 flex max-h-[min(80vh,400px)] min-w-[8rem] flex-col gap-y-[2px] overflow-x-hidden overflow-y-auto rounded-xl p-1 text-foreground",
         "animate-in fade-in-0 zoom-in-95",
         className,
       )}
@@ -747,8 +749,7 @@ export function ContextMenuEmojiBar({
   menuWidth = 144,
   className,
 }: ContextMenuEmojiBarProps) {
-  const { open, cursorPosition, setOpen, menuRect } =
-    useContextMenuContext();
+  const { open, cursorPosition, setOpen, menuRect } = useContextMenuContext();
   const barRef = React.useRef<HTMLDivElement | null>(null);
   const [position, setPosition] = React.useState<{
     left: number;

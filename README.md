@@ -110,7 +110,13 @@ A fully custom-built right-click / long-press context menu — zero dependencies
 - **Right-click** (desktop) or **long-press** (mobile, 500ms hold) on any post opens a floating menu
 - **Emoji reaction bar** floats above the menu — tap any emoji to react instantly
 - **Menu items** adapt to context: public feed shows "Copy Post Link"; admin panel adds Pin, Edit, Delete, Copy Text, and retry for failed posts
+- **Always-on item borders** — every row carries a `secondary/5` border at rest and brightens to `secondary/8` on hover, so the menu reads as a set of discrete rows even when idle. Hover is a brightening step, not the border appearing
+- **`primary` variant** — tinted at rest (`bg-primary/3`, `text-primary`, `primary/5` border) rather than on hover, making it the most legible row before the pointer arrives. Used by the post menu's Delete item
+- **`destructive` variant** — hover-only tint (`destructive/10`, `/20` in dark) with static red text, so it never competes with the primary row
+- 2px between every row (`gap-y-[2px]` on the container), rows at `rounded-[10px]` inside a `rounded-[15px]` pane; nested submenus step down to `rounded-xl` to read as inset
 - Submenus, checkboxes, radio groups, and separators are built into the primitive system for extensibility
+
+> The checkbox, radio and sub-trigger rows still use `secondary/3` and `rounded-lg` — they predate the item rework and were not carried with it. See §9 of `docs/design-system.md`.
 
 ### Stories
 

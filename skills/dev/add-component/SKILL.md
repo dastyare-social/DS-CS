@@ -115,9 +115,33 @@ Server-side callers — the OG image route, for instance — import `@/lib/api/*
 <div className="liquid-glass [--liquid-glass-bg:color-mix(in_srgb,var(--primary)_22%,transparent)]" />
 ```
 
-The stroke and the border are separate and complementary. `--liquid-glass-border-color` sets edge weight to match the install/update banners; the inset stroke adds the luminous rim. Do not merge them.
+The stroke and the border are separate and complementary. `--liquid-glass-border-color` sets edge weight to match the install/update/error bars; the inset stroke adds the luminous rim. Do not merge them.
 
 Glass is invisible on a flat white background. Review it over a busy backdrop using the `Design System/Liquid Glass` Storybook story, not an isolated white canvas.
+
+## Bottom floating bars, and transient errors
+
+The install bar, the update bar and the error bar are **one component** in three places: same `liquid-glass`, same `rounded-2xl px-3 py-2` pill, same `px-4 pt-2.5` wrapper, same `max-w-sm`, same `z-40`. Change the shared look in all three or in none — restyling one breaks the stack into two different bars.
+
+**To report a transient failure, never add a new surface.** Call `raiseError()` from `@/lib/error-bar`; the bar is mounted once in `src/app/(routes)/layout.tsx`, so nothing needs a callback threaded to it.
+
+```tsx
+import { raiseError } from "@/lib/error-bar";
+try { await createPost({ content }); } catch (err) { raiseError(err); }
+```
+
+It is for failures with no better home — rejected writes, dropped calls. It is **not** for form validation, per-attachment upload chips (they carry their own retry), or persistent load/publish error screens. If the user can act on it in place, it stays in place. A new message replaces and restarts a 4s timer; an identical repeat is a no-op, so a flapping error cannot hold the bar open.
+
+**Adding a page with bottom chrome?** Two edits, both next to the existing `--chat-footer-height` write in that page's `updateHeaderFooterOffsets`:
+
+```ts
+document.documentElement.style.setProperty(
+  "--error-bar-bottom",
+  "calc(var(--chat-footer-height) + var(--install-banner-height, 0px) - 5px)"
+);
+```
+
+...then add `var(--error-bar-height, 0px)` to that page's feed `pb`, scroll safe zone `bottomInset`, and scroll-to-bottom `bottom`. Skip either half and the bar overlaps or floats at the screen edge. Full contract: `docs/design-system.md` §6.
 
 ## Tests and stories
 

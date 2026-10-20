@@ -53,7 +53,7 @@ a Tailwind utility should be able to reach it.
 | `--selection-foreground` / `--selection-background` | `primary` / `primary` @ 10% | |
 
 Material tokens (`--liquid-glass-*`, `--scroll-fade-*`) are documented with
-the utility that consumes them, in §4 and §5.
+the utility that consumes them, in §4, §5 and §6.
 
 ---
 
@@ -123,7 +123,7 @@ no depth. An outer shadow would break the rule outright.
 | `--liquid-glass-stroke-blur` | `2px` | edge softness — raise it for a softer rim |
 
 The stroke and the border are **separate and complementary**. `--liquid-glass-border-color`
-sets edge weight to match the install/update banners
+sets edge weight to match the install/update/error bars
 (`border-secondary/5`); the stroke adds the luminous rim that makes the pane
 read as glass. Do not merge them.
 
@@ -174,7 +174,7 @@ change to corner **size** rather than shape and could not be reconciled with
 the previous look. Two radius-compensation scales were tried on top of it —
 ×1.21 derived from the diagonal-reach geometry, then ×1.15 — and both visibly
 oversized every corner, worst on the short full-bleed bars (pinned-posts bar,
-install/update banners) where the radius approaches half the element height.
+install/update/error bars) where the radius approaches half the element height.
 All of it is gone.
 
 If this is revisited, two things worth knowing:
@@ -224,7 +224,7 @@ All overridable per surface.
 | `--liquid-glass-wash-top` | `white` @ 65% | gradient top |
 | `--liquid-glass-wash-bottom` | `white` @ 15% | gradient bottom |
 | `--liquid-glass-border-width` | `1px` | rim thickness |
-| `--liquid-glass-border-color` | `--secondary` @ 5% | rim colour — a dark hairline, not a white rim (this app is light-only, so a white rim is invisible); matches `border-secondary/5`, the rim the install/update banners use |
+| `--liquid-glass-border-color` | `--secondary` @ 5% | rim colour — a dark hairline, not a white rim (this app is light-only, so a white rim is invisible); matches `border-secondary/5`, the rim the install/update/error bars use |
 | `--liquid-glass-sheen` | `white` @ 70% | hover highlight |
 | `--liquid-glass-stroke` | `white` | Figma-style inset stroke (§2.1) |
 | `--liquid-glass-stroke-opacity` | `60%` | inset stroke strength |
@@ -404,11 +404,14 @@ chrome the fade has to run before it reaches nothing.
 
 Callers pass **half** the floating bar's height as part of the inset, so the
 fade is measured against the middle of the pinned bar at the top and the middle
-of the install/update banner at the bottom:
+of the install/update/error bar at the bottom:
 
 ```tsx
 topInset="calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) / 2)"
-bottomInset="calc(var(--chat-footer-height) + var(--install-banner-height, 0px) / 2)"
+bottomInset="calc(
+  var(--chat-footer-height)
+  + (var(--install-banner-height, 0px) + var(--error-bar-height, 0px)) / 2
+)"
 ```
 
 ### 5.3 The mask is composed in the utility, not in a token
@@ -443,7 +446,133 @@ slack leaves the band stuck on at the very end of the list.
 
 ---
 
-## 6. Loading images — `LazyImageLoader`
+## 6. Bottom floating bars — install, update, error
+
+Three bars stack above the bottom edge, in this order. They share one shape and
+one contract:
+
+| Bar | File | Lives on | Height variable | Auto-dismiss |
+|-----|------|----------|------------------|--------------|
+| Install | `install-banner.tsx` | `/` (public feed) | `--install-banner-height` | no — persists until dismissed |
+| Update | `update-banner.tsx` | `/os` | `--update-banner-height` | no — persists until dismissed |
+| Error | `error-bar.tsx` | **every route** | `--error-bar-height` | yes — 4s |
+
+All three are the same element. Identical `liquid-glass`, `rounded-2xl px-3
+py-2` pill, identical `px-4 pt-2.5` wrapper, identical `max-w-sm`, identical
+`z-40`. Only the contents differ: the install and update bars carry a message,
+an action `Button` and an `X`; the error bar carries a message and an `X`.
+
+**Change the shared look in all three, or in none.** Restyling one of them
+breaks the stack into two different bars.
+
+```tsx
+<div className="fixed bottom-[...] left-1/2 -translate-x-1/2 w-full max-w-sm z-40 px-4 pt-2.5">
+  <div className="liquid-glass w-full flex items-center gap-x-2.5 rounded-2xl px-3 py-2">
+    <p className="flex-1 min-w-0 text-[15px] text-secondary/90">{message}</p>
+    <XIcon className="size-4 stroke-[1.5px] cursor-pointer shrink-0" />
+  </div>
+</div>
+```
+
+### 6.1 The height-variable contract
+
+Every bar **writes** its own height to `:root` through a `ResizeObserver` and
+resets it to `0px` while hidden, so whatever sits above it can offset itself.
+Three kinds of consumer, in order of who has to know:
+
+| Consumer | Adds up |
+|----------|---------|
+| a bar's own `bottom` | the heights of the bars **below** it |
+| the scroll-to-bottom button | footer + every bar below it |
+| the feed's `pb`, and the scroll safe zone's `bottomInset` | footer + every bar below it |
+
+The `- 5px` in every one of those offsets is a deliberate overlap (§5.4).
+
+The error bar is the odd one out: its own `bottom` comes from a variable it
+does **not** write, because only the page knows its footer.
+
+| Variable | Read/write | Meaning |
+|----------|------------|---------|
+| `--error-bar-height` | written by the bar | its height, so things above can offset |
+| `--error-bar-bottom` | **written by the page**, read by the bar | distance from the viewport bottom to the bar's own bottom edge |
+
+`--error-bar-bottom` is page-owned on purpose rather than derived inside the
+bar from `--chat-footer-height`. Deriving it would inherit the staleness that
+affects every other one of these variables: a page that never sets
+`--chat-footer-height` (`/about`, `/os/register`) would silently inherit the
+last value a footer page left behind and park the bar in mid-screen. A
+variable a page only writes when it *has* chrome cannot go stale, and its
+`0px` fallback covers the chrome-less routes.
+
+Adding a page with bottom chrome means two edits, both next to the existing
+`--chat-footer-height` write in that page's `updateHeaderFooterOffsets`:
+
+```ts
+document.documentElement.style.setProperty(
+  "--error-bar-bottom",
+  "calc(var(--chat-footer-height) + var(--install-banner-height, 0px) - 5px)"
+);
+```
+
+...then `--error-bar-height` into that page's feed `pb`, its scroll safe zone
+`bottomInset`, and its scroll-to-bottom `bottom`. Routes wired today: `/`,
+`/os`, `/explore`, `/posts/[post_id]`.
+
+### 6.2 Raising an error
+
+`raiseError()` — `src/lib/error-bar.ts` — is the only entry point:
+
+```tsx
+import { raiseError } from "@/lib/error-bar";
+
+try {
+  await createPost({ content });
+} catch (err) {
+  raiseError(err);
+}
+```
+
+The bar is mounted once in `src/app/(routes)/layout.tsx`, so nothing has to
+thread a callback or a context to reach it. `raiseError` dispatches a
+namespaced `window` event (`dastyare:error-bar`), which crosses server/client
+component boundaries and reaches into plain callbacks inside hooks and stores.
+It is a no-op on the server, and on `null` / `undefined` / blank messages — so
+a nullable message can be passed straight through without a guard.
+
+| Argument | Default | Notes |
+|----------|---------|-------|
+| `error` | — | an `Error`, a `string`, or anything else |
+| `fallback` | `"Operation failed"` | used only for a non-string, non-`Error` throw; pass a localized string when `t()` is in scope — `t("general.error_generic")` |
+| `duration` | `4000` ms | auto-dismiss override |
+
+**Behaviour.** A new message replaces the current one and restarts the timer.
+Repeating the message already on screen is a **complete no-op** — no replace,
+no timer reset — so a retry loop that throws the same error every two seconds
+cannot hold the bar open forever. `X` dismisses early and clears the pending
+timer. The bar carries `role="alert"`, so it is announced.
+
+### 6.3 Transient or static — which errors get the bar
+
+The bar is for failures worth telling the user about but not worth holding the
+screen for. That is a narrower set than "every error".
+
+| Use the bar | Keep its own surface |
+|-------------|----------------------|
+| rejected writes (create / update / delete / pin) | form validation — the field is right there |
+| rejected attachment selections | per-attachment upload chips, which carry their own retry |
+| any rejected call with no better home | persistent load / publish error screens |
+
+The rule of thumb: **if the user can act on it in place, it stays in place.**
+The bar is a heads-up, not a state.
+
+Two surfaces were absorbed into the bar when it landed — the 5s red write-error
+toast at the top of `/os`, and the 4s rejected-files notice inline in that
+composer. Both were transient, both were the only error UI on their path, and
+both are now `raiseError()` calls.
+
+---
+
+## 7. Loading images — `LazyImageLoader`
 
 `src/components/lazy-image-loader.tsx`. Stacks a WebGL shader *under* an
 existing loader, so media that resolves quickly never allocates GPU work.
@@ -473,7 +602,7 @@ on disk.
 
 ---
 
-## 7. Button
+## 8. Button
 
 `src/components/button.tsx`. `buttonVariants` is `cva`; `asChild` renders
 through a Radix `Slot`.
@@ -490,7 +619,7 @@ Rule: a variant may only set `--liquid-glass-*` tokens. Adding a shadow or a
 
 ---
 
-## 8. Context menu
+## 9. Context menu
 
 `src/components/context-menu.tsx`. Fully custom — no Radix, no menu library. One
 `ContextMenu` root per target card; only one menu can be open at a time
@@ -548,7 +677,7 @@ cursor-pointer select-none outline-none transition-all duration-500
 
 `rounded-[10px]` sits between `rounded-lg` (8px) and `rounded-xl` (12px) so the
 row corner follows the pane corner without matching it. `duration-500` is not
-local — it is the global base value (§8).
+local — it is the global base value (§10).
 
 > **Tailwind v4 trap:** the `border` utility is required and cannot be dropped.
 > Preflight resets every element to `border: 0 solid`, so `border-secondary/5`
@@ -601,10 +730,99 @@ sub-trigger rows use `pl-8` to reserve the indicator gutter, whereas
 
 ---
 
-## 9. General conventions
+## 10. General conventions
 
 - Tokens in `:root`; Tailwind mappings in `@theme inline`.
 - Prefer a token override over a one-off utility when theming a surface.
 - `cn()` (`@/lib/utils`) is the classname helper — it runs `twMerge`.
 - Global `duration-500` is applied to every element in `@layer base`; do not
   fight it with a local `duration-*` unless the change is deliberate.
+
+---
+
+## 11. Step transitions and motion
+
+A step change is **opacity plus a small vertical drift** — nothing else. The
+vocabulary is shared with SPACE (`dastyare_social_space/docs/DESIGN-SYSTEM.md`),
+so the two apps move the same way even where their layouts differ.
+
+| Token | Value |
+|---|---|
+| Duration | `260ms` |
+| Easing | `cubic-bezier(0.23, 1, 0.32, 1)` |
+| Drift | `8px` (`translate-y-2`) |
+| Reduced motion | opacity only, `150ms` |
+
+The curve is a strong ease-out: most of the distance is covered early and the
+last few pixels settle. That is what makes 260ms read as quiet rather than slow.
+
+**Tailwind v4 trap:** `translate-y-*` sets the independent `translate` property,
+not `transform`. Name it in the transition list, and never reach for
+`transition-all`:
+
+```
+transition-[opacity,translate]
+```
+
+`transition-all` also sweeps `height` and colours, which turns a two-property
+move into a layout animation.
+
+### 11.1 The register form
+
+`src/app/(routes)/os/(routes)/register/page.tsx` reveals the password field
+after the email is accepted. The email stays visible, so this is **progressive
+disclosure**, not a panel swap — real space has to appear.
+
+`max-height` was the old mechanism and it cannot be right: any value large
+enough for the field makes the reveal finish early and then sit still, and any
+value close to the field's height clips it mid-fade. The field's height is
+measured instead (`passwordFieldRef.scrollHeight`, taken on mount while the
+wrapper is still collapsed — the inner field lays out normally inside a
+zero-height, `overflow-hidden` wrapper), then animated to that exact value:
+
+```tsx
+<div
+  inert={!revealed}
+  aria-hidden={!revealed}
+  style={{ height: revealed ? measuredHeight : 0 }}
+  className="overflow-hidden transition-[height] duration-[260ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+>
+  <div
+    ref={fieldRef}
+    className={cn(
+      "transition-[opacity,translate] duration-[260ms] ease-[cubic-bezier(0.23,1,0.32,1)]",
+      "motion-reduce:translate-y-0 motion-reduce:duration-150",
+      revealed ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
+    )}
+  >
+    …
+  </div>
+</div>
+```
+
+- `inert` keeps the collapsed field out of the tab order and the accessibility
+  tree. Focus is still moved by hand in the existing effect — `inert` removes
+  the field from tab order, it does not carry focus.
+- The height and the fade run on the same duration and curve, so the field is
+  fully opaque exactly as its space finishes opening.
+- The `FieldGroup` gap no longer changes with the step. A gap is not animatable,
+  so a `gap-y-1.5` → `gap-y-3.5` swap is an instant jump in the middle of a
+  smooth move. The wider revealed spacing is `pt-2` inside the measured field
+  instead, which opens with the height; the button keeps a constant `mt-2.5`.
+- The button label (`continue —` → `login to panel`) is two spans in one grid
+  cell, cross-fading on the same curve. The button therefore keeps its size,
+  and the inactive label is `aria-hidden` so the accessible name changes
+  cleanly.
+
+### 11.2 Reduced motion
+
+Every move ships its fallback in the same class list:
+
+```
+motion-reduce:translate-y-0 motion-reduce:duration-150
+```
+
+The fade stays — an instant swap is harder to follow than a short fade — but the
+drift and the height animation are dropped. Apply `motion-reduce:translate-y-0`
+to the leaving state too, not only the entering one, or the field still moves
+for reduced-motion users.

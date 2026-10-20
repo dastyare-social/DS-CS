@@ -1362,6 +1362,7 @@ const Post = memo(
 
             {can_delete_post && (
               <ContextMenuItem
+                variant="primary"
                 className="flex gap-x-2 py-1.5"
                 onClick={() => setConfirmDeleteOpen(true)}
               >

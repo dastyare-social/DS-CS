@@ -82,6 +82,12 @@ export default function Page() {
         "--chat-footer-height",
         `${footerHeight + 20}px`
       );
+      // Where the global error bar floats from the viewport bottom. Explore has
+      // a footer but no install/update banner.
+      document.documentElement.style.setProperty(
+        "--error-bar-bottom",
+        "calc(var(--chat-footer-height) - 5px)"
+      );
     });
   }, []);
 

@@ -21,8 +21,12 @@ const Page = () => {
   // Root scroll container ref (optional but useful for future scroll-to-bottom logic)
   const pageRef = useRef<HTMLDivElement | null>(null);
   const passwordRef = useRef<HTMLInputElement | null>(null);
+  // The hidden password field still lays out at its natural height, so it can
+  // be measured while collapsed and its exact height animated on reveal.
+  const passwordFieldRef = useRef<HTMLDivElement | null>(null);
 
   const [pageHeight, setPageHeight] = useState<number | null>(null);
+  const [passwordFieldHeight, setPasswordFieldHeight] = useState(0);
 
   const updatePageHeight = () => {
     setPageHeight(window.innerHeight);
@@ -32,6 +36,11 @@ const Page = () => {
     updatePageHeight(); // initial
     window.addEventListener("resize", updatePageHeight);
     return () => window.removeEventListener("resize", updatePageHeight);
+  }, []);
+
+  useEffect(() => {
+    const field = passwordFieldRef.current;
+    if (field) setPasswordFieldHeight(field.scrollHeight);
   }, []);
 
   // Handle "Continue" click – validate email and reveal password
@@ -124,9 +133,7 @@ const Page = () => {
           </div>
         </div>
 
-        <FieldGroup
-          className={cn("w-full gap-y-1.5", show_password_input && "gap-y-3.5")}
-        >
+        <FieldGroup className="w-full gap-y-1.5">
           {/* —— EMAIL ADDRESS INPUT —— */}
           <Field className="flex flex-col gap-y-0.5">
             <div className="pl-5 text-sm tracking-[-0.8px] text-secondary/60">
@@ -135,7 +142,7 @@ const Page = () => {
             <Input
               id="fieldgroup-email"
               type="email"
-              placeholder="hey@omidshabab.com"
+              placeholder="hey@dastyare.social"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -144,29 +151,48 @@ const Page = () => {
             />
           </Field>
 
-          {/* —— PASSWORD INPUT with FADE-IN —— */}
+          {/* —— PASSWORD STEP with measured reveal —— */}
+          {/* Height animates to the field's measured value — no `max-h-0`
+              guess and no `transition-all` sweeping properties that were never
+              meant to move. The field fades in and drifts up on the same
+              260ms curve as SPACE's step swap; reduced motion drops the drift,
+              snaps the height and shortens the fade. `inert` keeps the
+              collapsed field out of the tab order. */}
           <div
-            className={`
-                transition-all duration-300 ease-in-out
-                overflow-hidden
-                ${show_password_input ? "opacity-100 translate-y-0" : "max-h-0 opacity-0 translate-y-2"}
-              `}
+            inert={!show_password_input}
+            aria-hidden={!show_password_input}
+            style={{
+              height: show_password_input ? passwordFieldHeight : 0,
+            }}
+            className="overflow-hidden transition-[height] duration-[260ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
           >
-            <Field className="flex flex-col gap-y-0.5">
-              <div className="pl-5 text-sm tracking-[-0.8px] text-secondary/60">
-                password —
-              </div>
-              <Input
-                ref={passwordRef}
-                id="fieldgroup-password"
-                type="password"
-                placeholder="YOUR-PASSWORD*"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={loading}
-              />
-            </Field>
+            <div
+              ref={passwordFieldRef}
+              className={cn(
+                // `pt-2` restores the wider step spacing inside the measured
+                // height, so the gap opens with the field instead of jumping.
+                "pt-2 transition-[opacity,translate] duration-[260ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:duration-150 motion-reduce:translate-y-0",
+                show_password_input
+                  ? "translate-y-0 opacity-100"
+                  : "translate-y-2 opacity-0",
+              )}
+            >
+              <Field className="flex flex-col gap-y-0.5">
+                <div className="pl-5 text-sm tracking-[-0.8px] text-secondary/60">
+                  password —
+                </div>
+                <Input
+                  ref={passwordRef}
+                  id="fieldgroup-password"
+                  type="password"
+                  placeholder="YOUR-PASSWORD*"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  disabled={loading}
+                />
+              </Field>
+            </div>
           </div>
 
           {error && (
@@ -187,9 +213,32 @@ const Page = () => {
                   handleContinue();
                 }
               }}
-              className={cn("w-full mt-2.5", show_password_input && "mt-5")}
+              className="w-full mt-2.5"
             >
-              {show_password_input ? t("general.login_to_panel") : "continue —"}
+              {/* Both labels stay mounted in one grid cell and cross-fade, so
+                  the swap neither reflows the button nor reads as a sudden
+                  replacement. The inactive label is hidden from assistive
+                  tech so the button has exactly one name at a time. */}
+              <span className="grid">
+                <span
+                  aria-hidden={show_password_input}
+                  className={cn(
+                    "col-start-1 row-start-1 transition-opacity duration-[260ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:duration-150",
+                    show_password_input ? "opacity-0" : "opacity-100",
+                  )}
+                >
+                  continue —
+                </span>
+                <span
+                  aria-hidden={!show_password_input}
+                  className={cn(
+                    "col-start-1 row-start-1 transition-opacity duration-[260ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:duration-150",
+                    show_password_input ? "opacity-100" : "opacity-0",
+                  )}
+                >
+                  {t("general.login_to_panel")}
+                </span>
+              </span>
             </Button>
           </Field>
         </FieldGroup>

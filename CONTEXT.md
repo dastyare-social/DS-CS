@@ -71,6 +71,7 @@ bun run ds-cs add           # install an agent skill
 |---|---|
 | Full agent + API guide | `AGENTS.md` (also served at `/agents.md`) |
 | Readme / marketing | `README.md` (also served at `/readme.md`) |
+| Design system + UI conventions | `docs/design-system.md` (§6 covers the install/update/error bars) |
 | Analytics setup | `docs/posthog-dashboard-guide.md` |
 | PWA + push history | `docs/pwa-guide.md` |
 | MCP client setup | `docs/mcp-guide.md` |
