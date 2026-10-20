@@ -241,7 +241,7 @@ CLI tests: `bun run skills:test`.
 | `src/lib/webhooks/` | Outbound webhook delivery (emit + HMAC signing + retries) |
 | `src/lib/auth/` | Better Auth server config and React client |
 | `src/lib/filters/` | Content filtering (NSFW words, HTML sanitization) |
-| `src/mastra/` | Mastra agent scaffold — Zernio MCP client, OAuth provider, skills |
+| `src/mastra/` | Mastra agent scaffold — orchestrator, specialists, tools, guardrails, memory, RAG, Zernio MCP/OAuth, skills |
 | `src/components/workspace-shell.tsx` | Resizable desktop side panels around the feed (empty by design) |
 
 ## Conventions
@@ -275,7 +275,13 @@ See `.env.example`. Critical vars:
 - `WEBPUSH_SUBJECT` — Contact URI such as `mailto:you@example.com`
 - `NEXT_PUBLIC_ADDITIONAL_IMAGE_DOMAINS` — Comma-separated list of domains for Next.js Image optimization (e.g., `"example.com,cdn.example.com"`). Media from S3 storage is automatically included.
 - `OPENROUTER_API_KEY` — Model provider key for the Mastra agent
-- `MASTRA_MODEL` — `provider/model` string, defaults to `openrouter/anthropic/claude-sonnet-4.5`
+- `MASTRA_MODEL` — orchestrator `provider/model` string, defaults to `openrouter/anthropic/claude-sonnet-4.5`
+- `MASTRA_SUBAGENT_MODEL` — optional model override for the specialist roster; falls back to `MASTRA_MODEL`
+- `MASTRA_GUARDRAIL_MODEL` — optional small model for the guardrail detectors; falls back to `MASTRA_MODEL`
+- `MASTRA_COST_BUDGET_USD`, `MASTRA_COST_WINDOW` — per-user spend ceiling and window (default `0.5` / `24h`); malformed values fail open
+- `MASTRA_INPUT_TOKEN_LIMIT`, `MASTRA_OUTPUT_TOKEN_LIMIT` — per-turn token ceilings (default `32000` / `4000`)
+- `TAVILY_API_KEY`, `BRAVE_SEARCH_API_KEY` — optional web search providers, detected Tavily-first; without either, `web_search` returns a "not configured" note and `web_fetch` still works
+- `RAG_EMBEDDING_API_KEY` (or `OPENAI_API_KEY`), `RAG_EMBEDDING_BASE_URL`, `RAG_EMBEDDING_MODEL`, `RAG_EMBEDDING_DIMENSIONS` — opt-in hybrid retrieval; keyword search needs no configuration
 - `ZERNIO_MCP_URL` — Zernio hosted MCP endpoint (default `https://mcp.zernio.com/mcp`)
 - `ZERNIO_CLIENT_METADATA_URL` **or** `ZERNIO_CLIENT_ID` / `ZERNIO_CLIENT_SECRET` — exactly one Zernio client identity; Mastra never performs dynamic client registration
 - `MCP_OAUTH_ENCRYPTION_KEY` — encrypts stored MCP OAuth tokens; falls back to `BETTER_AUTH_SECRET`
@@ -361,6 +367,60 @@ npx -y @posthog/wizard@latest
 	2. Copy the dashboard **Project API key / token** into `NEXT_PUBLIC_POSTHOG_PROJECT_API_KEY` and a server **Personal API key** or **Project Secret** into `POSTHOG_API_KEY`.
 
 	3. Client init is centralized in `src/lib/analytics/client.ts`. Agents should not attempt to read or fetch `POSTHOG_API_KEY` (server secret).
+
+## Mastra agent scaffold
+
+`src/mastra/` is a working agent runtime with **no UI or HTTP route** yet. The
+Zernio orchestrator (`agents/zernio.ts`) is callable from server code and owns
+the tool surface; `src/mastra/index.ts` registers it plus the specialist roster.
+
+### Orchestrator tools
+
+| Tool | Purpose |
+|------|---------|
+| `web_search` | Tavily or Brave, auto-detected; returns a `note` when unconfigured |
+| `web_fetch` | Reads a URL; always available, no key |
+| `list_channel_posts`, `get_channel_post`, `channel_stats` | Read this channel's posts and totals |
+| `search_channel` | Retrieval over published posts (keyword, or hybrid with embeddings) |
+| `repurpose_post` | Source post + per-platform limits/rules; the model writes the variants |
+
+Zernio MCP tools are attached per user at call time — `createZernioMcpClient({ userId })`
+returns a client because credentials are not module-global.
+
+### Specialists (subagents)
+
+Mastra exposes each entry in `agents/subagents/index.ts` as an `agent-<id>` tool.
+The roster is: `content-planner`, `researcher`, `engagement-analyst`,
+`linkedin-writer`, `instagram-writer`, `tiktok-writer`, `x-writer`,
+`social-writer`, `script-writer`, `first-comment-writer`, `hashtag-analyst`,
+`substack-writer`, `newsletter-writer`, `editor`, `repurpose-editor`.
+
+- The `id` is model-facing; the `description` is what the orchestrator routes on.
+- Specialists cannot see the parent conversation — pass the source material in
+  the delegation prompt.
+- Writers get read-only channel tools; researchers also get `web_search` /
+  `web_fetch`; the editor can call `repurpose_post` to check format limits.
+- They use `MASTRA_SUBAGENT_MODEL`, carry the local content policy and an output
+  token ceiling, but **not** the model-backed guardrails (the orchestrator runs
+  those once per turn; repeating them per delegation multiplies cost).
+- Do not give a specialist its own `agents` map — nesting delegations is not
+  supported by the current routing rules.
+
+### Guardrails, memory, retrieval
+
+- Guardrail processors live in `src/mastra/guardrails/` and are ordered there:
+  input = content policy → PII → prompt injection → token → cost; output =
+  moderation → content policy → token. Detectors use `MASTRA_GUARDRAIL_MODEL`
+  and `errorStrategy: "warn"` so a provider outage does not brick the agent.
+- Memory (`src/mastra/memory/`) is Postgres-backed via the shared
+  `PostgresStore`; pass `zernioMemoryContext(userId, threadId)` — `resource` is
+  the user id, and the helper throws on an empty id.
+- Retrieval (`src/mastra/rag/`) defaults to Postgres FTS on `posts.content`
+  (GIN index, migration `0008`). Hybrid retrieval is opt-in:
+  `bun run rag:pgvector` then `bun run rag:index`. The stock `postgres:16` image
+  has no pgvector — swap the image first.
+
+Full reference: `docs/mastra-zernio.md`.
 
 ## Release & versioning
 

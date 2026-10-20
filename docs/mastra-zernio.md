@@ -2,14 +2,26 @@
 
 The v1.0.0 scaffold adds a [Mastra](https://mastra.ai) agent runtime and connects
 it to [Zernio](https://zernio.com)'s hosted MCP server. It ships **without UI**:
-no chat surface is mounted, and no agent HTTP route is registered yet.
+no chat surface is mounted, and no agent HTTP route is registered yet. The agent
+itself is complete enough to be called from server code: it has tools, a
+specialist roster, guardrails, memory and retrieval.
 
 ## What is in the tree
 
 | Path | Purpose |
 |---|---|
-| `src/mastra/index.ts` | `Mastra` instance — registers the Zernio agent and Postgres storage |
-| `src/mastra/agents/zernio.ts` | Agent definition, OpenRouter model, Zernio skills |
+| `src/mastra/index.ts` | `Mastra` instance — registers the orchestrator, the specialists and Postgres storage |
+| `src/mastra/agents/zernio.ts` | Orchestrator: model, tools, delegation rules, skills, memory |
+| `src/mastra/agents/specialist.ts` | Shared factory for the specialist agents |
+| `src/mastra/agents/subagents/` | The specialist roster (planner, researcher, writers, editor, …) |
+| `src/mastra/tools/web-search.ts` | `web_search` (Tavily/Brave) and the built-in `web_fetch` |
+| `src/mastra/tools/channel-data.ts` | `list_channel_posts`, `get_channel_post`, `channel_stats` |
+| `src/mastra/tools/repurpose.ts` | `repurpose_post` — source + format playbook |
+| `src/mastra/tools/knowledge.ts` | `search_channel` — retrieval over the channel's own posts |
+| `src/mastra/repurpose/specs.ts` | Format limits and rules for each target platform |
+| `src/mastra/guardrails/` | Prompt injection, PII, moderation, token/cost, channel content policy |
+| `src/mastra/memory/` | Postgres-backed thread memory and working-memory template |
+| `src/mastra/rag/` | Chunking, embeddings, keyword and hybrid retrieval |
 | `src/mastra/mcp/zernio.ts` | Per-user `MCPClient` factory for `https://mcp.zernio.com/mcp` |
 | `src/mastra/oauth/zernio-provider.ts` | `MCPOAuthClientProvider` configuration and redirect URL |
 | `src/mastra/skills.ts` | The six vendored Zernio skills, as filesystem paths |
@@ -17,6 +29,8 @@ no chat surface is mounted, and no agent HTTP route is registered yet.
 | `src/lib/db/schema/mcp-oauth.ts` | `mcp_oauth_storage` table |
 | `src/app/api/agents/zernio/authorize/route.ts` | Starts OAuth for the signed-in user |
 | `src/app/api/agents/zernio/callback/route.ts` | Hosted OAuth callback (code + PKCE exchange) |
+| `scripts/enable-pgvector.ts` | Opt-in pgvector table (`bun run rag:pgvector`) |
+| `scripts/index-channel-knowledge.ts` | Embed existing posts (`bun run rag:index`) |
 | `skills/zernio/*/SKILL.md` | The same skills, installed in the DS-CS registry |
 
 ## Environment
@@ -24,6 +38,24 @@ no chat surface is mounted, and no agent HTTP route is registered yet.
 ```bash
 OPENROUTER_API_KEY=...
 MASTRA_MODEL="openrouter/anthropic/claude-sonnet-4.5"
+MASTRA_SUBAGENT_MODEL="openrouter/anthropic/claude-sonnet-4.5"   # optional
+MASTRA_GUARDRAIL_MODEL="openrouter/openai/gpt-4o-mini"           # optional
+
+# Budget and ceilings (guardrails fail open only on malformed values)
+MASTRA_COST_BUDGET_USD=0.5
+MASTRA_COST_WINDOW="24h"
+MASTRA_INPUT_TOKEN_LIMIT=32000
+MASTRA_OUTPUT_TOKEN_LIMIT=4000
+
+# Web search: either provider, or neither (web_fetch still works)
+TAVILY_API_KEY=...
+BRAVE_SEARCH_API_KEY=...
+
+# Semantic retrieval is opt-in; without a key, keyword search is used
+RAG_EMBEDDING_API_KEY=...          # or OPENAI_API_KEY
+RAG_EMBEDDING_BASE_URL="https://api.openai.com/v1"
+RAG_EMBEDDING_MODEL="text-embedding-3-small"
+RAG_EMBEDDING_DIMENSIONS=1536
 
 ZERNIO_MCP_URL="https://mcp.zernio.com/mcp"
 
@@ -92,9 +124,130 @@ They live under `skills/zernio/` so `ds-cs add` sees them, and
 `src/mastra/skills.ts` points the agent at the same directories. Do not copy
 them a second time.
 
-## Attaching tools later
+## Tools
 
-Tools cannot be attached at module scope because credentials are per user:
+| Tool | What it does | Notes |
+|---|---|---|
+| `web_search` | Tavily or Brave, auto-detected from env | Mastra's built-in `webSearchTool` is provider-defined and throws for OpenRouter, so search is explicit here |
+| `web_fetch` | Reads a URL, no API key | Mastra built-in; keeps working when no search key is set |
+| `list_channel_posts` | Paginated posts with views and reactions | Reads the same queries the feed uses |
+| `get_channel_post` | One post, with media URLs | Used before repurposing |
+| `channel_stats` | Post/story counts and accumulated views | `views` is text in the schema, so the aggregate guards the cast |
+| `repurpose_post` | Source post + per-platform playbook | Returns limits and rules; the model writes the variants |
+| `search_channel` | Retrieval over published posts | Keyword by default, hybrid when embeddings are configured |
+
+Without a search key `web_search` returns a `note` rather than throwing: a clear
+"not configured" is easier for a model to handle than a tool error it will try to
+work around.
+
+## Specialists (subagents)
+
+The orchestrator (`zernio`) delegates through Mastra's agent tools. Each key in
+`specialistAgents` becomes an `agent-<id>` tool, so the id is part of the
+model-facing surface.
+
+| Agent | Use it for |
+|---|---|
+| `content-planner` | Calendars and campaigns: slots, platforms, sequencing |
+| `researcher` | Cited briefs from the web and the channel |
+| `engagement-analyst` | What performed, from this channel's own numbers |
+| `linkedin-writer` | LinkedIn posts |
+| `instagram-writer` | IG captions and carousels |
+| `tiktok-writer` | TikTok hook, beats, caption, sound, tags |
+| `x-writer` | X posts and threads |
+| `social-writer` | Facebook, Threads, Bluesky, Pinterest, YouTube community, Mastodon |
+| `script-writer` | Spoken video scripts with timestamps and visuals |
+| `first-comment-writer` | Pinned comment, source list, link drop |
+| `hashtag-analyst` | Hashtag and keyword sets per platform |
+| `substack-writer` | Long-form Substack articles |
+| `newsletter-writer` | Email newsletter issues |
+| `editor` | Final pass: truth, fit, voice, safety |
+| `repurpose-editor` | One source post into the full multi-format set |
+
+Routing rules live in the orchestrator's instructions: delegate drafting, route
+facts through the researcher, route anything publishable through the editor, and
+pass the source material in the prompt (a specialist cannot see the parent
+conversation).
+
+Specialists use `MASTRA_SUBAGENT_MODEL`, get only the tools their role needs
+(writers read the channel; researchers also browse), and carry the local content
+policy plus an output token ceiling. The model-backed guardrails run on the
+orchestrator only — repeating a detection call inside every delegation would
+multiply latency and cost for the same protection.
+
+## Guardrails
+
+Order matters, and is enforced in `src/mastra/guardrails/index.ts`:
+
+Input — content policy (local), PII redaction, prompt-injection detection,
+token ceiling, per-user cost ceiling.
+
+Output — moderation, content policy, output token ceiling.
+
+- `PIIDetector` redacts to `[EMAIL]`-style placeholders before the model sees
+  the text.
+- `PromptInjectionDetector` blocks at a 0.75 threshold.
+- `TokenCostControl` aggregates per `resourceId` (the signed-in user) over
+  `MASTRA_COST_WINDOW`, warns at 80% and blocks at the budget.
+- The content policy is the repo's own `filterString` (NSFW map + HTML
+  sanitization), so a draft the agent proposes is filtered exactly like a post
+  the composer submits.
+
+Detectors use `MASTRA_GUARDRAIL_MODEL` and `errorStrategy: "warn"`: a provider
+outage is logged, not silently turned into an unusable agent.
+
+## Memory
+
+`zernioMemory()` builds a `Memory` on the shared `PostgresStore` with
+`lastMessages: 20`, working memory enabled (channel identity, voice, publishing
+defaults, standing instructions) and semantic recall off.
+
+Always pass the context from the helper:
+
+```ts
+import { zernioMemoryContext } from "@/mastra/memory";
+
+await agent.generate(prompt, {
+  memory: zernioMemoryContext(session.user.id, threadId),
+});
+```
+
+`resource` is the user id, which is what keeps one user's threads out of
+another's listing. The helper throws on an empty id rather than writing to the
+anonymous bucket.
+
+## Retrieval (RAG)
+
+Two paths, in `src/mastra/rag/`:
+
+1. **Keyword (default).** Postgres full-text search over `posts.content`, backed
+   by the `posts_content_fts_idx` GIN index (migration `0008`). No extension and
+   no provider key. If `websearch_to_tsquery` matches nothing, a substring scan
+   runs before returning empty.
+2. **Hybrid (opt-in).** When `RAG_EMBEDDING_API_KEY` (or `OPENAI_API_KEY`) is
+   set *and* the pgvector table exists, `search_channel` embeds the query and
+   merges semantic hits with keyword hits.
+
+Enabling it:
+
+```bash
+# requires a Postgres image with the vector extension, e.g. pgvector/pgvector
+bun run rag:pgvector   # create extension, table, HNSW index
+bun run rag:index      # chunk and embed existing posts
+```
+
+`rag:pgvector` refuses to change the dimension of an existing table; drop and
+re-index when you change embedding models. The stock `postgres:16` image in
+`docker-compose.yml` does **not** ship pgvector — swap the image before enabling
+the hybrid path.
+
+Embeddings use any OpenAI-compatible endpoint. OpenRouter (the model provider)
+does not serve embeddings, hence the separate `RAG_EMBEDDING_*` settings.
+
+## Attaching Zernio MCP tools
+
+The Zernio MCP tools cannot be attached at module scope because credentials are
+per user:
 
 ```ts
 import { createZernioMcpClient } from "@/mastra/mcp/zernio";
@@ -114,5 +267,10 @@ instructions have been reviewed — they are injected into the system prompt.
   Mastra's `LocalSkillSource` reads from disk.
 - `src/mastra/index.ts` only constructs `PostgresStore` when `DATABASE_URL` is
   set, so importing the module in a credential-less environment does not throw.
+- Guardrails add one cheap model call per detection type on the orchestrator
+  turn. Budget accordingly, and set `MASTRA_GUARDRAIL_MODEL` to something small.
+- `TokenCostControl` reads cost from Mastra observability, so it needs the
+  Postgres store to be initialized; without `DATABASE_URL` the cost guard is
+  inert.
 - The scaffold does not add the `mastra` CLI. Add it when local Studio work
   starts.

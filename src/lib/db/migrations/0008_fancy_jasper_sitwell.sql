@@ -1,0 +1,1 @@
+CREATE INDEX "posts_content_fts_idx" ON "posts" USING gin (to_tsvector('simple', coalesce("content", '')));

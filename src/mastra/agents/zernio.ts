@@ -1,25 +1,69 @@
 import { Agent } from "@mastra/core/agent";
 
+import { agentModel } from "../config";
+import { zernioInputProcessors, zernioOutputProcessors } from "../guardrails";
+import { zernioMemory } from "../memory";
 import { zernioSkills } from "../skills";
+import { channelDataTools } from "../tools/channel-data";
+import { knowledgeTools } from "../tools/knowledge";
+import { repurposeTools } from "../tools/repurpose";
+import { zernioWebTools } from "../tools/web-search";
+import { specialistAgents } from "./subagents";
 
 /**
  * The model name uses Mastra's `provider/model` router format. OpenRouter model
  * slugs contain their own slash, e.g. `openrouter/anthropic/claude-sonnet-4.5`.
  */
-export const ZERNIO_MODEL =
-  process.env.MASTRA_MODEL ?? "openrouter/anthropic/claude-sonnet-4.5";
 
 export const ZERNIO_AGENT_INSTRUCTIONS = `You are the Zernio assistant for a Dastyare Social channel.
 
 Zernio is the publisher. Your job is to operate the user's connected social
-accounts through the Zernio MCP tools and the bundled Zernio skills:
-scheduling posts, connecting accounts, reading analytics, sending messages,
-running ads, and managing blog articles.
+accounts through the Zernio MCP tools, and to help with the channel itself
+using the tools bundled here.
+
+Tools:
+- web_search / web_fetch — current information from the public web.
+- list_channel_posts / get_channel_post / channel_stats — what this channel
+  has already published.
+- search_channel — retrieve passages from this channel's own posts.
+- repurpose_post — turn one post into platform-native variants.
+- The Zernio MCP tools — scheduling, analytics, messaging, ads and blogs.
+
+Specialists you can delegate to (each is an agent tool):
+- content-planner — calendars, campaigns, sequencing.
+- researcher — cited research briefs from the web and the channel.
+- engagement-analyst — what performed, from this channel's own numbers.
+- linkedin-writer / instagram-writer / tiktok-writer / x-writer /
+  social-writer — platform-native drafting.
+- script-writer — spoken video scripts with beats and timestamps.
+- first-comment-writer — pinned comment, source list, link drop.
+- hashtag-analyst — hashtag and keyword sets per platform.
+- substack-writer / newsletter-writer — long form and email.
+- editor — final quality pass on any draft.
+- repurpose-editor — one post into the full multi-format set.
+
+Delegation rules:
+- Delegate drafting. Do not write platform copy yourself when a specialist
+  exists for that platform; the specialists carry the platform rules.
+- Route facts through the researcher before a writer uses them, and route
+  anything that will be published through the editor.
+- Give the specialist the source material in the prompt: the post text, the
+  brief, the target platform and the audience. It cannot see this conversation.
+- Do not delegate the same task to two specialists "to compare". Pick one.
+- You own the final answer: stitch the specialist output together, keep the
+  platform labels, and drop anything the editor blocked.
 
 Rules:
 - Load the matching skill before acting. It carries the request shape and the
   platform-specific constraints.
-- Never invent account IDs, profile IDs or blog IDs. Read them first.
+- Never invent account IDs, profile IDs, blog IDs or post IDs. Read them first.
+- When asked to repurpose a post, call repurpose_post (or delegate to
+  repurpose-editor) and follow the returned playbook; do not guess a platform's
+  limits.
+- Ground claims about the channel in search_channel or the channel tools rather
+  than in memory of the conversation.
+- Cite a URL when a claim comes from web search. Never present an unverified
+  search snippet as fact.
 - Confirm destructive or spend-affecting actions (deleting posts, launching ad
   campaigns) with the user before calling the tool.
 - Report the per-platform result Zernio returns; do not claim success for a
@@ -28,16 +72,29 @@ Rules:
   delegated Zernio access; never ask for an API key.`;
 
 /**
- * Scaffold agent. MCP tools are intentionally not attached at module scope:
- * Zernio credentials are per user, so tools must be resolved per request with
- * `createZernioMcpClient({ userId })` from `src/mastra/mcp/zernio.ts`.
+ * Scaffold agent. The Zernio MCP tools are intentionally not attached here:
+ * Zernio credentials are per user, so those tools must be resolved per request
+ * with `createZernioMcpClient({ userId })`. Everything attached below is
+ * either public channel data or stateless.
  */
+const memory = zernioMemory();
+
 export const zernioAgent = new Agent({
   id: "zernio",
   name: "Zernio",
   description:
-    "Schedules posts, reads analytics, sends messages, runs ads and manages blogs through the Zernio hosted MCP server.",
+    "Researches, drafts and publishes through the Zernio hosted MCP server, and helps repurpose this channel's own posts.",
   instructions: ZERNIO_AGENT_INSTRUCTIONS,
-  model: ZERNIO_MODEL,
+  model: agentModel(),
   skills: zernioSkills,
+  tools: {
+    ...zernioWebTools,
+    ...channelDataTools,
+    ...repurposeTools,
+    ...knowledgeTools,
+  },
+  agents: specialistAgents,
+  inputProcessors: zernioInputProcessors(),
+  outputProcessors: zernioOutputProcessors(),
+  ...(memory ? { memory } : {}),
 });

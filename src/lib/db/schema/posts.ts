@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
@@ -24,6 +25,13 @@ export const posts = pgTable("posts", {
   return {
     postsCreatedAtIdx: index("posts_created_at_idx").on(table.createdAt),
     postsTypeIdx: index("posts_type_idx").on(table.type),
+    // Retrieval for the agent's `search_channel` tool. `to_tsvector` with an
+    // explicit config is immutable, so it can back a GIN index; the two-argument
+    // form is required for that (the one-argument form is not immutable).
+    postsContentFtsIdx: index("posts_content_fts_idx").using(
+      "gin",
+      sql`to_tsvector('simple', coalesce(${table.content}, ''))`,
+    ),
   };
 });
 

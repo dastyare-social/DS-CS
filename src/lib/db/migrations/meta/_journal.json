@@ -57,6 +57,13 @@
       "when": 1792511539459,
       "tag": "0007_tearful_maestro",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792514830079,
+      "tag": "0008_fancy_jasper_sitwell",
+      "breakpoints": true
     }
   ]
 }

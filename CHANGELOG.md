@@ -14,6 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Zernio agent skills) and resizable, empty desktop side panels around the `/`
   and `/os` feeds. Panels hide below 1280px; mobile stays single-column. Agent
   UI wiring is intentionally not included. See `docs/mastra-zernio.md`
+- Mastra agent capabilities behind the same scaffold: web search (`web_search`
+  with Tavily/Brave auto-detect plus the built-in `web_fetch`), channel data
+  tools (`list_channel_posts`, `get_channel_post`, `channel_stats`),
+  `repurpose_post` with per-platform limits, and `search_channel` over published
+  posts. Fifteen specialists (planner, researcher, engagement analyst, LinkedIn,
+  Instagram, TikTok, X, general social, script, first comment, hashtags,
+  Substack, email newsletter, editor, repurpose editor) are exposed to the
+  orchestrator as `agent-<id>` tools. Guardrails cover prompt injection, PII,
+  moderation, channel content policy, and per-user token/cost budgets; memory is
+  Postgres-backed; retrieval defaults to full-text search with opt-in pgvector
+  hybrid search (`bun run rag:pgvector`, `bun run rag:index`). No chat route or
+  UI is mounted.
 - Global transient error bar (`src/components/error-bar.tsx`, raised through
   `raiseError()` in `src/lib/error-bar.ts`) — mounted once in
   `src/app/(routes)/layout.tsx` and available on every route. Identical
