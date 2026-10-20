@@ -131,6 +131,12 @@ const nextConfig: NextConfig = {
     remotePatterns,
   },
   allowedDevOrigins: ["::1", "127.0.0.1", "cs.dastyare.social"],
+  // posthog-js resolves its capture endpoints (`/e/`, `/s/`, `/decide/`) with a
+  // trailing slash against the same-origin `/ingest` path. Next's default
+  // redirect would 308 every one of those before the rewrite below runs, and a
+  // `sendBeacon` fired on page unload can be dropped by that redirect. Turn the
+  // normalization off so the proxy sees the request directly.
+  skipTrailingSlashRedirect: true,
   async rewrites() {
     const rewrites: Array<{
       source: string;
