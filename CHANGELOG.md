@@ -28,10 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   engagement analyst, LinkedIn, Instagram, TikTok, X, Reddit, general social,
   script, video analyst, first comment, hashtags, Substack, email newsletter,
   editor, quality reviewer, repurpose editor) are exposed to the orchestrator as
-  `agent-<id>` tools. Guardrails cover prompt injection, PII, moderation, channel
-  content policy, and per-user token/cost budgets; memory is Postgres-backed;
-  retrieval defaults to full-text search with opt-in pgvector hybrid search
-  (`bun run rag:pgvector`, `bun run rag:index`). No chat route or UI is mounted.
+  `agent-<id>` tools. Human-in-the-loop: `ask_user` asks instead of guessing,
+  `request_approval` gates publish/schedule/delete/message/ad-spend actions and
+  fails closed without a host, and Zernio MCP write tools are approval-gated by
+  tool annotations and name policy. Guardrails cover prompt injection, PII,
+  moderation, channel content policy, and per-user token/cost budgets; memory is
+  Postgres-backed; retrieval defaults to full-text search with opt-in pgvector
+  hybrid search (`bun run rag:pgvector`, `bun run rag:index`). No chat route or
+  UI is mounted, so suspended runs stay suspended until a host resumes them.
 - Global transient error bar (`src/components/error-bar.tsx`, raised through
   `raiseError()` in `src/lib/error-bar.ts`) — mounted once in
   `src/app/(routes)/layout.tsx` and available on every route. Identical

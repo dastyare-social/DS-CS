@@ -389,9 +389,31 @@ the tool surface; `src/mastra/index.ts` registers it plus the specialist roster.
 | `analyze_script` | Script analysis without transcription (plain, SRT, WebVTT) |
 | `check_copy` | Deterministic QA for posts, articles, captions, hashtags, scripts, email, Reddit |
 | `plan_posting_schedule` | Cadence → dated slots + cron expression (plans only) |
+| `ask_user` | Ask one clarifying question and suspend until answered |
+| `request_approval` | Human approval for one consequential action; fails closed |
 
 Zernio MCP tools are attached per user at call time — `createZernioMcpClient({ userId })`
 returns a client because credentials are not module-global.
+
+### Human in the loop
+
+- The orchestrator asks instead of guessing. A value counts as known only when
+  it is explicit in the conversation, returned by a tool, or defined in the
+  loaded skill; otherwise it calls `ask_user` (free text, 2–4 options, or
+  multi-select).
+- `request_approval` gates publish, schedule, delete, message-send and
+  ad-spend actions. It returns `approved: false` unless a host resumes it, so
+  silence is never consent.
+- Zernio MCP tools are approval-gated in `src/mastra/mcp/zernio.ts` through
+  `requireToolApproval` and the policy in `src/mastra/hitl/policy.ts`.
+  Read-only tools run; writes, spend and unknown unannotated tools require a
+  human.
+- A suspended run needs a host: `agent.resumeStream(answer, { runId })` for
+  `ask_user`/`request_approval`, `agent.approveToolCall`/`declineToolCall` for
+  MCP tool approval. The scaffold deliberately has no chat route or UI, so
+  nothing auto-approves.
+- Specialists cannot ask the user; they name the missing fact and the
+  orchestrator decides whether to ask.
 
 ### Specialists (subagents)
 

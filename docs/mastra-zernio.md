@@ -21,6 +21,7 @@ specialist roster, guardrails, memory and retrieval.
 | `src/mastra/tools/video.ts` | `transcribe_media`, `analyze_video`, `analyze_script` |
 | `src/mastra/tools/quality.ts` | `check_copy` — deterministic QA for any draft |
 | `src/mastra/tools/schedules.ts` | `plan_posting_schedule` — dated slots + cron |
+| `src/mastra/hitl/` | `ask_user`, `request_approval` and the Zernio approval policy |
 | `src/mastra/text/metrics.ts` | Shared word/sentence/readability measurements |
 | `src/mastra/repurpose/specs.ts` | Format limits and rules for each target platform |
 | `src/mastra/schedules/plan.ts` | Cadence → calendar slots and cron expression |
@@ -153,6 +154,8 @@ them a second time.
 | `analyze_script` | Script analysis without transcription | Plain text, SRT or WebVTT |
 | `check_copy` | Deterministic QA for a draft | Limits, hook, slop, hashtags, links, readability, platform rules |
 | `plan_posting_schedule` | Cadence → dated slots + cron | Plans only; publishing stays with Zernio |
+| `ask_user` | Ask one clarifying question and suspend | Host resumes with `agent.resumeStream(answer)` |
+| `request_approval` | Permission for one consequential action | Resumes with `{ decision, note? }`; fails closed without a host |
 
 Without a search key `web_search` returns a `note` rather than throwing: a clear
 "not configured" is easier for a model to handle than a tool error it will try to
@@ -196,6 +199,65 @@ the video analyst gets transcription and script analysis), and carry the local
 content policy plus an output token ceiling. The model-backed guardrails run on
 the orchestrator only — repeating a detection call inside every delegation would
 multiply latency and cost for the same protection.
+
+## Human in the loop
+
+The orchestrator does not guess. A required value is only treated as known when
+it is explicit in the conversation, returned by a tool, or defined in the loaded
+skill. Everything else is a question.
+
+Two tools enforce that:
+
+- **`ask_user`** (Mastra built-in) asks one question. It accepts a free-text
+  question, 2–4 options, or `multi_select` when several answers are valid. It
+  suspends the run with `{ question, options, selectionMode }`.
+- **`request_approval`** gates one consequential action. It carries `action`,
+  `summary`, `risk` (`low`/`medium`/`high`), `irreversible` and optional
+  `details`, then suspends with a question plus those fields. Resuming returns
+  `{ decision: "approve" | "reject", note? }`.
+
+Without a host attached, `request_approval` returns `approved: false` with
+`decision: "pending"`. Silence is never consent.
+
+Zernio MCP tools carry a second gate at the client level
+(`src/mastra/hitl/policy.ts`, wired through `requireToolApproval` in
+`src/mastra/mcp/zernio.ts`):
+
+| Tool shape | Approval |
+|---|---|
+| Annotated `readOnlyHint` and no write verb | runs |
+| Read-shaped name without annotations (`get_`, `list_`, `search_`, `analytics_`…) | runs |
+| `destructiveHint`, or a write verb (`create`, `update`, `delete`, `publish`, `schedule`, `send`, `launch`…) | required |
+| Ad/campaign/budget/spend tools | required |
+| Unknown tool with no annotations | required (fail closed) |
+
+A gated Zernio call pauses on its own, so the orchestrator does not call
+`request_approval` for the same action — that would ask twice. `request_approval`
+covers actions the tool does not gate (for example, confirming a multi-step
+batch before its first call).
+
+### Host contract
+
+A suspended turn emits `tool-call-suspended` with the tool name and payload. The
+host must persist the `runId` and resume explicitly:
+
+```ts
+// ask_user / request_approval (custom suspension)
+await agent.resumeStream(answer, { runId });
+await agent.resumeStream({ decision: "approve" }, { runId });
+
+// Zernio MCP tools gated by requireToolApproval
+await agent.approveToolCall({ runId });
+await agent.declineToolCall({ runId, reason: "Not this week" });
+```
+
+The scaffold has **no chat route or UI**, so a suspended run stays suspended
+until a host resumes it. That is intentional: auto-approving in server code
+would turn the gate into decoration. Build the route before exposing publish,
+delete or ad tools to end users.
+
+Specialists cannot ask the user; they have no channel to them. They return the
+exact missing fact, and the orchestrator decides whether to call `ask_user`.
 
 ## Video and transcripts
 
@@ -361,3 +423,6 @@ instructions have been reviewed — they are injected into the system prompt.
   hour.
 - `bun run agent:cron` exits non-zero on an unknown job or a failed run, so it
   works as a cron/Kubernetes job without extra wrapper logic.
+- HITL is fail-closed. A suspended `ask_user`, `request_approval` or
+  approval-gated Zernio tool stays suspended until a host resumes it with the
+  `runId`. Do not add a server-side auto-approver to make a demo run end.

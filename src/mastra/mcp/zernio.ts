@@ -1,5 +1,6 @@
 import { MCPClient } from "@mastra/mcp";
 
+import { requiresHumanApproval } from "../hitl/policy";
 import {
   ZERNIO_ALLOWED_HOSTS,
   ZERNIO_MCP_SERVER_NAME,
@@ -40,6 +41,11 @@ export function createZernioMcpClient({
         url: new URL(ZERNIO_MCP_URL),
         authProvider,
         allowedHosts: ZERNIO_ALLOWED_HOSTS,
+        // Publishing, deleting, scheduling, messaging and ad spend pause for a
+        // human. Read-only tools run freely. The host approves with
+        // `agent.approveToolCall({ runId })` or declines with
+        // `agent.declineToolCall({ runId })`.
+        requireToolApproval: requiresHumanApproval,
         // Server instructions are model-visible system guidance. Keep the
         // opt-in off until the Zernio instructions have been reviewed.
         forwardInstructions: false,
