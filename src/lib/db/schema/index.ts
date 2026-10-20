@@ -7,3 +7,4 @@ export * from "./users";
 export * from "./sessions";
 export * from "./verifications";
 export * from "./webhooks";
+export * from "./mcp-oauth";

@@ -41,6 +41,7 @@ import {
 } from "@/components/context-menu";
 import UpdateBanner from "@/components/update-banner";
 import ScrollSafeZone from "@/components/scroll-safe-zone";
+import WorkspaceShell from "@/components/workspace-shell";
 import { raiseError } from "@/lib/error-bar";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
 import type { MediaPayload, PostWithReactions } from "@/lib/api/posts";
@@ -1271,7 +1272,7 @@ const Page = () => {
   }, [selectedFiles.length, editingPostId, pinnedPosts.length]);
 
   return (
-    <>
+    <WorkspaceShell>
       {/* Pinned posts — outside scroll container, fixed at top */}
       <PinnedBar
         pinnedPosts={pinnedPosts}
@@ -1338,6 +1339,7 @@ const Page = () => {
                 className="fixed left-1/2 -translate-x-1/2 z-40 px-4 w-full max-w-2xl pointer-events-none"
                 style={{
                   top: `calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) + 8px)`,
+                  marginLeft: "var(--workspace-shift, 0px)",
                 }}
               >
                 <div className="w-full rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-md px-4 py-3 text-center text-sm text-red-500">
@@ -1557,7 +1559,7 @@ const Page = () => {
       </div>
 
       <UpdateBanner />
-    </>
+    </WorkspaceShell>
   );
 };
 

@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
 import Header from "@/components/header";
 import InstallBanner from "@/components/install-banner";
+import WorkspaceShell from "@/components/workspace-shell";
 import ScrollSafeZone from "@/components/scroll-safe-zone";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -334,7 +335,7 @@ const Page = () => {
   }, [posts.length]);
 
   return (
-    <>
+    <WorkspaceShell>
       <PinnedBar
         pinnedPosts={pinnedPosts}
         activeIndex={displayIndex}
@@ -467,7 +468,7 @@ const Page = () => {
           </div>
         </div>
       </div>
-    </>
+    </WorkspaceShell>
   );
 };
 

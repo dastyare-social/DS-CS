@@ -37,6 +37,21 @@ For agents acting *on* a live channel.
 | [`product/self-host-deploy`](product/self-host-deploy) | Install, update, back up |
 | [`product/mcp-connect`](product/mcp-connect) | Connecting an agent over MCP |
 
+### Publishing through Zernio — `zernio/`
+
+Vendored from Zernio's [Agent Skills index](https://zernio.com/.well-known/agent-skills/index.json).
+They document the Zernio REST API and are also loaded by the Mastra agent in
+`src/mastra/agents/zernio.ts` — keep one copy, do not fork them.
+
+| Skill | Covers |
+|---|---|
+| [`zernio/schedule-post`](zernio/schedule-post) | Schedule or publish a post to connected accounts |
+| [`zernio/connect-account`](zernio/connect-account) | OAuth-connect a platform account to a profile |
+| [`zernio/list-analytics`](zernio/list-analytics) | Per-post and per-account engagement |
+| [`zernio/send-message`](zernio/send-message) | WhatsApp, Instagram, Messenger and Telegram messages |
+| [`zernio/run-ads`](zernio/run-ads) | Create, pause and inspect ad campaigns |
+| [`zernio/manage-blog-articles`](zernio/manage-blog-articles) | WordPress and Shopify articles |
+
 ## Writing one
 
 A skill is a directory containing `SKILL.md`:

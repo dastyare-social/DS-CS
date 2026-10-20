@@ -226,6 +226,7 @@ a skill with local edits unless `--force` is passed.
 | [`product/brand-config`](./skills/product/brand-config) | Channel identity and the `/about` page |
 | [`product/self-host-deploy`](./skills/product/self-host-deploy) | Install, update, back up |
 | [`product/mcp-connect`](./skills/product/mcp-connect) | Connecting an agent over MCP |
+| [`zernio/*`](./skills/zernio) | Scheduling, analytics, messaging, ads and blogs via Zernio (also loaded by the Mastra agent) |
 
 CLI tests: `bun run skills:test`.
 
@@ -240,6 +241,8 @@ CLI tests: `bun run skills:test`.
 | `src/lib/webhooks/` | Outbound webhook delivery (emit + HMAC signing + retries) |
 | `src/lib/auth/` | Better Auth server config and React client |
 | `src/lib/filters/` | Content filtering (NSFW words, HTML sanitization) |
+| `src/mastra/` | Mastra agent scaffold — Zernio MCP client, OAuth provider, skills |
+| `src/components/workspace-shell.tsx` | Resizable desktop side panels around the feed (empty by design) |
 
 ## Conventions
 
@@ -251,6 +254,7 @@ CLI tests: `bun run skills:test`.
 - **Corners:** plain `border-radius` only — no `corner-shape` is applied anywhere in this app. `rounded-*` is stock Tailwind v4 (`rounded-xl` = 12px … `rounded-4xl` = 32px, `rounded-full` = true circle). Corner smoothing (`corner-shape: superellipse(n)`) was tried and removed: it read as a change to corner *size* rather than shape, and two radius-compensation scales (×1.21, then ×1.15) visibly oversized every corner, worst on the short full-bleed bars. Do not re-add it globally; if revisited, scope it to specific surfaces. The `@toolwind/corner-shape` package is unusable (its `superellipse` support is commented out and it imports an undeclared dependency). See `docs/design-system.md` §3 and the note in `src/styles/globals.css`.
 - **Transient errors:** call `raiseError()` from `@/lib/error-bar` — it drives the global error bar (`src/components/error-bar.tsx`), which is mounted once in `src/app/(routes)/layout.tsx` and shares the install/update bar's exact shape, size and style. Use it for rejected writes and other failures with no better home; **do not** use it for form validation, per-attachment upload chips (they carry their own retry), or persistent load/publish error screens. A new message replaces and restarts a 4s timer; an identical repeat is a no-op so a flapping error can't hold it open. See `docs/design-system.md` §6
 - **Adding a page with bottom chrome:** set `--error-bar-bottom` next to the existing `--chat-footer-height` write in that page's `updateHeaderFooterOffsets`, then add `var(--error-bar-height, 0px)` to its feed `pb`, scroll safe zone `bottomInset` and scroll-to-bottom `bottom`. Without both, the bar floats at `0px` (or overlaps). See `docs/design-system.md` §6.1
+- **Desktop side panels:** `WorkspaceShell` wraps the `/` and `/os` feeds. Both panels are empty and resize with pointer drag, arrow keys (16px), Home/End, or double-click to reset; widths persist in localStorage. They are hidden below `xl` (1280px). The shell publishes `--workspace-shift` (`(sidebar − panel) / 2`); fixed, viewport-centred chrome (pinned bar, `/os` load-error banner) must add `margin-left: var(--workspace-shift, 0px)` or it drifts off the feed. Width math lives in `src/lib/workspace-layout.ts`.
 - **Step transitions:** opacity + an 8px drift at `260ms cubic-bezier(0.23,1,0.32,1)` — `transition-[opacity,translate]`, never `transition-all` or `max-h-*`. A revealed field animates its **measured** height on the same curve and stays `inert` while collapsed; every move ships a `motion-reduce` fallback. See `docs/design-system.md` §11
 - **Email placeholders:** always `hey@dastyare.social` — never a personal address (`hey@omidshabab.com`). This is display copy, not a dev credential.
 - **Do not** refactor unrelated code; match existing patterns
@@ -270,6 +274,11 @@ See `.env.example`. Critical vars:
 - `WEBPUSH_PRIVATE_KEY` — Private VAPID key for server-side sending
 - `WEBPUSH_SUBJECT` — Contact URI such as `mailto:you@example.com`
 - `NEXT_PUBLIC_ADDITIONAL_IMAGE_DOMAINS` — Comma-separated list of domains for Next.js Image optimization (e.g., `"example.com,cdn.example.com"`). Media from S3 storage is automatically included.
+- `OPENROUTER_API_KEY` — Model provider key for the Mastra agent
+- `MASTRA_MODEL` — `provider/model` string, defaults to `openrouter/anthropic/claude-sonnet-4.5`
+- `ZERNIO_MCP_URL` — Zernio hosted MCP endpoint (default `https://mcp.zernio.com/mcp`)
+- `ZERNIO_CLIENT_METADATA_URL` **or** `ZERNIO_CLIENT_ID` / `ZERNIO_CLIENT_SECRET` — exactly one Zernio client identity; Mastra never performs dynamic client registration
+- `MCP_OAUTH_ENCRYPTION_KEY` — encrypts stored MCP OAuth tokens; falls back to `BETTER_AUTH_SECRET`
 
 ## Image Optimization Notes
 

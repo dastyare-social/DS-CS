@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- v1.0.0 workspace scaffold: Mastra agent runtime with the Zernio hosted MCP
+  server (OAuth 2.1 + PKCE, per-user encrypted token storage, six vendored
+  Zernio agent skills) and resizable, empty desktop side panels around the `/`
+  and `/os` feeds. Panels hide below 1280px; mobile stays single-column. Agent
+  UI wiring is intentionally not included. See `docs/mastra-zernio.md`
 - Global transient error bar (`src/components/error-bar.tsx`, raised through
   `raiseError()` in `src/lib/error-bar.ts`) — mounted once in
   `src/app/(routes)/layout.tsx` and available on every route. Identical

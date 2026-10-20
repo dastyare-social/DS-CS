@@ -57,6 +57,9 @@ export default function PinnedBar({
   return (
     <div
       ref={barRef}
+      // Keep the bar centred on the feed column, not the viewport, when the
+      // desktop workspace panels differ in width.
+      style={{ marginLeft: "var(--workspace-shift, 0px)" }}
       className="fixed top-[calc(var(--chat-header-height)-5px)] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4"
     >
       <div
