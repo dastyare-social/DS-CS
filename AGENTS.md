@@ -248,7 +248,7 @@ CLI tests: `bun run skills:test`.
 - **Schemas:** Drizzle schema → drizzle-zod → route validation
 - **OpenAPI:** Annotate route handlers with JSDoc; run `bun run openapi:generate`
 - **Config:** Edit YAML, never hand-edit `app.config.json`; `about.config.yml` is parsed fresh on every request — keep its `enabled` key first
-- **Corners:** content surfaces (cards, panels, dialogs) get **60% corner smoothing**, applied globally in `src/styles/globals.css` via `--corner-smoothing: superellipse(2.5)`. `superellipse()` takes an **exponent, not a percentage** — `2` is a circular arc, `2.5` is the continuous iOS/Figma corner, and anything below `2` cuts corners *inward*. Don't restate `superellipse()` in a component. `.rounded-full` stays a true circle and `.w-full` bars (install/update banners, pinned bar) keep circular corners. See `docs/design-system.md` §3
+- **Corners:** plain `border-radius` only — no `corner-shape` is applied anywhere in this app. `rounded-*` is stock Tailwind v4 (`rounded-xl` = 12px … `rounded-4xl` = 32px, `rounded-full` = true circle). Corner smoothing (`corner-shape: superellipse(n)`) was tried and removed: it read as a change to corner *size* rather than shape, and two radius-compensation scales (×1.21, then ×1.15) visibly oversized every corner, worst on the short full-bleed bars. Do not re-add it globally; if revisited, scope it to specific surfaces. The `@toolwind/corner-shape` package is unusable (its `superellipse` support is commented out and it imports an undeclared dependency). See `docs/design-system.md` §3 and the note in `src/styles/globals.css`.
 - **Do not** refactor unrelated code; match existing patterns
 
 ## Environment variables
