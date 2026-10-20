@@ -4,7 +4,10 @@ import {
   listChannelPosts,
 } from "./channel-data";
 import { knowledgeTools } from "./knowledge";
+import { qualityTools } from "./quality";
 import { repurposeTools } from "./repurpose";
+import { scheduleTools } from "./schedules";
+import { videoTools } from "./video";
 import { zernioWebTools } from "./web-search";
 
 /**
@@ -12,14 +15,16 @@ import { zernioWebTools } from "./web-search";
  * repeating object spreads in a dozen agent files) makes it obvious what each
  * kind of specialist is allowed to reach:
  *
- * - writers read the channel, they do not browse the web;
+ * - writers read the channel and can QA their own draft;
  * - research and hashtag work browses and reads the channel;
- * - the editor can check a draft against the format playbook.
+ * - the editor can check a draft against the format playbook and the QA rules;
+ * - the video analyst gets transcription and script analysis.
  */
 export const writerTools = {
   search_channel: knowledgeTools.search_channel,
   get_channel_post: getChannelPost,
   list_channel_posts: listChannelPosts,
+  ...qualityTools,
 };
 
 export const researchTools = {
@@ -32,6 +37,7 @@ export const researchTools = {
 
 export const editorTools = {
   ...repurposeTools,
+  ...qualityTools,
   search_channel: knowledgeTools.search_channel,
   get_channel_post: getChannelPost,
   channel_stats: channelDataTools.channel_stats,
@@ -40,6 +46,12 @@ export const editorTools = {
 export const plannerTools = {
   ...writerTools,
   channel_stats: channelDataTools.channel_stats,
+  ...scheduleTools,
+};
+
+export const videoAnalysisTools = {
+  ...videoTools,
+  ...writerTools,
 };
 
 export const allChannelTools = channelDataTools;

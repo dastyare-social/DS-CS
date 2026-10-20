@@ -18,14 +18,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with Tavily/Brave auto-detect plus the built-in `web_fetch`), channel data
   tools (`list_channel_posts`, `get_channel_post`, `channel_stats`),
   `repurpose_post` with per-platform limits, and `search_channel` over published
-  posts. Fifteen specialists (planner, researcher, engagement analyst, LinkedIn,
-  Instagram, TikTok, X, general social, script, first comment, hashtags,
-  Substack, email newsletter, editor, repurpose editor) are exposed to the
-  orchestrator as `agent-<id>` tools. Guardrails cover prompt injection, PII,
-  moderation, channel content policy, and per-user token/cost budgets; memory is
-  Postgres-backed; retrieval defaults to full-text search with opt-in pgvector
-  hybrid search (`bun run rag:pgvector`, `bun run rag:index`). No chat route or
-  UI is mounted.
+  posts. Video and transcript tools (`transcribe_media`, `analyze_video`,
+  `analyze_script`) handle direct media URLs, SRT/WebVTT/plain transcripts and
+  deterministic hook/pacing/readability analysis. `check_copy` is a
+  deterministic QA pass for posts, articles, captions, hashtags, scripts, email
+  and Reddit. `plan_posting_schedule` turns a cadence into dated slots and a
+  cron expression, and `bun run agent:cron` runs code-defined recurring agent
+  jobs from the host scheduler. Eighteen specialists (planner, researcher,
+  engagement analyst, LinkedIn, Instagram, TikTok, X, Reddit, general social,
+  script, video analyst, first comment, hashtags, Substack, email newsletter,
+  editor, quality reviewer, repurpose editor) are exposed to the orchestrator as
+  `agent-<id>` tools. Guardrails cover prompt injection, PII, moderation, channel
+  content policy, and per-user token/cost budgets; memory is Postgres-backed;
+  retrieval defaults to full-text search with opt-in pgvector hybrid search
+  (`bun run rag:pgvector`, `bun run rag:index`). No chat route or UI is mounted.
 - Global transient error bar (`src/components/error-bar.tsx`, raised through
   `raiseError()` in `src/lib/error-bar.ts`) — mounted once in
   `src/app/(routes)/layout.tsx` and available on every route. Identical

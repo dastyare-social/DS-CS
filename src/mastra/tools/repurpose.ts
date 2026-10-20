@@ -24,6 +24,7 @@ const targetSchema = z.object({
   label: z.string(),
   maxChars: z.number(),
   partChars: z.number().optional(),
+  titleChars: z.number().optional(),
   guidance: z.array(z.string()),
 });
 

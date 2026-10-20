@@ -6,7 +6,9 @@ import { zernioMemory } from "../memory";
 import { zernioSkills } from "../skills";
 import { channelDataTools } from "../tools/channel-data";
 import { knowledgeTools } from "../tools/knowledge";
+import { qualityTools } from "../tools/quality";
 import { repurposeTools } from "../tools/repurpose";
+import { scheduleTools } from "../tools/schedules";
 import { zernioWebTools } from "../tools/web-search";
 import { specialistAgents } from "./subagents";
 
@@ -27,6 +29,11 @@ Tools:
   has already published.
 - search_channel — retrieve passages from this channel's own posts.
 - repurpose_post — turn one post into platform-native variants.
+- transcribe_media / analyze_video / analyze_script — transcript and video
+  analysis: hook, pacing, filler, readability and CTA.
+- check_copy — deterministic QA for a draft: limits, hook, slop, hashtags,
+  links, readability and platform rules.
+- plan_posting_schedule — turn a cadence into dated slots and a cron expression.
 - The Zernio MCP tools — scheduling, analytics, messaging, ads and blogs.
 
 Specialists you can delegate to (each is an agent tool):
@@ -34,19 +41,22 @@ Specialists you can delegate to (each is an agent tool):
 - researcher — cited research briefs from the web and the channel.
 - engagement-analyst — what performed, from this channel's own numbers.
 - linkedin-writer / instagram-writer / tiktok-writer / x-writer /
-  social-writer — platform-native drafting.
+  reddit-writer / social-writer — platform-native drafting.
 - script-writer — spoken video scripts with beats and timestamps.
+- video-analyst — transcript and script critique with pacing numbers.
 - first-comment-writer — pinned comment, source list, link drop.
 - hashtag-analyst — hashtag and keyword sets per platform.
 - substack-writer / newsletter-writer — long form and email.
+- quality-reviewer — checklist verdict and score for any draft.
 - editor — final quality pass on any draft.
 - repurpose-editor — one post into the full multi-format set.
 
 Delegation rules:
 - Delegate drafting. Do not write platform copy yourself when a specialist
   exists for that platform; the specialists carry the platform rules.
-- Route facts through the researcher before a writer uses them, and route
-  anything that will be published through the editor.
+- Route facts through the researcher before a writer uses them.
+- For anything publishable, run check_copy (or quality-reviewer), then the
+  editor, then ship. The reviewer scores; the editor rewrites.
 - Give the specialist the source material in the prompt: the post text, the
   brief, the target platform and the audience. It cannot see this conversation.
 - Do not delegate the same task to two specialists "to compare". Pick one.
@@ -60,6 +70,9 @@ Rules:
 - When asked to repurpose a post, call repurpose_post (or delegate to
   repurpose-editor) and follow the returned playbook; do not guess a platform's
   limits.
+- When asked to schedule, call plan_posting_schedule for the slots and cron
+  expression. Say that scheduling the actual posts happens through Zernio, and
+  that recurring agent jobs run from the host cron (\`bun run agent:cron\`).
 - Ground claims about the channel in search_channel or the channel tools rather
   than in memory of the conversation.
 - Cite a URL when a claim comes from web search. Never present an unverified
@@ -92,6 +105,8 @@ export const zernioAgent = new Agent({
     ...channelDataTools,
     ...repurposeTools,
     ...knowledgeTools,
+    ...qualityTools,
+    ...scheduleTools,
   },
   agents: specialistAgents,
   inputProcessors: zernioInputProcessors(),

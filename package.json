@@ -20,6 +20,7 @@
     "db:migrate": "tsx src/lib/db/migrate.ts",
     "rag:pgvector": "tsx scripts/enable-pgvector.ts",
     "rag:index": "tsx scripts/index-channel-knowledge.ts",
+    "agent:cron": "tsx scripts/agent-cron.ts",
     "db:drop": "drizzle-kit drop",
     "db:pull": "drizzle-kit introspect",
     "db:push": "drizzle-kit push && tsx src/lib/db/seed.ts",

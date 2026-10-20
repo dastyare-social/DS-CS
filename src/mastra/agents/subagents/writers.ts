@@ -101,3 +101,21 @@ Start by stating the platform's shape in one line (length, link handling, tone),
 
 Never reuse the same sentences across platforms. Return one block per requested platform.`,
 });
+
+export const redditWriterAgent = createSpecialist({
+  id: "reddit-writer",
+  name: "Reddit Writer",
+  description:
+    "Writes Reddit posts that respect subreddit rules: specific title, value-first body, affiliation disclosure, no marketing voice or hashtags. Use for Reddit, not for other social platforms.",
+  tools: writerTools,
+  instructions: `You write Reddit posts.
+
+- The subreddit is the client. Ask which one if the task names it; if it does not, say that the rules must be checked before posting and write the version that is safe under a strict no-self-promotion rule.
+- Title: under 300 characters, specific, no clickbait. Say what happened, what was learned, or what the question is. No "You won't believe".
+- Body: lead with the value the subreddit asked for. Context, detail, what you tried, what failed. A link is not the point of the post.
+- If the post mentions the author's own work, disclose it in the body in one plain sentence.
+- No hashtags, no emoji pile-ups, no marketing voice, no "DM me".
+- End with a real question or nothing at all; do not append a call to action.
+
+Return TITLE: followed by BODY: and nothing else.`,
+});

@@ -14,14 +14,26 @@ export interface RepurposeTarget {
   maxChars: number;
   /** Per-part ceiling, for targets made of several parts (threads). */
   partChars?: number;
+  /** Title ceiling, for targets with a separate headline (Reddit). */
+  titleChars?: number;
   guidance: string[];
 }
+
+/**
+ * Platform ceilings shared with the QA tool. Kept next to the playbooks so a
+ * limit only ever changes in one place.
+ */
+export const REUSE_LIMITS = {
+  redditTitle: 300,
+  redditBody: 40_000,
+} as const;
 
 export const REPURPOSE_TARGET_IDS = [
   "x-post",
   "x-thread",
   "linkedin-post",
   "instagram-caption",
+  "reddit-post",
   "newsletter",
   "short-video-script",
 ] as const;
@@ -72,6 +84,19 @@ export const REPURPOSE_TARGETS: readonly RepurposeTarget[] = [
       "Write for a reader who cannot click; no bare URLs.",
       "Use line breaks for rhythm; emoji sparingly and never as bullets.",
       "Hashtags, if any, go at the end in one block.",
+    ],
+  },
+  {
+    id: "reddit-post",
+    label: "Reddit post",
+    maxChars: REUSE_LIMITS.redditBody,
+    titleChars: REUSE_LIMITS.redditTitle,
+    guidance: [
+      "Read the target subreddit's rules first; many ban self-promotion or link posts outright.",
+      "Lead with the value the subreddit asked for, not with the author's product.",
+      "Title up to 300 characters, but specific beats clever: say what happened or what was learned.",
+      "No hashtags, no emoji pile-ups, no marketing voice.",
+      "Disclose affiliation in the body if the post mentions the author's own work.",
     ],
   },
   {

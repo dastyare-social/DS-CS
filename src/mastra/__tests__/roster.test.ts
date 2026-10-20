@@ -11,13 +11,16 @@ const EXPECTED_SPECIALISTS = [
   "instagram-writer",
   "tiktok-writer",
   "x-writer",
+  "reddit-writer",
   "social-writer",
   "script-writer",
+  "video-analyst",
   "first-comment-writer",
   "hashtag-analyst",
   "substack-writer",
   "newsletter-writer",
   "editor",
+  "quality-reviewer",
   "repurpose-editor",
 ];
 

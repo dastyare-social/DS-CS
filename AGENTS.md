@@ -241,7 +241,7 @@ CLI tests: `bun run skills:test`.
 | `src/lib/webhooks/` | Outbound webhook delivery (emit + HMAC signing + retries) |
 | `src/lib/auth/` | Better Auth server config and React client |
 | `src/lib/filters/` | Content filtering (NSFW words, HTML sanitization) |
-| `src/mastra/` | Mastra agent scaffold — orchestrator, specialists, tools, guardrails, memory, RAG, Zernio MCP/OAuth, skills |
+| `src/mastra/` | Mastra agent scaffold — orchestrator, specialists, tools (web, channel, video, QA, schedules), guardrails, memory, RAG, Zernio MCP/OAuth, skills |
 | `src/components/workspace-shell.tsx` | Resizable desktop side panels around the feed (empty by design) |
 
 ## Conventions
@@ -282,6 +282,7 @@ See `.env.example`. Critical vars:
 - `MASTRA_INPUT_TOKEN_LIMIT`, `MASTRA_OUTPUT_TOKEN_LIMIT` — per-turn token ceilings (default `32000` / `4000`)
 - `TAVILY_API_KEY`, `BRAVE_SEARCH_API_KEY` — optional web search providers, detected Tavily-first; without either, `web_search` returns a "not configured" note and `web_fetch` still works
 - `RAG_EMBEDDING_API_KEY` (or `OPENAI_API_KEY`), `RAG_EMBEDDING_BASE_URL`, `RAG_EMBEDDING_MODEL`, `RAG_EMBEDDING_DIMENSIONS` — opt-in hybrid retrieval; keyword search needs no configuration
+- `TRANSCRIPTION_API_KEY` (or `OPENAI_API_KEY`), `TRANSCRIPTION_BASE_URL`, `TRANSCRIPTION_MODEL`, `TRANSCRIPTION_MAX_BYTES` — optional video/audio transcription; direct media URLs only
 - `ZERNIO_MCP_URL` — Zernio hosted MCP endpoint (default `https://mcp.zernio.com/mcp`)
 - `ZERNIO_CLIENT_METADATA_URL` **or** `ZERNIO_CLIENT_ID` / `ZERNIO_CLIENT_SECRET` — exactly one Zernio client identity; Mastra never performs dynamic client registration
 - `MCP_OAUTH_ENCRYPTION_KEY` — encrypts stored MCP OAuth tokens; falls back to `BETTER_AUTH_SECRET`
@@ -383,6 +384,11 @@ the tool surface; `src/mastra/index.ts` registers it plus the specialist roster.
 | `list_channel_posts`, `get_channel_post`, `channel_stats` | Read this channel's posts and totals |
 | `search_channel` | Retrieval over published posts (keyword, or hybrid with embeddings) |
 | `repurpose_post` | Source post + per-platform limits/rules; the model writes the variants |
+| `transcribe_media` | Direct media URL → transcript + timed cues; refuses platform pages |
+| `analyze_video` | URL or pasted transcript → hook, pacing, filler, CTA |
+| `analyze_script` | Script analysis without transcription (plain, SRT, WebVTT) |
+| `check_copy` | Deterministic QA for posts, articles, captions, hashtags, scripts, email, Reddit |
+| `plan_posting_schedule` | Cadence → dated slots + cron expression (plans only) |
 
 Zernio MCP tools are attached per user at call time — `createZernioMcpClient({ userId })`
 returns a client because credentials are not module-global.
@@ -392,14 +398,17 @@ returns a client because credentials are not module-global.
 Mastra exposes each entry in `agents/subagents/index.ts` as an `agent-<id>` tool.
 The roster is: `content-planner`, `researcher`, `engagement-analyst`,
 `linkedin-writer`, `instagram-writer`, `tiktok-writer`, `x-writer`,
-`social-writer`, `script-writer`, `first-comment-writer`, `hashtag-analyst`,
-`substack-writer`, `newsletter-writer`, `editor`, `repurpose-editor`.
+`reddit-writer`, `social-writer`, `script-writer`, `video-analyst`,
+`first-comment-writer`, `hashtag-analyst`, `substack-writer`,
+`newsletter-writer`, `editor`, `quality-reviewer`, `repurpose-editor`.
 
 - The `id` is model-facing; the `description` is what the orchestrator routes on.
 - Specialists cannot see the parent conversation — pass the source material in
   the delegation prompt.
-- Writers get read-only channel tools; researchers also get `web_search` /
-  `web_fetch`; the editor can call `repurpose_post` to check format limits.
+- Writers get read-only channel tools plus `check_copy`; researchers also get
+  `web_search` / `web_fetch`; the video analyst gets transcription and script
+  analysis; the editor and quality reviewer can call `repurpose_post` and
+  `check_copy` to check format limits.
 - They use `MASTRA_SUBAGENT_MODEL`, carry the local content policy and an output
   token ceiling, but **not** the model-backed guardrails (the orchestrator runs
   those once per turn; repeating them per delegation multiplies cost).
@@ -419,6 +428,20 @@ The roster is: `content-planner`, `researcher`, `engagement-analyst`,
   (GIN index, migration `0008`). Hybrid retrieval is opt-in:
   `bun run rag:pgvector` then `bun run rag:index`. The stock `postgres:16` image
   has no pgvector — swap the image first.
+- Video (`src/mastra/tools/video.ts`): `parseTranscript` handles SRT/VTT/plain,
+  `transcribeMedia` uses an OpenAI-compatible `/audio/transcriptions` endpoint
+  on direct media URLs only (platform pages are refused, not scraped), and
+  `analyzeScript` is deterministic (hook, WPM, filler, Flesch, CTA). Missing
+  keys return a note, like `web_search`.
+- QA (`src/mastra/tools/quality.ts`): `check_copy` enforces the same limits as
+  `REPURPOSE_TARGETS` / `REUSE_LIMITS`, plus slop, bait, hashtags, links,
+  readability, article structure, email subjects and Reddit rules. It scores
+  0–100 and never rewrites.
+- Schedules: `plan_posting_schedule` plans slots and a cron expression but does
+  not publish; Zernio queues posts. Agent cron jobs live in
+  `src/mastra/schedules/jobs.ts` and run from the host with
+  `bun run agent:cron -- --job <id>` (or `--list`). The Postgres store has no
+  schedules domain, so do not rely on `mastra.schedules` for persistence.
 
 Full reference: `docs/mastra-zernio.md`.
 
@@ -476,6 +499,10 @@ bun run dev                  # Start dev server
 bun run openapi:generate     # Regenerate OpenAPI from route JSDoc
 bun run db:generate          # New migration after schema change
 bun run db:migrate           # Apply migrations
+bun run rag:pgvector         # Opt-in: create the pgvector table
+bun run rag:index            # Opt-in: embed existing posts
+bun run agent:cron -- --list # List agent cron jobs
+bun run agent:cron -- --job <id>  # Run one agent cron job
 bun run lint                 # ESLint
 bun run test                 # Test suite — ALWAYS via this script (see below)
 bun run ds-cs add            # Install agent skills

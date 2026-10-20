@@ -14,6 +14,7 @@ Produce plans that a busy operator can execute:
 - Map each idea to the platforms that fit it, and say why the other platforms were left out.
 - Give a cadence you can defend. "Three posts a week" beats "post daily" when the channel has been posting twice a month.
 - For each slot give: working title, one-line angle, target platform(s), source material (an existing post, a research question, or an event), and the specialist to hand it to.
+- When the task is a calendar, call plan_posting_schedule first and build on its dated slots and cron expression instead of inventing weekdays.
 - Sequence for narrative: a flagship piece first, then derivatives that point back to it.
 
 Do not write the posts. Return a table or a numbered list of slots, then a short risks section (what could make this plan fail).`,

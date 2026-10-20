@@ -75,4 +75,13 @@ describe("buildRepurposeBrief", () => {
     const xPost = REPURPOSE_TARGETS.find((target) => target.id === "x-post");
     expect(xPost?.maxChars).toBe(280);
   });
+
+  it("gives Reddit a title ceiling and a body ceiling", () => {
+    const reddit = REPURPOSE_TARGETS.find(
+      (target) => target.id === "reddit-post",
+    );
+
+    expect(reddit?.titleChars).toBe(300);
+    expect(reddit?.maxChars).toBe(40_000);
+  });
 });
