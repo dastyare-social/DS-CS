@@ -1,15 +1,22 @@
 import { describe, expect, it } from "bun:test";
 
 import {
-  WORKSPACE_BAND_MIN,
   WORKSPACE_BREAKPOINT,
   WORKSPACE_DESKTOP_CLASS,
+  WORKSPACE_DESKTOP_LEFT_CLASS,
   WORKSPACE_DESKTOP_WIDTH_CLASS,
   WORKSPACE_FEED,
+  WORKSPACE_FEED_COOKIE,
   WORKSPACE_FEED_WIDTH_CLASS,
+  WORKSPACE_LEFT,
+  WORKSPACE_LEFT_COOKIE,
+  WORKSPACE_RIGHT,
+  WORKSPACE_WIDTH_SCRIPT,
   clamp,
-  feedWidthLimit,
-  fitFeedWidth,
+  dragLeftBoundary,
+  dragRightBoundary,
+  fitWorkspaceWidths,
+  rightWidth,
 } from "../workspace-layout";
 
 describe("clamp", () => {
@@ -32,6 +39,9 @@ describe("the desktop classes", () => {
     expect(WORKSPACE_DESKTOP_WIDTH_CLASS).toContain(
       `min-[${WORKSPACE_BREAKPOINT}px]:w-[var(--workspace-feed-width`,
     );
+    expect(WORKSPACE_DESKTOP_LEFT_CLASS).toContain(
+      `min-[${WORKSPACE_BREAKPOINT}px]:w-[var(--workspace-left-width`,
+    );
   });
 
   it("gives fixed chrome the feed's width, capped at the screen", () => {
@@ -41,38 +51,118 @@ describe("the desktop classes", () => {
   });
 });
 
-describe("feedWidthLimit", () => {
-  it("is the feed's own maximum on a wide screen", () => {
-    expect(feedWidthLimit(1920)).toBe(WORKSPACE_FEED.max);
+describe("the saved widths", () => {
+  it("live in cookies the server can read", () => {
+    expect(WORKSPACE_LEFT_COOKIE).toBe("ds.workspace.left-width");
+    expect(WORKSPACE_FEED_COOKIE).toBe("ds.workspace.feed-width");
   });
 
-  it("leaves both side columns room on a narrow one", () => {
-    expect(feedWidthLimit(WORKSPACE_BREAKPOINT)).toBe(
-      WORKSPACE_BREAKPOINT - WORKSPACE_BAND_MIN * 2,
-    );
+  it("are published before the first paint", () => {
+    expect(WORKSPACE_WIDTH_SCRIPT).toContain("--workspace-feed-width");
+    expect(WORKSPACE_WIDTH_SCRIPT).toContain("--workspace-left-width");
   });
 });
 
-describe("fitFeedWidth", () => {
-  it("keeps the default on a wide screen", () => {
-    expect(fitFeedWidth(WORKSPACE_FEED.default, 1440)).toBe(
-      WORKSPACE_FEED.default,
-    );
+describe("rightWidth", () => {
+  it("is whatever is left of the window", () => {
+    expect(rightWidth({ left: 300, feed: 700 }, 1440)).toBe(440);
+  });
+});
+
+describe("fitWorkspaceWidths", () => {
+  it("keeps widths that fit", () => {
+    expect(fitWorkspaceWidths({ left: 240, feed: 672 }, 1440)).toEqual({
+      left: 240,
+      feed: 672,
+    });
   });
 
-  it("never goes below the feed's minimum", () => {
-    expect(fitFeedWidth(10, 1440)).toBe(WORKSPACE_FEED.min);
+  it("bounds both columns to their own range", () => {
+    const fitted = fitWorkspaceWidths({ left: 10, feed: 9999 }, 1920);
+
+    expect(fitted.left).toBe(WORKSPACE_LEFT.min);
+    expect(fitted.feed).toBe(WORKSPACE_FEED.max);
   });
 
-  it("never takes the side columns out of existence", () => {
+  it("never squeezes the right column out of existence", () => {
     for (let viewport = WORKSPACE_BREAKPOINT; viewport <= 2560; viewport += 16) {
-      const width = fitFeedWidth(WORKSPACE_FEED.max, viewport);
+      const fitted = fitWorkspaceWidths(
+        { left: WORKSPACE_LEFT.max, feed: WORKSPACE_FEED.max },
+        viewport,
+      );
 
-      expect(width).toBeGreaterThanOrEqual(WORKSPACE_FEED.min);
-      expect(width).toBeLessThanOrEqual(feedWidthLimit(viewport));
-      expect(viewport - width).toBeGreaterThanOrEqual(
-        WORKSPACE_BAND_MIN * 2,
+      expect(fitted.feed).toBeGreaterThanOrEqual(WORKSPACE_FEED.min);
+      expect(rightWidth(fitted, viewport)).toBeGreaterThanOrEqual(
+        WORKSPACE_RIGHT.min,
       );
     }
+  });
+});
+
+describe("dragLeftBoundary", () => {
+  it("moves the boundary with the pointer", () => {
+    const next = dragLeftBoundary({ left: 300, feed: 700 }, 50);
+
+    expect(next.left).toBe(350);
+    expect(next.feed).toBe(650);
+  });
+
+  it("leaves the feed's other edge where it was", () => {
+    const before = { left: 300, feed: 700 };
+    const after = dragLeftBoundary(before, 50);
+
+    // The feed's right edge is left + feed, and it must not move.
+    expect(after.left + after.feed).toBe(before.left + before.feed);
+  });
+
+  it("grows the feed when its left edge is dragged left", () => {
+    const before = { left: 300, feed: 700 };
+    const after = dragLeftBoundary(before, -100);
+
+    expect(after.feed).toBe(800);
+    expect(after.left).toBe(200);
+    expect(after.left + after.feed).toBe(before.left + before.feed);
+  });
+
+  it("stops at the columns' limits", () => {
+    const grown = dragLeftBoundary({ left: 300, feed: 700 }, -10_000);
+    expect(grown.left).toBe(WORKSPACE_LEFT.min);
+    expect(grown.feed).toBeLessThanOrEqual(WORKSPACE_FEED.max);
+  });
+});
+
+describe("dragRightBoundary", () => {
+  it("moves the boundary with the pointer", () => {
+    const before = { left: 300, feed: 700 };
+    const after = dragRightBoundary(before, 50, 1440);
+
+    expect(after.feed).toBe(750);
+    expect(after.left).toBe(300);
+    expect(rightWidth(after, 1440)).toBe(390);
+  });
+
+  it("leaves the feed's other edge where it was", () => {
+    const before = { left: 300, feed: 700 };
+    const after = dragRightBoundary(before, 50, 1440);
+
+    expect(after.left).toBe(before.left);
+  });
+
+  it("grows the feed when its right edge is dragged right", () => {
+    const before = { left: 300, feed: 700 };
+    const after = dragRightBoundary(before, 100, 1440);
+
+    expect(after.feed).toBe(800);
+    expect(after.left).toBe(300);
+  });
+
+  it("gives the width back when the right column is at its minimum", () => {
+    const viewport = 1024;
+    const before = { left: 200, feed: 480 };
+    const after = dragRightBoundary(before, 500, viewport);
+
+    expect(rightWidth(after, viewport)).toBeGreaterThanOrEqual(
+      WORKSPACE_RIGHT.min,
+    );
   });
 });

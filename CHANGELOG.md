@@ -108,6 +108,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   inherits `div { font-size: 24px }` from the base layer and the button carries
   `text-[24px]`; this app has no such base rule, so the size is stated at the
   call site
+- Dragging one edge of the centre panel no longer resizes both of its edges.
+  The feed used to be centred between two equal side columns, so any change to
+  its width moved both edges: the drag was symmetric and the column you were
+  holding appeared to move away from you. The columns now fill the window and
+  a drag moves the boundary it sits on — the boundary follows the pointer
+  exactly, the two columns that meet there trade width, and the feed's other
+  edge stays put. The feed's width and the left column's width are saved in
+  cookies, and the right column takes the rest of the window.
 - The workspace feed no longer jumps on load. The saved width was in
   localStorage, so the server could not see it: the page painted at the
   fallback 672px and then resized to the saved width after hydration. The
