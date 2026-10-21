@@ -1,18 +1,15 @@
 import { describe, expect, it } from "bun:test";
 
 import {
+  WORKSPACE_BAND_MIN,
   WORKSPACE_BREAKPOINT,
-  WORKSPACE_DEFAULT_WIDTHS,
   WORKSPACE_DESKTOP_CLASS,
   WORKSPACE_DESKTOP_WIDTH_CLASS,
   WORKSPACE_FEED,
-  WORKSPACE_GUTTER,
-  WORKSPACE_PANEL,
-  WORKSPACE_SIDEBAR,
+  WORKSPACE_FEED_WIDTH_CLASS,
   clamp,
-  fitWorkspaceWidths,
-  workspaceBudget,
-  workspaceShift,
+  feedWidthLimit,
+  fitFeedWidth,
 } from "../workspace-layout";
 
 describe("clamp", () => {
@@ -27,16 +24,6 @@ describe("clamp", () => {
   });
 });
 
-describe("workspaceBudget", () => {
-  it("takes the outer gutters off the viewport", () => {
-    expect(workspaceBudget(1280)).toBe(1280 - WORKSPACE_GUTTER * 2);
-  });
-
-  it("never goes negative on narrow viewports", () => {
-    expect(workspaceBudget(10)).toBe(0);
-  });
-});
-
 describe("the desktop classes", () => {
   it("target the same breakpoint the shell measures", () => {
     expect(WORKSPACE_DESKTOP_CLASS).toBe(
@@ -46,111 +33,46 @@ describe("the desktop classes", () => {
       `min-[${WORKSPACE_BREAKPOINT}px]:w-[var(--workspace-feed-width`,
     );
   });
+
+  it("gives fixed chrome the feed's width, capped at the screen", () => {
+    expect(WORKSPACE_FEED_WIDTH_CLASS).toBe(
+      "w-[min(var(--workspace-feed-width,672px),100vw)]",
+    );
+  });
 });
 
-describe("fitWorkspaceWidths", () => {
-  it("keeps the defaults when they fit", () => {
-    expect(
-      fitWorkspaceWidths(WORKSPACE_DEFAULT_WIDTHS, 1440),
-    ).toEqual(WORKSPACE_DEFAULT_WIDTHS);
+describe("feedWidthLimit", () => {
+  it("is the feed's own maximum on a wide screen", () => {
+    expect(feedWidthLimit(1920)).toBe(WORKSPACE_FEED.max);
   });
 
-  it("bounds every column to its own range", () => {
-    const fitted = fitWorkspaceWidths(
-      { sidebar: 10, feed: 9999, panel: 1 },
-      1920,
+  it("leaves both side columns room on a narrow one", () => {
+    expect(feedWidthLimit(WORKSPACE_BREAKPOINT)).toBe(
+      WORKSPACE_BREAKPOINT - WORKSPACE_BAND_MIN * 2,
     );
+  });
+});
 
-    expect(fitted.sidebar).toBe(WORKSPACE_SIDEBAR.min);
-    expect(fitted.feed).toBe(WORKSPACE_FEED.max);
-    expect(fitted.panel).toBe(WORKSPACE_PANEL.min);
+describe("fitFeedWidth", () => {
+  it("keeps the default on a wide screen", () => {
+    expect(fitFeedWidth(WORKSPACE_FEED.default, 1440)).toBe(
+      WORKSPACE_FEED.default,
+    );
   });
 
-  it("keeps the three columns inside the viewport", () => {
+  it("never goes below the feed's minimum", () => {
+    expect(fitFeedWidth(10, 1440)).toBe(WORKSPACE_FEED.min);
+  });
+
+  it("never takes the side columns out of existence", () => {
     for (let viewport = WORKSPACE_BREAKPOINT; viewport <= 2560; viewport += 16) {
-      const fitted = fitWorkspaceWidths(
-        {
-          sidebar: WORKSPACE_SIDEBAR.max,
-          feed: WORKSPACE_FEED.max,
-          panel: WORKSPACE_PANEL.max,
-        },
-        viewport,
-      );
-      expect(fitted.sidebar + fitted.feed + fitted.panel).toBeLessThanOrEqual(
-        workspaceBudget(viewport),
+      const width = fitFeedWidth(WORKSPACE_FEED.max, viewport);
+
+      expect(width).toBeGreaterThanOrEqual(WORKSPACE_FEED.min);
+      expect(width).toBeLessThanOrEqual(feedWidthLimit(viewport));
+      expect(viewport - width).toBeGreaterThanOrEqual(
+        WORKSPACE_BAND_MIN * 2,
       );
     }
-  });
-
-  it("leaves the feed readable on the narrowest desktop", () => {
-    const fitted = fitWorkspaceWidths(
-      {
-        sidebar: WORKSPACE_SIDEBAR.max,
-        feed: WORKSPACE_FEED.max,
-        panel: WORKSPACE_PANEL.max,
-      },
-      WORKSPACE_BREAKPOINT,
-    );
-
-    expect(fitted.feed).toBeGreaterThanOrEqual(WORKSPACE_FEED.min);
-    expect(fitted.sidebar).toBeGreaterThanOrEqual(WORKSPACE_SIDEBAR.min);
-    expect(fitted.panel).toBeGreaterThanOrEqual(WORKSPACE_PANEL.min);
-  });
-
-  it("gives the space to the column being dragged", () => {
-    // The feed is dragged wider than the defaults: the panel gives way first,
-    // the feed keeps the width it was dragged to.
-    const fitted = fitWorkspaceWidths(
-      { sidebar: 200, feed: 900, panel: 320 },
-      1440,
-      "feed",
-    );
-
-    expect(fitted.feed).toBe(900);
-    expect(fitted.panel).toBe(308);
-    expect(fitted.sidebar).toBe(200);
-  });
-
-  it("still keeps the columns inside the viewport at the breakpoint", () => {
-    const fitted = fitWorkspaceWidths(
-      { sidebar: 200, feed: 900, panel: 280 },
-      WORKSPACE_BREAKPOINT,
-      "feed",
-    );
-
-    expect(fitted.sidebar + fitted.feed + fitted.panel).toBeLessThanOrEqual(
-      workspaceBudget(WORKSPACE_BREAKPOINT),
-    );
-    expect(fitted.feed).toBeGreaterThanOrEqual(WORKSPACE_FEED.min);
-  });
-
-  it("shrinks the feed last when nothing is being dragged", () => {
-    const fitted = fitWorkspaceWidths(
-      {
-        sidebar: WORKSPACE_SIDEBAR.max,
-        feed: WORKSPACE_FEED.max,
-        panel: WORKSPACE_PANEL.max,
-      },
-      WORKSPACE_BREAKPOINT,
-    );
-
-    // The outer columns give up their slack first; the feed keeps the most.
-    expect(fitted.sidebar).toBe(WORKSPACE_SIDEBAR.min);
-    expect(fitted.panel).toBe(WORKSPACE_PANEL.min);
-    expect(fitted.feed).toBeGreaterThan(WORKSPACE_FEED.min);
-  });
-});
-
-describe("workspaceShift", () => {
-  it("is half the difference between the outer columns", () => {
-    expect(
-      workspaceShift({ sidebar: 240, feed: 672, panel: 320 }),
-    ).toBe(-40);
-  });
-
-  it("does not depend on the feed's width", () => {
-    expect(
-      workspaceShift({ sidebar: 240, feed: 480, panel: 320 }),
-    ).toBe(workspaceShift({ sidebar: 240, feed: 960, panel: 320 }));
   });
 });

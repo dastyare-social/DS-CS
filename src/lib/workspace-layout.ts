@@ -1,33 +1,32 @@
 export const WORKSPACE_FEED_MAX_WIDTH = 672; // the feed's default width
 export const WORKSPACE_GUTTER = 16;
 
-export const WORKSPACE_SIDEBAR = {
-  min: 200,
-  max: 340,
-  default: 240,
-} as const;
-
+/**
+ * The feed is the resizable column. The two side columns are what is left of
+ * the window once the feed has taken its width, so they are always equal and
+ * always against the window edges: the left one is the sidebar, the right one
+ * is the assistant panel.
+ */
 export const WORKSPACE_FEED = {
   min: 480,
   max: 960,
   default: 672,
 } as const;
 
-export const WORKSPACE_PANEL = {
-  min: 280,
-  max: 460,
-  default: 320,
-} as const;
+/**
+ * The narrowest a side column may get before the feed has to give width
+ * back. Below this the columns stop being columns.
+ */
+export const WORKSPACE_BAND_MIN = 120;
 
 /**
- * The panels appear from 1024px — the narrowest viewport where both panels
- * fit at their minimum widths (200 + 280) with a readable feed between them
- * (1024 − 32 gutters − 480 = 512).
+ * The columns exist from 1024px — the narrowest viewport where the feed keeps
+ * a readable width and both side columns still have room.
  */
 export const WORKSPACE_BREAKPOINT = 1024;
 
 /**
- * The Tailwind class that reveals the panels at the breakpoint. It lives next
+ * The Tailwind class that reveals the columns at the breakpoint. It lives next
  * to the number so the CSS and the JS can never disagree; Tailwind picks the
  * literal up from this file.
  */
@@ -48,25 +47,11 @@ export const WORKSPACE_DESKTOP_WIDTH_CLASS =
 export const WORKSPACE_FEED_WIDTH_CLASS =
   "w-[min(var(--workspace-feed-width,672px),100vw)]";
 
-export type WorkspaceColumn = "sidebar" | "feed" | "panel";
+export type WorkspaceColumn = "feed" | "sidebar" | "panel";
 
-export interface WorkspaceWidths {
-  sidebar: number;
-  feed: number;
-  panel: number;
-}
-
-export const WORKSPACE_RANGES = {
-  sidebar: WORKSPACE_SIDEBAR,
-  feed: WORKSPACE_FEED,
-  panel: WORKSPACE_PANEL,
-} as const;
-
-export const WORKSPACE_DEFAULT_WIDTHS: WorkspaceWidths = {
-  sidebar: WORKSPACE_SIDEBAR.default,
+export const WORKSPACE_DEFAULT_WIDTHS = {
   feed: WORKSPACE_FEED.default,
-  panel: WORKSPACE_PANEL.default,
-};
+} as const;
 
 export function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
@@ -74,71 +59,23 @@ export function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * The width the three columns share, once the outer gutters are accounted
- * for.
+ * The width the feed may take on this viewport: its own range, and never so
+ * much that one of the side columns is squeezed out of existence.
  */
-export function workspaceBudget(viewportWidth: number): number {
-  return Math.max(0, viewportWidth - WORKSPACE_GUTTER * 2);
-}
-
-/**
- * Clamps every column to its own range and keeps the three inside the
- * viewport.
- *
- * When the columns do not fit, the space comes from the ones that are *not*
- * being dragged, outermost first (panel, then sidebar) and only then from the
- * dragged column. The feed is the last resort: it is the content.
- */
-export function fitWorkspaceWidths(
-  widths: WorkspaceWidths,
-  viewportWidth: number,
-  pinned: WorkspaceColumn | null = null,
-): WorkspaceWidths {
-  const next: WorkspaceWidths = {
-    sidebar: clamp(
-      widths.sidebar,
-      WORKSPACE_SIDEBAR.min,
-      WORKSPACE_SIDEBAR.max,
+export function feedWidthLimit(viewportWidth: number): number {
+  return Math.max(
+    WORKSPACE_FEED.min,
+    Math.min(
+      WORKSPACE_FEED.max,
+      viewportWidth - WORKSPACE_BAND_MIN * 2,
     ),
-    feed: clamp(widths.feed, WORKSPACE_FEED.min, WORKSPACE_FEED.max),
-    panel: clamp(widths.panel, WORKSPACE_PANEL.min, WORKSPACE_PANEL.max),
-  };
-
-  const budget = workspaceBudget(viewportWidth);
-  let overflow =
-    next.sidebar + next.feed + next.panel - budget;
-
-  if (overflow <= 0) return next;
-
-  const order: WorkspaceColumn[] = ["panel", "sidebar", "feed"];
-  for (const column of order) {
-    if (overflow <= 0) break;
-    if (pinned && column === pinned) continue;
-
-    const range = WORKSPACE_RANGES[column];
-    const room = next[column] - range.min;
-    if (room <= 0) continue;
-
-    const take = Math.min(room, overflow);
-    next[column] -= take;
-    overflow -= take;
-  }
-
-  if (overflow > 0 && pinned) {
-    const range = WORKSPACE_RANGES[pinned];
-    next[pinned] = Math.max(range.min, next[pinned] - overflow);
-  }
-
-  return next;
+  );
 }
 
 /**
- * How far the feed's centre sits from the viewport's centre.
- *
- * The row is centred, so the feed's centre is the viewport's centre plus half
- * the difference between the two outer columns. The feed's own width cancels
- * out — widening the feed does not move it.
+ * Clamps the feed to what the viewport can carry. The side columns take
+ * whatever is left, equally, so the feed stays centred in the window.
  */
-export function workspaceShift(widths: WorkspaceWidths): number {
-  return (widths.sidebar - widths.panel) / 2;
+export function fitFeedWidth(width: number, viewportWidth: number): number {
+  return clamp(width, WORKSPACE_FEED.min, feedWidthLimit(viewportWidth));
 }

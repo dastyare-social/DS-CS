@@ -108,22 +108,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   inherits `div { font-size: 24px }` from the base layer and the button carries
   `text-[24px]`; this app has no such base rule, so the size is stated at the
   call site
-- The desktop workspace is three resizable columns now — sidebar, feed and
+- The desktop workspace is three columns now — a sidebar, the feed and an
   assistant panel — and the fixed chrome follows the feed instead of the
   viewport. The top header, the pinned bar and the footers were hard-coded to
   `max-w-2xl`, so as soon as the feed was not exactly 672px wide they
   overflowed it or sat off-centre. The shell now publishes
   `--workspace-feed-width` (the feed's width) and `--workspace-shift` (the
-  feed's centre against the viewport's), and every fixed element sizes itself
-  from those. The feed column is resizable too (480–960): each column's
-  handle sits on that column's right edge, so the three handles never compete
-  for the same pixels. The columns are also actually visible now — they were
-  painted with a 4% wash and a 5% border, which composites to `#f6f6f6` on the
-  `#fdfdfd` page, three levels of difference, i.e. nothing; the surface is now
-  `bg-secondary/[0.07]`, the divider `border-secondary/20`, and a 2×40px grip
-  sits on the hairline so an empty column still says "this edge moves". The
-  columns appear from 1024px; below it the feed is full width and the mobile
-  layout is untouched
+  feed's measured centre against the viewport's), and every fixed element sizes
+  itself from those. The row is the full width of the window: the sidebar
+  against the left edge, the panel against the right edge, the feed resizable
+  in between (480–960) and centred. Each column is resized by dragging the
+  **whole edge strip** it owns — the sidebar's right edge, the feed's left and
+  right edges, the panel's left edge, since the right panel is against the
+  window edge and has nothing to grab there. There is no grip or other
+  indicator in the middle of a column. The columns are also actually visible
+  now — they were painted with a 4% wash and a 5% border, which composites to
+  `#f6f6f6` on the `#fdfdfd` page, three levels of difference, i.e. nothing;
+  the surface is now `bg-secondary/[0.07]` with a `border-secondary/20`
+  divider. The columns appear from 1024px; below it the feed is full width and
+  the mobile layout is untouched
 
 ## [0.1.0] - Initial release
 

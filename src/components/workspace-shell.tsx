@@ -7,19 +7,12 @@ import {
   WORKSPACE_BREAKPOINT,
   WORKSPACE_DESKTOP_CLASS,
   WORKSPACE_DESKTOP_WIDTH_CLASS,
-  WORKSPACE_DEFAULT_WIDTHS,
-  WORKSPACE_RANGES,
-  fitWorkspaceWidths,
-  workspaceShift,
+  WORKSPACE_FEED,
+  fitFeedWidth,
   type WorkspaceColumn,
-  type WorkspaceWidths,
 } from "@/lib/workspace-layout";
 
-const STORAGE_KEYS = {
-  sidebar: "ds.workspace.sidebar-width",
-  feed: "ds.workspace.feed-width",
-  panel: "ds.workspace.panel-width",
-} as const;
+const STORAGE_KEY = "ds.workspace.feed-width";
 
 const ARIA_LABEL = {
   sidebar: "Resize sidebar",
@@ -27,27 +20,22 @@ const ARIA_LABEL = {
   panel: "Resize assistant panel",
 } as const;
 
-function readStoredWidths(): WorkspaceWidths {
-  const read = (key: string, fallback: number) => {
-    try {
-      const raw = window.localStorage.getItem(key);
-      const value = raw === null ? Number.NaN : Number(raw);
-      return Number.isFinite(value) ? value : fallback;
-    } catch {
-      return fallback;
-    }
-  };
+/** How wide a column's edge strip is. The whole strip drags. */
+const HANDLE_WIDTH = "w-2.5";
 
-  return {
-    sidebar: read(STORAGE_KEYS.sidebar, WORKSPACE_DEFAULT_WIDTHS.sidebar),
-    feed: read(STORAGE_KEYS.feed, WORKSPACE_DEFAULT_WIDTHS.feed),
-    panel: read(STORAGE_KEYS.panel, WORKSPACE_DEFAULT_WIDTHS.panel),
-  };
+function readStoredWidth(): number {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const value = raw === null ? Number.NaN : Number(raw);
+    return Number.isFinite(value) ? value : WORKSPACE_FEED.default;
+  } catch {
+    return WORKSPACE_FEED.default;
+  }
 }
 
-function storeWidth(column: WorkspaceColumn, value: number) {
+function storeWidth(value: number) {
   try {
-    window.localStorage.setItem(STORAGE_KEYS[column], String(value));
+    window.localStorage.setItem(STORAGE_KEY, String(value));
   } catch {
     // Private mode / storage disabled — resizing still works for this session.
   }
@@ -55,6 +43,8 @@ function storeWidth(column: WorkspaceColumn, value: number) {
 
 interface ResizeHandleProps {
   column: WorkspaceColumn;
+  /** Where the strip sits inside its own column. */
+  position: "left" | "right";
   width: number;
   dragging: boolean;
   onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
@@ -65,13 +55,19 @@ interface ResizeHandleProps {
 }
 
 /**
- * The drag handle for a column. It always sits on the column's right edge and
- * always widens that column, so the three handles never compete for the same
- * pixels: the sidebar's handle is on the sidebar, the feed's handle is on the
- * feed, the panel's handle is on the panel's outer edge.
+ * A column's edge strip. The whole strip is the handle — there is no grip in
+ * the middle of it — so you can grab the edge anywhere along its height and
+ * drag.
+ *
+ * The strip belongs to the column whose edge it sits on, and it moves that
+ * edge. Dragging the feed's left edge widens the column to its left; dragging
+ * its right edge widens the column to its right. The window edges have
+ * nothing to grab: the right panel is against the edge of the window, so it
+ * is resized from its left edge like every other column.
  */
 function ResizeHandle({
   column,
+  position,
   width,
   dragging,
   onPointerDown,
@@ -80,15 +76,13 @@ function ResizeHandle({
   onKeyDown,
   onDoubleClick,
 }: ResizeHandleProps) {
-  const range = WORKSPACE_RANGES[column];
-
   return (
     <div
       role="separator"
       aria-orientation="vertical"
-      aria-label={ARIA_LABEL[column]}
-      aria-valuemin={range.min}
-      aria-valuemax={range.max}
+      aria-label={`${ARIA_LABEL[column]} — ${position} edge`}
+      aria-valuemin={WORKSPACE_FEED.min}
+      aria-valuemax={WORKSPACE_FEED.max}
       aria-valuenow={width}
       aria-valuetext={`${width} pixels`}
       tabIndex={0}
@@ -100,25 +94,20 @@ function ResizeHandle({
       onKeyDown={onKeyDown}
       onDoubleClick={onDoubleClick}
       className={cn(
-        "group absolute inset-y-0 right-0 z-20 w-2.5 touch-none cursor-col-resize outline-none",
+        "group absolute inset-y-0 z-20 touch-none cursor-col-resize outline-none",
+        HANDLE_WIDTH,
+        position === "left" ? "left-0" : "right-0",
         dragging && "bg-primary/5",
       )}
     >
-      {/* The hairline that separates the column from the next one. */}
+      {/* The hairline. It is the only affordance: the whole strip above it
+          drags, so there is no grip in the middle of the column. */}
       <div
         className={cn(
-          "absolute inset-y-0 right-1 w-px transition-colors duration-150 motion-reduce:transition-none",
+          "absolute inset-y-0 w-px transition-colors duration-150 motion-reduce:transition-none",
+          position === "left" ? "left-0" : "right-0",
           "bg-secondary/20 group-hover:bg-primary/40 group-focus-visible:bg-primary/50",
           dragging && "bg-primary/50",
-        )}
-      />
-      {/* The grip. The columns are empty by design, so without a visible
-          handle there is nothing on screen to say "this edge moves". */}
-      <div
-        className={cn(
-          "absolute top-1/2 right-[3px] h-10 w-0.5 -translate-y-1/2 rounded-full transition-colors duration-150 motion-reduce:transition-none",
-          "bg-secondary/40 group-hover:bg-primary/60 group-focus-visible:bg-primary/70",
-          dragging && "bg-primary/70",
         )}
       />
     </div>
@@ -126,14 +115,14 @@ function ResizeHandle({
 }
 
 /**
- * Desktop workspace chrome: a sidebar to the left of the feed and an assistant
- * panel to its right, with the feed column in between. All three are
- * resizable (pointer, keyboard, double-click to reset) and remember their
- * widths.
+ * Desktop workspace chrome: the feed in the middle, a sidebar to its left and
+ * an assistant panel to its right. The feed is the resizable column — the
+ * side columns are what is left of the window, so they are always against the
+ * window edges.
  *
- * The columns are empty by design, so the *edge* is what has to read on
- * screen: a soft surface wash, a hairline divider and a visible grip on the
- * hairline. An empty column with only a 4% wash was, in practice, invisible.
+ * The row is the full width of the window. The columns are empty by design,
+ * so the *edge* is what has to read on screen: a soft surface wash and a
+ * hairline divider. A 4% wash was, in practice, invisible.
  *
  * The fixed chrome inside the feed (the header, the pinned bar, the footers)
  * is positioned against the viewport, so it has to be told where the feed
@@ -141,7 +130,7 @@ function ResizeHandle({
  * `--workspace-shift` is how far its centre sits from the viewport's centre.
  * Fixed chrome must use both, or it drifts off the feed.
  *
- * From `WORKSPACE_BREAKPOINT` (1024px) the panels exist. Below it the feed is
+ * From `WORKSPACE_BREAKPOINT` (1024px) the columns exist. Below it the feed is
  * full width and the layout is the existing mobile-first single column.
  */
 export default function WorkspaceShell({
@@ -149,28 +138,29 @@ export default function WorkspaceShell({
 }: {
   children: React.ReactNode;
 }) {
-  const [widths, setWidths] = useState<WorkspaceWidths>(
-    WORKSPACE_DEFAULT_WIDTHS,
+  const [feedWidth, setFeedWidth] = useState<number>(
+    WORKSPACE_FEED.default,
   );
   const [isDesktop, setIsDesktop] = useState(false);
-  const [dragging, setDragging] = useState<WorkspaceColumn | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const feedRef = useRef<HTMLDivElement>(null);
 
   const dragRef = useRef<{
-    column: WorkspaceColumn;
+    edge: "left" | "right";
     startX: number;
     startWidth: number;
     latestWidth: number;
   } | null>(null);
 
-  // Restore persisted widths, fitted to the current viewport. This has to run
-  // after mount: reading localStorage during render would make the first
+  // Restore the persisted width, fitted to the current viewport. This has to
+  // run after mount: reading localStorage during render would make the first
   // client render disagree with the server HTML and break hydration.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setWidths(fitWorkspaceWidths(readStoredWidths(), window.innerWidth));
+    setFeedWidth(fitFeedWidth(readStoredWidth(), window.innerWidth));
   }, []);
 
-  // Track the breakpoint that decides whether the panels exist.
+  // Track the breakpoint that decides whether the columns exist.
   useEffect(() => {
     const query = window.matchMedia(`(min-width: ${WORKSPACE_BREAKPOINT}px)`);
     const update = () => setIsDesktop(query.matches);
@@ -179,31 +169,51 @@ export default function WorkspaceShell({
     return () => query.removeEventListener("change", update);
   }, []);
 
-  // Re-fit the columns when the window shrinks so nothing overflows.
+  // Re-fit the feed when the window shrinks so the columns never collapse.
   useEffect(() => {
     if (!isDesktop) return;
 
     const onResize = () =>
-      setWidths((current) =>
-        fitWorkspaceWidths(current, window.innerWidth),
-      );
+      setFeedWidth((current) => fitFeedWidth(current, window.innerWidth));
 
     window.addEventListener("resize", onResize);
     onResize();
     return () => window.removeEventListener("resize", onResize);
   }, [isDesktop]);
 
-  // Publish the layout to CSS for fixed chrome. The shift is the distance
-  // between the viewport centre and the feed centre; the width is the feed's
-  // own width, which the fixed chrome has to match or it overflows.
+  // Publish the feed's width, and where its centre actually is, for the fixed
+  // chrome. The shift is measured rather than computed: the columns sit
+  // against the window edges, so the feed's centre depends on the layout, not
+  // on a formula.
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty("--workspace-feed-width", `${widths.feed}px`);
-    root.style.setProperty(
-      "--workspace-shift",
-      isDesktop ? `${workspaceShift(widths)}px` : "0px",
-    );
-  }, [widths, isDesktop]);
+    root.style.setProperty("--workspace-feed-width", `${feedWidth}px`);
+
+    const feed = feedRef.current;
+    if (!feed) {
+      root.style.setProperty("--workspace-shift", "0px");
+      return;
+    }
+
+    const publish = () => {
+      const rect = feed.getBoundingClientRect();
+      root.style.setProperty(
+        "--workspace-shift",
+        `${rect.left + rect.width / 2 - window.innerWidth / 2}px`,
+      );
+    };
+
+    publish();
+
+    const observer = new ResizeObserver(publish);
+    observer.observe(feed);
+    window.addEventListener("resize", publish);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", publish);
+    };
+  }, [feedWidth, isDesktop]);
 
   useEffect(() => {
     return () => {
@@ -216,131 +226,125 @@ export default function WorkspaceShell({
   }, []);
 
   const startResize = useCallback(
-    (column: WorkspaceColumn, event: React.PointerEvent<HTMLDivElement>) => {
+    (
+      feedEdge: "left" | "right",
+      event: React.PointerEvent<HTMLDivElement>,
+    ) => {
       if (event.button !== 0) return;
       event.preventDefault();
 
       dragRef.current = {
-        column,
+        edge: feedEdge,
         startX: event.clientX,
-        startWidth: widths[column],
-        latestWidth: widths[column],
+        startWidth: feedWidth,
+        latestWidth: feedWidth,
       };
       event.currentTarget.setPointerCapture(event.pointerId);
-      setDragging(column);
+      setDragging(true);
     },
-    [widths],
+    [feedWidth],
   );
 
   const moveResize = useCallback(
-    (column: WorkspaceColumn, event: React.PointerEvent<HTMLDivElement>) => {
+    (
+      feedEdge: "left" | "right",
+      event: React.PointerEvent<HTMLDivElement>,
+    ) => {
       const drag = dragRef.current;
-      if (!drag || drag.column !== column) return;
+      if (!drag || drag.edge !== feedEdge) return;
 
-      const range = WORKSPACE_RANGES[column];
-      const next = Math.min(
-        range.max,
-        Math.max(range.min, drag.startWidth + (event.clientX - drag.startX)),
-      );
+      // A left edge dragged leftwards makes the feed wider; a right edge
+      // dragged rightwards does the same. Both grow the feed.
+      const delta =
+        (event.clientX - drag.startX) * (feedEdge === "left" ? -1 : 1);
+      const next = fitFeedWidth(drag.startWidth + delta, window.innerWidth);
 
       drag.latestWidth = next;
-      setWidths((current) =>
-        fitWorkspaceWidths({ ...current, [column]: next }, window.innerWidth, column),
-      );
+      setFeedWidth(next);
     },
     [],
   );
 
   const endResize = useCallback(
-    (column: WorkspaceColumn, event: React.PointerEvent<HTMLDivElement>) => {
+    (
+      feedEdge: "left" | "right",
+      event: React.PointerEvent<HTMLDivElement>,
+    ) => {
       const drag = dragRef.current;
-      if (!drag || drag.column !== column) return;
+      if (!drag || drag.edge !== feedEdge) return;
 
       dragRef.current = null;
-      setDragging(null);
+      setDragging(false);
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
-      storeWidth(column, drag.latestWidth);
+      storeWidth(drag.latestWidth);
     },
     [],
   );
 
   const handleKeyDown = useCallback(
-    (column: WorkspaceColumn, event: React.KeyboardEvent<HTMLDivElement>) => {
-      const range = WORKSPACE_RANGES[column];
-      const width = widths[column];
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
       let next: number | null = null;
 
       switch (event.key) {
         case "ArrowLeft":
-          next = Math.max(range.min, width - 16);
+          next = feedWidth - 16;
           break;
         case "ArrowRight":
-          next = Math.min(range.max, width + 16);
+          next = feedWidth + 16;
           break;
         case "Home":
-          next = range.min;
+          next = WORKSPACE_FEED.min;
           break;
         case "End":
-          next = range.max;
+          next = WORKSPACE_FEED.max;
           break;
         default:
           return;
       }
 
       event.preventDefault();
-      const fitted = fitWorkspaceWidths(
-        { ...widths, [column]: next },
-        window.innerWidth,
-        column,
-      );
-      setWidths(fitted);
-      storeWidth(column, fitted[column]);
+      const fitted = fitFeedWidth(next, window.innerWidth);
+      setFeedWidth(fitted);
+      storeWidth(fitted);
     },
-    [widths],
+    [feedWidth],
   );
 
-  const resetWidth = useCallback(
-    (column: WorkspaceColumn) => {
-      const range = WORKSPACE_RANGES[column];
-      const fitted = fitWorkspaceWidths(
-        { ...widths, [column]: range.default },
-        window.innerWidth,
-        column,
-      );
-      setWidths(fitted);
-      storeWidth(column, fitted[column]);
-    },
-    [widths],
-  );
+  const resetWidth = useCallback(() => {
+    const fitted = fitFeedWidth(WORKSPACE_FEED.default, window.innerWidth);
+    setFeedWidth(fitted);
+    storeWidth(fitted);
+  }, []);
 
   return (
-    <div className="flex w-full justify-center items-start">
+    <div className="flex w-full items-stretch">
       <aside
         aria-label="Sidebar"
-        style={{ width: widths.sidebar }}
         className={cn(
-          "relative hidden",
+          "relative hidden min-w-0 flex-1",
           WORKSPACE_DESKTOP_CLASS,
-          "h-dvh shrink-0 flex-col border-r border-secondary/20 bg-secondary/[0.07]",
+          "h-dvh flex-col border-r border-secondary/20 bg-secondary/[0.07]",
         )}
       >
         <ResizeHandle
           column="sidebar"
-          width={widths.sidebar}
-          dragging={dragging === "sidebar"}
-          onPointerDown={(event) => startResize("sidebar", event)}
-          onPointerMove={(event) => moveResize("sidebar", event)}
-          onPointerUp={(event) => endResize("sidebar", event)}
-          onKeyDown={(event) => handleKeyDown("sidebar", event)}
-          onDoubleClick={() => resetWidth("sidebar")}
+          position="right"
+          width={feedWidth}
+          dragging={dragging}
+          onPointerDown={(event) => startResize("left", event)}
+          onPointerMove={(event) => moveResize("left", event)}
+          onPointerUp={(event) => endResize("left", event)}
+          onKeyDown={handleKeyDown}
+          onDoubleClick={resetWidth}
         />
       </aside>
 
       {/* The feed column. Its width is the shell's business, so the fixed
           chrome inside it can be positioned against it. */}
       <div
+        ref={feedRef}
         className={cn(
           "relative w-full shrink-0",
           WORKSPACE_DESKTOP_WIDTH_CLASS,
@@ -350,34 +354,46 @@ export default function WorkspaceShell({
 
         <ResizeHandle
           column="feed"
-          width={widths.feed}
-          dragging={dragging === "feed"}
-          onPointerDown={(event) => startResize("feed", event)}
-          onPointerMove={(event) => moveResize("feed", event)}
-          onPointerUp={(event) => endResize("feed", event)}
-          onKeyDown={(event) => handleKeyDown("feed", event)}
-          onDoubleClick={() => resetWidth("feed")}
+          position="left"
+          width={feedWidth}
+          dragging={dragging}
+          onPointerDown={(event) => startResize("left", event)}
+          onPointerMove={(event) => moveResize("left", event)}
+          onPointerUp={(event) => endResize("left", event)}
+          onKeyDown={handleKeyDown}
+          onDoubleClick={resetWidth}
+        />
+        <ResizeHandle
+          column="feed"
+          position="right"
+          width={feedWidth}
+          dragging={dragging}
+          onPointerDown={(event) => startResize("right", event)}
+          onPointerMove={(event) => moveResize("right", event)}
+          onPointerUp={(event) => endResize("right", event)}
+          onKeyDown={handleKeyDown}
+          onDoubleClick={resetWidth}
         />
       </div>
 
       <aside
         aria-label="Assistant panel"
-        style={{ width: widths.panel }}
         className={cn(
-          "relative hidden",
+          "relative hidden min-w-0 flex-1",
           WORKSPACE_DESKTOP_CLASS,
-          "h-dvh shrink-0 flex-col border-l border-secondary/20 bg-secondary/[0.07]",
+          "h-dvh flex-col border-l border-secondary/20 bg-secondary/[0.07]",
         )}
       >
         <ResizeHandle
           column="panel"
-          width={widths.panel}
-          dragging={dragging === "panel"}
-          onPointerDown={(event) => startResize("panel", event)}
-          onPointerMove={(event) => moveResize("panel", event)}
-          onPointerUp={(event) => endResize("panel", event)}
-          onKeyDown={(event) => handleKeyDown("panel", event)}
-          onDoubleClick={() => resetWidth("panel")}
+          position="left"
+          width={feedWidth}
+          dragging={dragging}
+          onPointerDown={(event) => startResize("right", event)}
+          onPointerMove={(event) => moveResize("right", event)}
+          onPointerUp={(event) => endResize("right", event)}
+          onKeyDown={handleKeyDown}
+          onDoubleClick={resetWidth}
         />
       </aside>
     </div>
