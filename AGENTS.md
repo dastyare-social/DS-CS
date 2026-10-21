@@ -531,6 +531,25 @@ bun run ds-cs add            # Install agent skills
 bun run skills:test          # CLI test suite
 ```
 
+### If every route shows the not-found page
+
+`next dev` (Turbopack) can wedge when the disk is nearly full: the build
+manifest never resolves, and because `next.config.ts` enables the
+`globalNotFound` experiment, Next then renders the not-found page for **every**
+route. Symptoms: the browser shows "not found" on `/`, `/about`, `/os`; the dev
+log prints nothing for those requests; `next-server` sits at 400% CPU; requests
+hang instead of failing fast.
+
+It is not a routing or code bug — do not start editing routes. Fix it in this
+order:
+
+```bash
+df -h /System/Volumes/Data     # free space first — the dev cache is ~550 MB
+rm -rf .next/dev                # drop the wedged Turbopack cache
+bun run dev                     # fresh server
+bun pm cache rm                 # usually the largest safe win (was 10 GB)
+```
+
 ### Always run tests with `bun run test`, never bare `bun test`
 
 The `test` script passes `--isolate`, which gives each test file a fresh global. Without it, Bun shares one module registry across every test file, so a `vi.mock('../some-component')` in one file silently replaces that module for **every file that runs after it**.
