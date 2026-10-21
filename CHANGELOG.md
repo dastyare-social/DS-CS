@@ -108,13 +108,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   inherits `div { font-size: 24px }` from the base layer and the button carries
   `text-[24px]`; this app has no such base rule, so the size is stated at the
   call site
-- The desktop side panels are actually visible now. They were painted with a
-  4% wash and a 5% border, which composites to `#f6f6f6` on the `#fdfdfd`
-  page — three levels of difference, i.e. nothing. The surface is now
+- The desktop workspace is three resizable columns now — sidebar, feed and
+  assistant panel — and the fixed chrome follows the feed instead of the
+  viewport. The top header, the pinned bar and the footers were hard-coded to
+  `max-w-2xl`, so as soon as the feed was not exactly 672px wide they
+  overflowed it or sat off-centre. The shell now publishes
+  `--workspace-feed-width` (the feed's width) and `--workspace-shift` (the
+  feed's centre against the viewport's), and every fixed element sizes itself
+  from those. The feed column is resizable too (480–960): each column's
+  handle sits on that column's right edge, so the three handles never compete
+  for the same pixels. The columns are also actually visible now — they were
+  painted with a 4% wash and a 5% border, which composites to `#f6f6f6` on the
+  `#fdfdfd` page, three levels of difference, i.e. nothing; the surface is now
   `bg-secondary/[0.07]`, the divider `border-secondary/20`, and a 2×40px grip
   sits on the hairline so an empty column still says "this edge moves". The
-  panels also appear from 1024px instead of 1184px; the feed's 672px is a
-  ceiling, not a guarantee, and it yields width down to 512px
+  columns appear from 1024px; below it the feed is full width and the mobile
+  layout is untouched
 
 ## [0.1.0] - Initial release
 

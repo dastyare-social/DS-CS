@@ -4,6 +4,7 @@ import { PinIcon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import type { PostWithReactions } from "@/lib/api/posts";
+import { WORKSPACE_FEED_WIDTH_CLASS } from "@/lib/workspace-layout";
 
 interface PinnedBarProps {
   pinnedPosts: PostWithReactions[];
@@ -60,7 +61,7 @@ export default function PinnedBar({
       // Keep the bar centred on the feed column, not the viewport, when the
       // desktop workspace panels differ in width.
       style={{ marginLeft: "var(--workspace-shift, 0px)" }}
-      className="fixed top-[calc(var(--chat-header-height)-5px)] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4"
+      className={`fixed top-[calc(var(--chat-header-height)-5px)] left-1/2 -translate-x-1/2 ${WORKSPACE_FEED_WIDTH_CLASS} z-40 px-4`}
     >
       <div
         onClick={onCycle}

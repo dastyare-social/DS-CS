@@ -19,6 +19,7 @@ import { setUserLocale } from "@/services/locale";
 import { useSiteConfig } from "@/components/site-config-provider";
 import { Locale } from "@/config/locale";
 import { batchIncrementViews, getPinnedPosts } from "@/lib/actions/posts";
+import { WORKSPACE_FEED_WIDTH_CLASS } from "@/lib/workspace-layout";
 import type { PostWithReactions } from "@/lib/api/posts";
 
 const Page = () => {
@@ -345,7 +346,7 @@ const Page = () => {
       />
 
       {/* Feed column — positioning context for overlays anchored to the posts feed */}
-      <div className="relative w-full max-w-2xl min-w-0">
+      <div className="relative w-full">
         <div
           ref={pageRef}
           onScroll={handleListScroll}
@@ -359,7 +360,7 @@ const Page = () => {
           <Header
             explore
             headerRef={headerRef}
-            container_className="max-w-2xl"
+            container_className={WORKSPACE_FEED_WIDTH_CLASS}
             postsData={posts}
             totalCount={total}
             loading={isLoading}
@@ -453,7 +454,10 @@ const Page = () => {
 
         <InstallBanner />
 
-        <div ref={footerRef} className="fixed bottom-0 max-w-2xl w-full z-50">
+        <div
+          ref={footerRef}
+          className={`fixed bottom-0 ${WORKSPACE_FEED_WIDTH_CLASS} z-50`}
+        >
           <div className="flex w-full gap-x-1.5 sm:gap-x-2 px-4 pb-3 lg:pb-5 justify-center items-center">
             <Dialog>
               <DialogTrigger asChild>

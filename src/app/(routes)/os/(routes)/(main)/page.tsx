@@ -43,6 +43,7 @@ import UpdateBanner from "@/components/update-banner";
 import ScrollSafeZone from "@/components/scroll-safe-zone";
 import WorkspaceShell from "@/components/workspace-shell";
 import { raiseError } from "@/lib/error-bar";
+import { WORKSPACE_FEED_WIDTH_CLASS } from "@/lib/workspace-layout";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/dialog";
 import type { MediaPayload, PostWithReactions } from "@/lib/api/posts";
 import { Locale } from "@/config/locale";
@@ -1282,7 +1283,7 @@ const Page = () => {
       />
 
       {/* Feed column — positioning context for overlays anchored to the posts feed */}
-      <div className="relative w-full max-w-2xl min-w-0">
+      <div className="relative w-full">
         <div
           ref={pageRef}
           onScroll={handleListScroll}
@@ -1297,7 +1298,7 @@ const Page = () => {
           <Header
             new_story={true}
             headerRef={headerRef}
-            container_className="max-w-2xl"
+            container_className={WORKSPACE_FEED_WIDTH_CLASS}
           />
 
           {/* —— List —— */}
@@ -1336,7 +1337,7 @@ const Page = () => {
             {/* Error — pinned-bar layer, just below the pinned banner, above posts */}
             {error && (
               <div
-                className="fixed left-1/2 -translate-x-1/2 z-40 px-4 w-full max-w-2xl pointer-events-none"
+                className={`fixed left-1/2 -translate-x-1/2 z-40 px-4 ${WORKSPACE_FEED_WIDTH_CLASS} pointer-events-none`}
                 style={{
                   top: `calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) + 8px)`,
                   marginLeft: "var(--workspace-shift, 0px)",
@@ -1422,7 +1423,10 @@ const Page = () => {
         )}
 
         {/* Footer */}
-        <div ref={footerRef} className="fixed bottom-0 max-w-2xl w-full z-50">
+        <div
+          ref={footerRef}
+          className={`fixed bottom-0 ${WORKSPACE_FEED_WIDTH_CLASS} z-50`}
+        >
           {/* Editing post bar */}
           {activeEditPost && (
             <div className="w-full flex justify-center items-center tracking-tight px-4 pb-3">

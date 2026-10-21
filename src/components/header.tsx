@@ -16,6 +16,7 @@ import { routes } from "@/config/routes";
 import { useSiteConfig } from "@/components/site-config-provider";
 import { Locale } from "@/config/locale";
 import type { PostWithReactions } from "@/lib/api/posts";
+import { WORKSPACE_FEED_WIDTH_CLASS } from "@/lib/workspace-layout";
 
 interface HeaderProps {
   explore?: boolean;
@@ -276,9 +277,10 @@ const Header = ({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="fixed left-1/2 -translate-x-1/2 z-[60] px-4 w-full max-w-2xl pointer-events-none backdrop-blur-md"
+            className={`fixed left-1/2 -translate-x-1/2 z-[60] px-4 ${WORKSPACE_FEED_WIDTH_CLASS} pointer-events-none backdrop-blur-md`}
             style={{
               top: `calc(var(--chat-header-height) + var(--pinned-bar-height, 0px) + 8px)`,
+              marginLeft: "var(--workspace-shift, 0px)",
             }}
           >
             <div className="w-full rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center text-sm text-red-500">
