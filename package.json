@@ -3,7 +3,8 @@
   "author": "Dastyare Social — Team",
   "version": "1.0.0",
   "scripts": {
-    "dev": "bun run generate:config && bun run generate:icons && next dev -p 8729",
+    "dev": "bun run generate:config && bun run generate:icons && next dev --webpack -p 8729",
+    "dev:turbo": "bun run generate:config && bun run generate:icons && next dev -p 8729",
     "build": "bun run generate:config && bun run generate:icons && bun run upload:emojis && bun run db:migrate && bun run bootstrap:admin && next build",
     "start": "next start -p 8729",
     "storybook": "storybook dev -p 6006",

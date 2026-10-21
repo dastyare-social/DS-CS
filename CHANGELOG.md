@@ -89,15 +89,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Dev server wedging, which made every route render the not-found page.
-  Turbopack's on-disk dev cache (`.next/dev`, ~550 MB) was compacted in the
-  background; on a slow or nearly full disk that spun the compiler at 300%+ CPU,
-  the route manifest stopped resolving, and — with `globalNotFound` enabled —
-  Next served the not-found page for `/`, `/about`, `/os` and everything else.
-  `experimental.turbopackFileSystemCacheForDev` is now off, so the dev server
-  keeps its state in memory (`.next/dev` stays ~70 MB), the server no longer
-  self-restarts on the memory threshold, and pages answer in under two seconds.
-  See `AGENTS.md` → "If every route shows the not-found page"
+- Dev server instability, which made every route render the not-found page.
+  Turbopack's dev server wedged on this machine in both directions: with its
+  on-disk cache enabled it spun the compiler at 400%+ CPU while writing and
+  compacting `.next/dev` (~550 MB) and stopped answering requests; with the
+  cache disabled it grew the heap without bound, tripped Next's memory guard
+  (`⚠ Server is approaching the used memory threshold, restarting...`) and
+  died with `FATAL ERROR: Ineffective mark-compacts near heap limit`. Because
+  `globalNotFound` is enabled, a wedged server renders the not-found page for
+  `/`, `/about`, `/os` and everything else. `bun run dev` now runs webpack
+  (`next dev --webpack`): ~25 MB resident, sub-second responses, a
+  1,400-request soak with zero failures. `bun run dev:turbo` keeps the old
+  behaviour. The failure mode and its diagnostics are documented in
+  `AGENTS.md` → "If every route shows the not-found page"
 
 ## [0.1.0] - Initial release
 

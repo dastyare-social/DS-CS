@@ -533,27 +533,33 @@ bun run skills:test          # CLI test suite
 
 ### If every route shows the not-found page
 
-`next dev` (Turbopack) can wedge when the disk is nearly full: the build
-manifest never resolves, and because `next.config.ts` enables the
-`globalNotFound` experiment, Next then renders the not-found page for **every**
-route. Symptoms: the browser shows "not found" on `/`, `/about`, `/os`; the dev
-log prints nothing for those requests; `next-server` sits at 400% CPU; requests
-hang instead of failing fast.
+`next dev` can wedge: the route manifest stops resolving and, because
+`next.config.ts` enables the `globalNotFound` experiment, Next renders the
+not-found page for **every** route. Symptoms: "not found" on `/`, `/about`,
+`/os`; the dev log prints nothing for those requests; `next-server` sits at
+300–500% CPU; requests hang instead of failing fast.
 
-It is not a routing or code bug — do not start editing routes. Fix it in this
-order:
+It is not a routing or code bug — do not start editing routes.
+
+`bun run dev` now runs **webpack** (`next dev --webpack`) for exactly this
+reason. Turbopack's dev server proved unusable on this machine in two
+directions: with its on-disk cache enabled it spun the compiler at 400%+ CPU
+writing and compacting `.next/dev` and stopped answering; with the cache
+disabled it grew the heap without bound, tripped Next's memory guard
+(`⚠ Server is approaching the used memory threshold, restarting...`) and then
+died with `FATAL ERROR: Ineffective mark-compacts near heap limit`. Webpack
+holds ~25 MB resident, answers in under a second and survived a 1,400-request
+soak with zero failures. `bun run dev:turbo` still exposes Turbopack — keep at
+least ~10 GB free on the volume that holds `.next` if you use it.
+
+If the server is already wedged, recover in this order:
 
 ```bash
 df -h /System/Volumes/Data     # free space first — the dev cache is ~550 MB
+bun pm cache rm                 # usually the largest safe win (was 10 GB)
 rm -rf .next/dev                # drop the wedged Turbopack cache
 bun run dev                     # fresh server
-bun pm cache rm                 # usually the largest safe win (was 10 GB)
 ```
-
-`next.config.ts` now sets `experimental.turbopackFileSystemCacheForDev: false`,
-so the dev server keeps its state in memory and never writes the 550 MB
-`.next/dev` cache that caused the wedge. Cold starts are a second slower; the
-server no longer spins at 300% CPU or self-restarts on the memory threshold.
 
 ### Always run tests with `bun run test`, never bare `bun test`
 

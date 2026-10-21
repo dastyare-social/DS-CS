@@ -221,13 +221,12 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   experimental: {
     globalNotFound: true,
-    // Turbopack's on-disk dev cache writes ~550 MB into `.next/dev` and then
-    // compacts it in the background. On a slow or nearly full disk that
-    // compaction spins the compiler at 300%+ CPU, the route manifest stops
-    // resolving, and — because `globalNotFound` is on — every page renders the
-    // not-found page. Without the filesystem cache the dev server keeps its
-    // state in memory: slightly slower cold starts, no wedged server.
-    turbopackFileSystemCacheForDev: false,
+    // Turbopack's on-disk dev cache stays ON. It is what keeps the dev
+    // server's heap bounded: with the cache disabled the whole module graph
+    // stays in memory and Node dies with "Ineffective mark-compacts near heap
+    // limit" after ~15 minutes of use. `bun run dev` runs webpack rather than
+    // Turbopack for the same reason — see AGENTS.md → "If every route shows
+    // the not-found page".
   },
 };
 
