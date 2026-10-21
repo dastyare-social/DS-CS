@@ -221,6 +221,13 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   experimental: {
     globalNotFound: true,
+    // Turbopack's on-disk dev cache writes ~550 MB into `.next/dev` and then
+    // compacts it in the background. On a slow or nearly full disk that
+    // compaction spins the compiler at 300%+ CPU, the route manifest stops
+    // resolving, and — because `globalNotFound` is on — every page renders the
+    // not-found page. Without the filesystem cache the dev server keeps its
+    // state in memory: slightly slower cold starts, no wedged server.
+    turbopackFileSystemCacheForDev: false,
   },
 };
 

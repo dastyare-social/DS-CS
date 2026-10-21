@@ -550,6 +550,11 @@ bun run dev                     # fresh server
 bun pm cache rm                 # usually the largest safe win (was 10 GB)
 ```
 
+`next.config.ts` now sets `experimental.turbopackFileSystemCacheForDev: false`,
+so the dev server keeps its state in memory and never writes the 550 MB
+`.next/dev` cache that caused the wedge. Cold starts are a second slower; the
+server no longer spins at 300% CPU or self-restarts on the memory threshold.
+
 ### Always run tests with `bun run test`, never bare `bun test`
 
 The `test` script passes `--isolate`, which gives each test file a fresh global. Without it, Bun shares one module registry across every test file, so a `vi.mock('../some-component')` in one file silently replaces that module for **every file that runs after it**.
