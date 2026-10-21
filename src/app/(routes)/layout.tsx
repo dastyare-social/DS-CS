@@ -7,6 +7,7 @@ import { getLocale, getMessages } from "next-intl/server";
 import { LangDir, LangFont } from "@/lib/fonts";
 import NextTopLoader from "nextjs-toploader";
 import { cn } from "@/lib/utils";
+import { WORKSPACE_WIDTH_SCRIPT } from "@/lib/workspace-layout";
 import { Locale } from "@/config/locale";
 import { rootMetadata } from "../../../config/metadata";
 import { get_app_config } from "@/config/runtime";
@@ -53,6 +54,9 @@ export default async function RootLayout({
           "antialiased tracking-tighter select-none w-full flex justify-center",
         )}
       >
+        {/* The saved workspace width, published before the first paint so the
+            feed is never rendered at the fallback width and then resized. */}
+        <script dangerouslySetInnerHTML={{ __html: WORKSPACE_WIDTH_SCRIPT }} />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <NextTopLoader
             color="var(--color-primary)"

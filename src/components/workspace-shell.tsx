@@ -1,18 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { cn } from "@/lib/utils";
+import ProductSwitcher from "@/components/product-switcher";
 import {
   WORKSPACE_BREAKPOINT,
+  WORKSPACE_WIDTH_COOKIE,
   WORKSPACE_DESKTOP_CLASS,
   WORKSPACE_DESKTOP_WIDTH_CLASS,
   WORKSPACE_FEED,
   fitFeedWidth,
   type WorkspaceColumn,
 } from "@/lib/workspace-layout";
-
-const STORAGE_KEY = "ds.workspace.feed-width";
 
 const ARIA_LABEL = {
   sidebar: "Resize sidebar",
@@ -23,10 +29,21 @@ const ARIA_LABEL = {
 /** How wide a column's edge strip is. The whole strip drags. */
 const HANDLE_WIDTH = "w-2.5";
 
+/**
+ * Layout effects run before the browser paints, so the stored width and the
+ * published CSS variable are in place on the first frame. With a passive
+ * effect the page painted at the fallback width and then jumped to the saved
+ * one — the feed visibly resized on every load.
+ */
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 function readStoredWidth(): number {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const value = raw === null ? Number.NaN : Number(raw);
+    const match = document.cookie.match(
+      new RegExp(`(?:^|; )${WORKSPACE_WIDTH_COOKIE.replace(/\./g, "\\.")}=([^;]*)`),
+    );
+    const value = match ? Number(decodeURIComponent(match[1]!)) : Number.NaN;
     return Number.isFinite(value) ? value : WORKSPACE_FEED.default;
   } catch {
     return WORKSPACE_FEED.default;
@@ -35,9 +52,9 @@ function readStoredWidth(): number {
 
 function storeWidth(value: number) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, String(value));
+    document.cookie = `${WORKSPACE_WIDTH_COOKIE}=${encodeURIComponent(String(value))}; path=/; max-age=31536000; samesite=lax`;
   } catch {
-    // Private mode / storage disabled — resizing still works for this session.
+    // Cookies disabled — resizing still works for this session.
   }
 }
 
@@ -154,9 +171,11 @@ export default function WorkspaceShell({
 
   // Restore the persisted width, fitted to the current viewport. This has to
   // run after mount: reading localStorage during render would make the first
-  // client render disagree with the server HTML and break hydration.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+  // client render disagree with the server HTML and break hydration. It runs
+  // as a layout effect so the first paint is already the final width — with a
+  // passive effect the page painted at the fallback width and then jumped to
+  // the saved one.
+  useIsomorphicLayoutEffect(() => {
     setFeedWidth(fitFeedWidth(readStoredWidth(), window.innerWidth));
   }, []);
 
@@ -184,8 +203,9 @@ export default function WorkspaceShell({
   // Publish the feed's width, and where its centre actually is, for the fixed
   // chrome. The shift is measured rather than computed: the columns sit
   // against the window edges, so the feed's centre depends on the layout, not
-  // on a formula.
-  useEffect(() => {
+  // on a formula. A layout effect, so the fixed chrome never paints at the
+  // fallback width first.
+  useIsomorphicLayoutEffect(() => {
     const root = document.documentElement;
     root.style.setProperty("--workspace-feed-width", `${feedWidth}px`);
 
@@ -328,6 +348,16 @@ export default function WorkspaceShell({
           "h-dvh flex-col border-r border-secondary/20 bg-secondary/[0.07]",
         )}
       >
+        <div className="flex flex-col gap-3 p-4">
+          <div className="liquid-glass flex items-center gap-3 rounded-2xl border border-primary/10 px-4 py-3">
+            <span className="text-[15px] leading-5 tracking-tighter text-foreground">
+              Dastyare Social <span className="text-primary">— CS</span>
+            </span>
+          </div>
+
+          <ProductSwitcher />
+        </div>
+
         <ResizeHandle
           column="sidebar"
           position="right"

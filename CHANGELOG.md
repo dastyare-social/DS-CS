@@ -108,6 +108,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   inherits `div { font-size: 24px }` from the base layer and the button carries
   `text-[24px]`; this app has no such base rule, so the size is stated at the
   call site
+- The workspace feed no longer jumps on load. The saved width was in
+  localStorage, so the server could not see it: the page painted at the
+  fallback 672px and then resized to the saved width after hydration. The
+  width is now a cookie (`ds.workspace.feed-width`) that the server can read,
+  and an inline script in the layout publishes it before the first paint.
+- A DS — CS — WEB product switcher at the top of the left column. CS is this
+  app and is the active segment; DS and WEB link to `NEXT_PUBLIC_DS_URL` and
+  `NEXT_PUBLIC_WEB_URL`, and an unset URL renders that segment as a label
+  rather than a dead link
 - The desktop workspace is three columns now — a sidebar, the feed and an
   assistant panel — and the fixed chrome follows the feed instead of the
   viewport. The top header, the pinned bar and the footers were hard-coded to

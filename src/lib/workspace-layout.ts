@@ -47,6 +47,20 @@ export const WORKSPACE_DESKTOP_WIDTH_CLASS =
 export const WORKSPACE_FEED_WIDTH_CLASS =
   "w-[min(var(--workspace-feed-width,672px),100vw)]";
 
+/**
+ * The saved width lives in a cookie, not in localStorage, because the server
+ * has to be able to read it: the width is part of the layout, and a width the
+ * server cannot see is a width the first paint gets wrong.
+ */
+export const WORKSPACE_WIDTH_COOKIE = "ds.workspace.feed-width";
+
+/**
+ * Runs before the first paint and publishes the saved width, so the feed is
+ * never painted at the fallback width and then resized. Kept as a string so
+ * it can be tested and so the cookie name has one home.
+ */
+export const WORKSPACE_WIDTH_SCRIPT = `(function(){try{var m=document.cookie.match(/(?:^|; )ds\\.workspace\\.feed-width=([^;]*)/);if(m){var w=parseInt(decodeURIComponent(m[1]),10);if(isFinite(w)&&w>0){document.documentElement.style.setProperty("--workspace-feed-width",w+"px")}}}catch(e){}})();`;
+
 export type WorkspaceColumn = "feed" | "sidebar" | "panel";
 
 export const WORKSPACE_DEFAULT_WIDTHS = {
