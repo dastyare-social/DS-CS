@@ -12,8 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - v1.0.0 workspace scaffold: Mastra agent runtime with the Zernio hosted MCP
   server (OAuth 2.1 + PKCE, per-user encrypted token storage, six vendored
   Zernio agent skills) and resizable, empty desktop side panels around the `/`
-  and `/os` feeds. Panels hide below 1280px; mobile stays single-column. Agent
-  UI wiring is intentionally not included. See `docs/mastra-zernio.md`
+  and `/os` feeds. Panels appear from 1184px — the narrowest viewport where
+  both panels fit at their minimum widths without touching the 672px feed —
+  and read as quiet columns (a soft surface wash, a hairline divider and a
+  visible drag handle). Below that the mobile layout stays single-column.
+  Agent UI wiring is intentionally not included. See `docs/mastra-zernio.md`
 - Mastra agent capabilities behind the same scaffold: web search (`web_search`
   with Tavily/Brave auto-detect plus the built-in `web_fetch`), channel data
   tools (`list_channel_posts`, `get_channel_post`, `channel_stats`),

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "bun:test";
 
 import {
+  WORKSPACE_BREAKPOINT,
+  WORKSPACE_DESKTOP_CLASS,
   WORKSPACE_FEED_MAX_WIDTH,
   WORKSPACE_GUTTER,
   WORKSPACE_PANEL,
@@ -34,6 +36,14 @@ describe("panelBudget", () => {
   });
 });
 
+describe("WORKSPACE_DESKTOP_CLASS", () => {
+  it("targets the same breakpoint the shell measures", () => {
+    expect(WORKSPACE_DESKTOP_CLASS).toBe(
+      `min-[${WORKSPACE_BREAKPOINT}px]:flex`,
+    );
+  });
+});
+
 describe("fitWorkspaceWidths", () => {
   it("keeps the defaults at the desktop breakpoint", () => {
     const fitted = fitWorkspaceWidths(
@@ -45,6 +55,21 @@ describe("fitWorkspaceWidths", () => {
       sidebar: WORKSPACE_SIDEBAR.default,
       panel: WORKSPACE_PANEL.default,
     });
+  });
+
+  it("still fits both panels at their minimums on the narrowest desktop", () => {    const budget = panelBudget(WORKSPACE_BREAKPOINT);
+    expect(budget).toBeGreaterThanOrEqual(
+      WORKSPACE_SIDEBAR.min + WORKSPACE_PANEL.min,
+    );
+
+    const fitted = fitWorkspaceWidths(
+      WORKSPACE_SIDEBAR.default,
+      WORKSPACE_PANEL.default,
+      WORKSPACE_BREAKPOINT,
+    );
+    expect(fitted.sidebar).toBeGreaterThanOrEqual(WORKSPACE_SIDEBAR.min);
+    expect(fitted.panel).toBeGreaterThanOrEqual(WORKSPACE_PANEL.min);
+    expect(fitted.sidebar + fitted.panel).toBeLessThanOrEqual(budget);
   });
 
   it("bounds values to each panel's range", () => {
@@ -65,7 +90,7 @@ describe("fitWorkspaceWidths", () => {
   });
 
   it("leaves room for the feed at every supported desktop width", () => {
-    for (let viewport = 1280; viewport <= 2560; viewport += 16) {
+    for (let viewport = WORKSPACE_BREAKPOINT; viewport <= 2560; viewport += 16) {
       const fitted = fitWorkspaceWidths(
         WORKSPACE_SIDEBAR.max,
         WORKSPACE_PANEL.max,

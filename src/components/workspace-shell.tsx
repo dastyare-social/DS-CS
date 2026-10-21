@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   WORKSPACE_BREAKPOINT,
+  WORKSPACE_DESKTOP_CLASS,
   WORKSPACE_PANEL,
   WORKSPACE_SIDEBAR,
   clamp,
@@ -102,7 +103,7 @@ function ResizeHandle({
       onKeyDown={onKeyDown}
       onDoubleClick={onDoubleClick}
       className={cn(
-        "group absolute inset-y-0 z-20 w-2 touch-none cursor-col-resize outline-none",
+        "group absolute inset-y-0 z-20 w-2.5 touch-none cursor-col-resize outline-none",
         side === "sidebar" ? "right-0" : "left-0",
         dragging && "bg-primary/5",
       )}
@@ -111,8 +112,8 @@ function ResizeHandle({
         className={cn(
           "absolute inset-y-0 w-px transition-colors duration-150 motion-reduce:transition-none",
           side === "sidebar" ? "right-1" : "left-1",
-          "bg-secondary/10 group-hover:bg-primary/30 group-focus-visible:bg-primary/40",
-          dragging && "bg-primary/40",
+          "bg-secondary/20 group-hover:bg-primary/40 group-focus-visible:bg-primary/50",
+          dragging && "bg-primary/50",
         )}
       />
     </div>
@@ -124,9 +125,14 @@ function ResizeHandle({
  * empty assistant panel to its right. Both are resizable (pointer, keyboard,
  * double-click to reset) and remember their widths.
  *
- * Below `xl` the panels are hidden, so the existing mobile-first single-column
- * feed is untouched. The feed column stays `max-w-2xl`; the shell only adds flex
- * items around it.
+ * The panels are empty by design, so they read as quiet columns: a soft
+ * surface wash and a hairline divider, with the drag handle as the only
+ * affordance.
+ *
+ * Below `WORKSPACE_BREAKPOINT` (1184px — the narrowest viewport where both
+ * panels fit at their minimum widths without touching the feed) the panels are
+ * hidden, so the existing mobile-first single-column feed is untouched. The
+ * feed column stays `max-w-2xl`; the shell only adds flex items around it.
  *
  * Fixed, viewport-centred chrome (the pinned bar, the /os error banner) reads
  * `--workspace-shift` to stay aligned with the feed when the panels differ in
@@ -320,7 +326,11 @@ export default function WorkspaceShell({
       <aside
         aria-label="Sidebar"
         style={{ width: widths.sidebar }}
-        className="relative hidden xl:flex h-dvh shrink-0 flex-col border-r border-secondary/5 bg-primary/[0.012]"
+        className={cn(
+          "relative hidden",
+          WORKSPACE_DESKTOP_CLASS,
+          "h-dvh shrink-0 flex-col border-r border-secondary/10 bg-secondary/[0.04]",
+        )}
       >
         <ResizeHandle
           side="sidebar"
@@ -341,7 +351,11 @@ export default function WorkspaceShell({
       <aside
         aria-label="Assistant panel"
         style={{ width: widths.panel }}
-        className="relative hidden xl:flex h-dvh shrink-0 flex-col border-l border-secondary/5 bg-primary/[0.012]"
+        className={cn(
+          "relative hidden",
+          WORKSPACE_DESKTOP_CLASS,
+          "h-dvh shrink-0 flex-col border-l border-secondary/10 bg-secondary/[0.04]",
+        )}
       >
         <ResizeHandle
           side="panel"

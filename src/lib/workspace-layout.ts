@@ -13,7 +13,23 @@ export const WORKSPACE_PANEL = {
   default: 320,
 } as const;
 
-export const WORKSPACE_BREAKPOINT = 1280; // Tailwind xl — panels hide below this
+/**
+ * The panels are sized in CSS, not with a Tailwind breakpoint token, so the
+ * breakpoint is a number the shell and the layout math share:
+ *
+ *   200 (sidebar min) + 672 (feed) + 280 (panel min) + 32 (gutters) = 1184
+ *
+ * Below that the panels would have to eat into the feed column, so they are
+ * hidden and the layout falls back to the single-column mobile view.
+ */
+export const WORKSPACE_BREAKPOINT = 1184;
+
+/**
+ * The Tailwind class that reveals the panels at the breakpoint. It lives next
+ * to the number so the CSS and the JS can never disagree; Tailwind picks the
+ * literal up from this file.
+ */
+export const WORKSPACE_DESKTOP_CLASS = "min-[1184px]:flex";
 
 export function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
