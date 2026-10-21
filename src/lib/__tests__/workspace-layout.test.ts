@@ -4,6 +4,7 @@ import {
   WORKSPACE_BREAKPOINT,
   WORKSPACE_DESKTOP_CLASS,
   WORKSPACE_FEED_MAX_WIDTH,
+  WORKSPACE_FEED_MIN_WIDTH,
   WORKSPACE_GUTTER,
   WORKSPACE_PANEL,
   WORKSPACE_SIDEBAR,
@@ -25,9 +26,9 @@ describe("clamp", () => {
 });
 
 describe("panelBudget", () => {
-  it("subtracts the feed column and both gutters", () => {
+  it("charges the feed its minimum width and both gutters", () => {
     expect(panelBudget(1280)).toBe(
-      1280 - WORKSPACE_FEED_MAX_WIDTH - WORKSPACE_GUTTER * 2,
+      1280 - WORKSPACE_FEED_MIN_WIDTH - WORKSPACE_GUTTER * 2,
     );
   });
 
@@ -57,7 +58,8 @@ describe("fitWorkspaceWidths", () => {
     });
   });
 
-  it("still fits both panels at their minimums on the narrowest desktop", () => {    const budget = panelBudget(WORKSPACE_BREAKPOINT);
+  it("still fits both panels at their minimums on the narrowest desktop", () => {
+    const budget = panelBudget(WORKSPACE_BREAKPOINT);
     expect(budget).toBeGreaterThanOrEqual(
       WORKSPACE_SIDEBAR.min + WORKSPACE_PANEL.min,
     );
@@ -70,6 +72,18 @@ describe("fitWorkspaceWidths", () => {
     expect(fitted.sidebar).toBeGreaterThanOrEqual(WORKSPACE_SIDEBAR.min);
     expect(fitted.panel).toBeGreaterThanOrEqual(WORKSPACE_PANEL.min);
     expect(fitted.sidebar + fitted.panel).toBeLessThanOrEqual(budget);
+  });
+
+  it("leaves the feed at least its minimum width on the narrowest desktop", () => {
+    const fitted = fitWorkspaceWidths(
+      WORKSPACE_SIDEBAR.min,
+      WORKSPACE_PANEL.min,
+      WORKSPACE_BREAKPOINT,
+    );
+    const feed = WORKSPACE_BREAKPOINT - fitted.sidebar - fitted.panel;
+
+    expect(feed).toBeGreaterThanOrEqual(WORKSPACE_FEED_MIN_WIDTH);
+    expect(feed).toBeLessThanOrEqual(WORKSPACE_FEED_MAX_WIDTH);
   });
 
   it("bounds values to each panel's range", () => {
@@ -90,7 +104,11 @@ describe("fitWorkspaceWidths", () => {
   });
 
   it("leaves room for the feed at every supported desktop width", () => {
-    for (let viewport = WORKSPACE_BREAKPOINT; viewport <= 2560; viewport += 16) {
+    for (
+      let viewport = WORKSPACE_BREAKPOINT;
+      viewport <= 2560;
+      viewport += 16
+    ) {
       const fitted = fitWorkspaceWidths(
         WORKSPACE_SIDEBAR.max,
         WORKSPACE_PANEL.max,

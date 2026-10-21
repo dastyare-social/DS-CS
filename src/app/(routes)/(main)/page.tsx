@@ -345,7 +345,7 @@ const Page = () => {
       />
 
       {/* Feed column — positioning context for overlays anchored to the posts feed */}
-      <div className="relative w-full max-w-2xl">
+      <div className="relative w-full max-w-2xl min-w-0">
         <div
           ref={pageRef}
           onScroll={handleListScroll}

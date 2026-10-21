@@ -116,6 +116,16 @@ function ResizeHandle({
           dragging && "bg-primary/50",
         )}
       />
+      {/* The grip. The panels are empty by design, so without a visible handle
+          there is nothing on screen to say "this edge moves". */}
+      <div
+        className={cn(
+          "absolute top-1/2 h-10 w-0.5 -translate-y-1/2 rounded-full transition-colors duration-150 motion-reduce:transition-none",
+          side === "sidebar" ? "right-[3px]" : "left-[3px]",
+          "bg-secondary/40 group-hover:bg-primary/60 group-focus-visible:bg-primary/70",
+          dragging && "bg-primary/70",
+        )}
+      />
     </div>
   );
 }
@@ -125,14 +135,14 @@ function ResizeHandle({
  * empty assistant panel to its right. Both are resizable (pointer, keyboard,
  * double-click to reset) and remember their widths.
  *
- * The panels are empty by design, so they read as quiet columns: a soft
- * surface wash and a hairline divider, with the drag handle as the only
- * affordance.
+ * The panels are empty by design, so the edge is what has to be seen: a soft
+ * surface wash, a hairline divider and a visible grip on the hairline. An
+ * empty column with only a 4% wash was, in practice, invisible.
  *
- * Below `WORKSPACE_BREAKPOINT` (1184px — the narrowest viewport where both
- * panels fit at their minimum widths without touching the feed) the panels are
- * hidden, so the existing mobile-first single-column feed is untouched. The
- * feed column stays `max-w-2xl`; the shell only adds flex items around it.
+ * From `WORKSPACE_BREAKPOINT` (1024px) the panels exist. The feed's 672px is
+ * a ceiling, not a guarantee: between 1024px and 1184px the feed gives up
+ * width to the panels, never below 512px. Below the breakpoint the panels are
+ * hidden and the existing mobile-first single-column feed is untouched.
  *
  * Fixed, viewport-centred chrome (the pinned bar, the /os error banner) reads
  * `--workspace-shift` to stay aligned with the feed when the panels differ in
@@ -329,7 +339,7 @@ export default function WorkspaceShell({
         className={cn(
           "relative hidden",
           WORKSPACE_DESKTOP_CLASS,
-          "h-dvh shrink-0 flex-col border-r border-secondary/10 bg-secondary/[0.04]",
+          "h-dvh shrink-0 flex-col border-r border-secondary/20 bg-secondary/[0.07]",
         )}
       >
         <ResizeHandle
@@ -354,7 +364,7 @@ export default function WorkspaceShell({
         className={cn(
           "relative hidden",
           WORKSPACE_DESKTOP_CLASS,
-          "h-dvh shrink-0 flex-col border-l border-secondary/10 bg-secondary/[0.04]",
+          "h-dvh shrink-0 flex-col border-l border-secondary/20 bg-secondary/[0.07]",
         )}
       >
         <ResizeHandle

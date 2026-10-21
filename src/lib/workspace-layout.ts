@@ -1,4 +1,5 @@
 export const WORKSPACE_FEED_MAX_WIDTH = 672; // Tailwind max-w-2xl
+export const WORKSPACE_FEED_MIN_WIDTH = 512; // the feed yields width to the panels down to this
 export const WORKSPACE_GUTTER = 16;
 
 export const WORKSPACE_SIDEBAR = {
@@ -14,22 +15,20 @@ export const WORKSPACE_PANEL = {
 } as const;
 
 /**
- * The panels are sized in CSS, not with a Tailwind breakpoint token, so the
- * breakpoint is a number the shell and the layout math share:
- *
- *   200 (sidebar min) + 672 (feed) + 280 (panel min) + 32 (gutters) = 1184
- *
- * Below that the panels would have to eat into the feed column, so they are
- * hidden and the layout falls back to the single-column mobile view.
+ * The panels appear from 1024px — the narrowest viewport where both panels
+ * fit at their minimum widths (200 + 280) with a readable feed between them
+ * (1024 − 480 = 544). The feed's 672px is a ceiling, not a guarantee: between
+ * 1024px and 1184px it gives up width to the panels, never below
+ * WORKSPACE_FEED_MIN_WIDTH.
  */
-export const WORKSPACE_BREAKPOINT = 1184;
+export const WORKSPACE_BREAKPOINT = 1024;
 
 /**
  * The Tailwind class that reveals the panels at the breakpoint. It lives next
  * to the number so the CSS and the JS can never disagree; Tailwind picks the
  * literal up from this file.
  */
-export const WORKSPACE_DESKTOP_CLASS = "min-[1184px]:flex";
+export const WORKSPACE_DESKTOP_CLASS = "min-[1024px]:flex";
 
 export function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
@@ -38,12 +37,13 @@ export function clamp(value: number, min: number, max: number): number {
 
 /**
  * Width available to both panels together once the feed column and the outer
- * gutter are accounted for.
+ * gutter are accounted for. The feed is charged its *minimum* here, so the
+ * panels can be widened even on a screen where the feed has to shrink.
  */
 export function panelBudget(viewportWidth: number): number {
   return Math.max(
     0,
-    viewportWidth - WORKSPACE_FEED_MAX_WIDTH - WORKSPACE_GUTTER * 2,
+    viewportWidth - WORKSPACE_FEED_MIN_WIDTH - WORKSPACE_GUTTER * 2,
   );
 }
 
