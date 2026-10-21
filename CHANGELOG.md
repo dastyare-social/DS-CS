@@ -108,6 +108,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   inherits `div { font-size: 24px }` from the base layer and the button carries
   `text-[24px]`; this app has no such base rule, so the size is stated at the
   call site
+- The workspace columns are built with the shadcn `Resizable` component now
+  (`src/components/resizable.tsx`, on `react-resizable-panels`): a panel group
+  with a panel per column and the shadcn handle between them. The side columns
+  lost their grey fill — they are the window, not a panel — and the divider no
+  longer changes colour on hover or while dragging. The left column is empty
+  again, and the floating install, update and error bars are centred on the
+  feed instead of on the window.
 - Dragging one edge of the centre panel no longer resizes both of its edges.
   The feed used to be centred between two equal side columns, so any change to
   its width moved both edges: the drag was symmetric and the column you were

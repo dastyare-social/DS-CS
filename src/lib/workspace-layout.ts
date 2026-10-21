@@ -1,11 +1,9 @@
-export const WORKSPACE_FEED_MAX_WIDTH = 672; // the feed's default width
 export const WORKSPACE_GUTTER = 16;
 
 /**
  * The workspace is three columns that fill the window: a left column, the
- * feed, and a right column. The feed is the only one that is resized by
- * dragging its own edges, and each of its edges is free — dragging one moves
- * that edge and nothing else.
+ * feed, and a right column. The feed is the resizable one; the right column
+ * takes what is left of the window.
  */
 export const WORKSPACE_LEFT = {
   min: 200,
@@ -39,19 +37,6 @@ export const WORKSPACE_BREAKPOINT = 1024;
 export const WORKSPACE_DESKTOP_CLASS = "min-[1024px]:flex";
 
 /**
- * The feed's width, applied only from the breakpoint up. Below it the feed is
- * the full width of the screen, as it always was.
- */
-export const WORKSPACE_DESKTOP_WIDTH_CLASS =
-  "min-[1024px]:w-[var(--workspace-feed-width,672px)]";
-
-/**
- * The left column's width, applied only from the breakpoint up.
- */
-export const WORKSPACE_DESKTOP_LEFT_CLASS =
-  "min-[1024px]:w-[var(--workspace-left-width,240px)]";
-
-/**
  * The width every piece of fixed chrome has to use to sit exactly over the
  * feed: the feed's width on the desktop, the screen's width on mobile, where
  * the feed is full width.
@@ -60,134 +45,95 @@ export const WORKSPACE_FEED_WIDTH_CLASS =
   "w-[min(var(--workspace-feed-width,672px),100vw)]";
 
 /**
- * The saved widths live in cookies, not in localStorage, because the server
+ * The saved widths live in a cookie, not in localStorage, because the server
  * has to be able to read them: the widths are part of the layout, and a width
  * the server cannot see is a width the first paint gets wrong.
  */
-export const WORKSPACE_LEFT_COOKIE = "ds.workspace.left-width";
-export const WORKSPACE_FEED_COOKIE = "ds.workspace.feed-width";
+export const WORKSPACE_WIDTHS_COOKIE = "ds.workspace.widths";
 
 /**
- * Runs before the first paint and publishes the saved widths, so the feed is
- * never painted at the fallback width and then resized.
+ * The panel ids, which are also the keys of the library's layout map.
  */
-export const WORKSPACE_WIDTH_SCRIPT = `(function(){try{var c=document.cookie;var l=c.match(/(?:^|; )ds\\.workspace\\.left-width=([^;]*)/);var f=c.match(/(?:^|; )ds\\.workspace\\.feed-width=([^;]*)/);if(l){var v=parseInt(decodeURIComponent(l[1]),10);if(isFinite(v)&&v>0){document.documentElement.style.setProperty("--workspace-left-width",v+"px")}}if(f){var v2=parseInt(decodeURIComponent(f[1]),10);if(isFinite(v2)&&v2>0){document.documentElement.style.setProperty("--workspace-feed-width",v2+"px")}}}catch(e){}})();`;
+export const WORKSPACE_PANEL_IDS = {
+  left: "ws-left",
+  feed: "ws-feed",
+  right: "ws-right",
+} as const;
 
-export interface WorkspaceWidths {
-  /** The left column's width. */
-  left: number;
-  /** The feed's width. */
-  feed: number;
-}
-
-export function clamp(value: number, min: number, max: number): number {
-  if (!Number.isFinite(value)) return min;
-  return Math.min(Math.max(Math.round(value), min), max);
-}
+export type WorkspaceLayout = Record<string, number>;
 
 /**
- * The right column takes whatever is left of the window, so the three columns
- * always fill it exactly.
- */
-export function rightWidth(
-  widths: WorkspaceWidths,
-  viewportWidth: number,
-): number {
-  return Math.max(0, viewportWidth - widths.left - widths.feed);
-}
-
-/**
- * Keeps the three columns inside the window: the feed gives up width first,
- * then the left column, and the right column is whatever is left.
- */
-export function fitWorkspaceWidths(
-  widths: WorkspaceWidths,
-  viewportWidth: number,
-): WorkspaceWidths {
-  let left = clamp(widths.left, WORKSPACE_LEFT.min, WORKSPACE_LEFT.max);
-  let feed = clamp(widths.feed, WORKSPACE_FEED.min, WORKSPACE_FEED.max);
-
-  const available = viewportWidth - WORKSPACE_RIGHT.min;
-
-  if (left + feed > available) {
-    const feedRoom = feed - WORKSPACE_FEED.min;
-    const take = Math.min(feedRoom, left + feed - available);
-    feed -= take;
-
-    if (left + feed > available) {
-      left = Math.max(WORKSPACE_LEFT.min, available - feed);
-    }
-  }
-
-  return { left, feed };
-}
-
-/**
- * Moves the boundary between the left column and the feed.
+ * Runs before the first paint: it reads the saved widths and puts the
+ * columns where they belong, so the feed is never painted at the fallback
+ * width and then resized.
  *
- * The boundary follows the pointer; the feed and the left column trade the
- * width. The feed's other edge does not move, so a drag on one side of the
- * feed never resizes the other side too.
+ * The panels are sized with `flex-grow`, and the library sets that itself —
+ * so the script writes the same values the first client render will produce.
+ * The DOM then matches the render and there is nothing to jump.
  */
-export function dragLeftBoundary(
-  widths: WorkspaceWidths,
-  delta: number,
-): WorkspaceWidths {
-  // How far the boundary wants to move.
-  const targetLeft = clamp(
-    widths.left + delta,
-    WORKSPACE_LEFT.min,
-    WORKSPACE_LEFT.max,
-  );
-  const moved = targetLeft - widths.left;
-
-  // The feed gives up the width the boundary took, so its other edge stays
-  // exactly where it was.
-  const feed = clamp(
-    widths.feed - moved,
-    WORKSPACE_FEED.min,
-    WORKSPACE_FEED.max,
-  );
-
-  // If the feed could not give up that much, the left column takes the rest.
-  const left = clamp(
-    widths.left + (widths.feed - feed),
-    WORKSPACE_LEFT.min,
-    WORKSPACE_LEFT.max,
-  );
-
-  return { left, feed };
-}
+export const WORKSPACE_WIDTH_SCRIPT = `(function(){try{var m=document.cookie.match(/(?:^|; )ds\\.workspace\\.widths=([^;]*)/);if(!m)return;var w=JSON.parse(decodeURIComponent(m[1]));var v=window.innerWidth;var left=w.left||0,feed=w.feed||0,right=Math.max(0,v-left-feed),total=left+feed+right;if(!(total>0))return;var l=Math.round(left/total*1000),f=Math.round(feed/total*1000),r=1000-l-f;var sizes={left:l,feed:f,right:r};document.documentElement.style.setProperty("--workspace-feed-width",Math.round((w.feed||0))+"px");var apply=function(){var found=false;["ws-left","ws-feed","ws-right"].forEach(function(id){var el=document.getElementById(id);if(el){el.style.flexGrow=String(sizes[id]);found=true}});return found};if(!apply()){var o=new MutationObserver(function(){if(apply()){o.disconnect()}});o.observe(document.documentElement,{childList:true,subtree:true})}}catch(e){}})();`;
 
 /**
- * Moves the boundary between the feed and the right column. Same rule: the
- * boundary follows the pointer and the two columns trade the width.
+ * The library's layout is a map of panel id to flex-grow ratio, so the saved
+ * pixel widths have to become ratios before they can be handed to it.
  */
-export function dragRightBoundary(
-  widths: WorkspaceWidths,
-  delta: number,
+export function layoutFromWidths(
+  widths: { left: number; feed: number },
   viewportWidth: number,
-): WorkspaceWidths {
-  const wanted = clamp(
-    widths.feed + delta,
-    WORKSPACE_FEED.min,
-    WORKSPACE_FEED.max,
-  );
-  const right = rightWidth(widths, viewportWidth);
-  const moved = wanted - widths.feed;
-
-  if (right - moved < WORKSPACE_RIGHT.min) {
-    // The right column is as narrow as it may be: the feed grows only as far
-    // as the right column can give.
+): WorkspaceLayout {
+  if (!(widths.left + widths.feed > 0)) {
     return {
-      left: widths.left,
-      feed: clamp(
-        widths.feed + (right - WORKSPACE_RIGHT.min),
-        WORKSPACE_FEED.min,
-        WORKSPACE_FEED.max,
-      ),
+      [WORKSPACE_PANEL_IDS.left]: 1,
+      [WORKSPACE_PANEL_IDS.feed]: 1,
+      [WORKSPACE_PANEL_IDS.right]: 1,
     };
   }
 
-  return { left: widths.left, feed: wanted };
+  const right = Math.max(0, viewportWidth - widths.left - widths.feed);
+  const total = widths.left + widths.feed + right;
+
+  if (!(total > 0)) {
+    return {
+      [WORKSPACE_PANEL_IDS.left]: 1,
+      [WORKSPACE_PANEL_IDS.feed]: 1,
+      [WORKSPACE_PANEL_IDS.right]: 1,
+    };
+  }
+
+  const left = Math.round((widths.left / total) * 1000);
+  const feed = Math.round((widths.feed / total) * 1000);
+
+  return {
+    [WORKSPACE_PANEL_IDS.left]: left,
+    [WORKSPACE_PANEL_IDS.feed]: feed,
+    [WORKSPACE_PANEL_IDS.right]: 1000 - left - feed,
+  };
+}
+
+/**
+ * The other direction: the library's ratios back to pixel widths, so they can
+ * be saved and so the fixed chrome can be told how wide the feed is.
+ */
+export function widthsFromLayout(
+  layout: WorkspaceLayout,
+  viewportWidth: number,
+): { left: number; feed: number; right: number } {
+  const left = layout[WORKSPACE_PANEL_IDS.left] ?? 0;
+  const feed = layout[WORKSPACE_PANEL_IDS.feed] ?? 0;
+  const right = layout[WORKSPACE_PANEL_IDS.right] ?? 0;
+  const total = left + feed + right;
+
+  if (!(total > 0)) {
+    return {
+      left: WORKSPACE_LEFT.default,
+      feed: WORKSPACE_FEED.default,
+      right: WORKSPACE_RIGHT.default,
+    };
+  }
+
+  return {
+    left: Math.round((left / total) * viewportWidth),
+    feed: Math.round((feed / total) * viewportWidth),
+    right: Math.round((right / total) * viewportWidth),
+  };
 }

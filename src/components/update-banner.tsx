@@ -104,6 +104,9 @@ export default function UpdateBanner() {
   return (
     <div
       ref={barRef}
+      // Centred on the feed, not on the window: the workspace shift is how far
+      // the feed's centre sits from the viewport's centre.
+      style={{ marginLeft: "var(--workspace-shift, 0px)" }}
       className="fixed bottom-[calc(var(--chat-footer-height)-5px)] left-1/2 -translate-x-1/2 w-full max-w-sm z-40 px-4 pt-2.5"
     >
       <div className="liquid-glass w-full flex items-center gap-x-2.5 rounded-2xl px-3 py-2">
