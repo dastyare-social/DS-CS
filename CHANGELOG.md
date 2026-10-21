@@ -102,6 +102,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   1,400-request soak with zero failures. `bun run dev:turbo` keeps the old
   behaviour. The failure mode and its diagnostics are documented in
   `AGENTS.md` → "If every route shows the not-found page"
+- Not-found pages now render at the Workshop project's size: the description
+  line is 24px (`text-2xl`) and the "Get Back To Home Page" button is 24px
+  instead of the 14px it was pinned to. In the Workshop project the same line
+  inherits `div { font-size: 24px }` from the base layer and the button carries
+  `text-[24px]`; this app has no such base rule, so the size is stated at the
+  call site
 
 ## [0.1.0] - Initial release
 
