@@ -84,6 +84,10 @@ export function initPostHog(): Promise<PostHog | null> {
         autocapture: false,
         capture_pageview: false,
         capture_heatmaps: true,
+        // The default target inserts lazy-loaded scripts before the first
+        // `body > script`, which is a JSON-LD tag inside the route's Suspense
+        // boundary. React then fails to hydrate that boundary (error #418).
+        external_scripts_inject_target: "head",
         loaded: startRecording,
       });
       return ph;
